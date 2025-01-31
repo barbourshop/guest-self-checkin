@@ -63,7 +63,7 @@ app.post("/search-customers-phone", async (req, res) => {
         fuzzy: phone
       }
     });
-
+    console.log("Found customers:", customers);
     res.json(customers);
   } catch (error) {
     console.error("Error searching customers by phone:", error);
@@ -90,7 +90,7 @@ app.post("/search-customers-email", async (req, res) => {
         fuzzy: email
       }
     });
-
+    console.log("Found customers:", customers);
     res.json(customers);
   } catch (error) {
     console.error("Error searching customers by email:", error);
