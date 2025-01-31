@@ -2,6 +2,14 @@ import { APICustomer } from './types';
 
 const API_BASE_URL = 'http://localhost:3000';
 
+/**
+ * Searches for customers by email or phone.
+ * 
+ * @param {('email' | 'phone')} type - The type of search, either 'email' or 'phone'.
+ * @param {string} query - The search query, either an email address or phone number.
+ * @returns {Promise<APICustomer[]>} - A promise that resolves to an array of APICustomer objects.
+ * @throws Will throw an error if the search fails.
+ */
 export async function searchCustomers(type: 'email' | 'phone', query: string): Promise<APICustomer[]> {
   try {
     const endpoint = type === 'email' ? 'search-customers-email' : 'search-customers-phone';
