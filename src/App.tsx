@@ -97,7 +97,9 @@ function App() {
       <main className="max-w-3xl mx-auto p-4 mt-6">
         {showConfirmation ? (
           <div className="bg-green-50 rounded-lg p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div 
+            data-testid="green-checkmark"
+            className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-green-900 mb-2">All Set!</h2>
@@ -126,6 +128,7 @@ function App() {
                     Number of guests (including you)
                   </label>
                   <input
+                    data-testid="checkin-input"
                     type="number"
                     min="1"
                     max="10"
@@ -135,6 +138,7 @@ function App() {
                   />
                 </div>
                 <button
+                  data-testid="checkin-button"
                   onClick={handleCheckIn}
                   className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
                 >
@@ -168,11 +172,14 @@ function App() {
                   </div>
                 ) : (
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Sign Waiver</h3>
+                    <h3 
+                    data-testid="signwaiver-text"
+                    className="text-lg font-medium text-gray-900 mb-4">Sign Waiver</h3>
                     <p className="text-sm text-gray-600 mb-4">
                       Please review and sign our liability waiver before proceeding.
                     </p>
                     <button
+                      data-testid="signwaiver-button"
                       onClick={() => setShowWaiver(true)}
                       className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2"
                     >
