@@ -59,7 +59,8 @@ Web application that allows guests at a recreation center to check in using thei
 ## Scripts
 
 ```bash
-npm run dev      # Start development server
+npm run dev      # Start development server for front end
+npm run server      # Start development server for back end
 npm run build    # Build for production
 npm run lint     # Run ESLint
 npm run preview  # Preview production build
