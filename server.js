@@ -16,12 +16,18 @@ const SQUARE_API_CONFIG = {
   }
 };
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static("public"));
+// Middleware setup
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(bodyParser.json()); // Parse JSON request bodies
+app.use(express.static("public")); // Serve static files from the "public" directory
 
-// Square API helper function
+/**
+ * Helper function to search customers in Square API.
+ * 
+ * @param {Object} searchParams - The search parameters to filter customers.
+ * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
+ * @throws Will throw an error if the Square API request fails.
+ */
 async function searchSquareCustomers(searchParams) {
   try {
     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
@@ -47,7 +53,13 @@ async function searchSquareCustomers(searchParams) {
   }
 }
 
-// Endpoint to search customers by phone number
+/**
+ * Endpoint to search customers by phone number.
+ * 
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 app.post("/search-customers-phone", async (req, res) => {
   try {
     const { phone } = req.body;
@@ -74,7 +86,13 @@ app.post("/search-customers-phone", async (req, res) => {
   }
 });
 
-// Endpoint to search customers by email
+/**
+ * Endpoint to search customers by phone number.
+ * 
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
 app.post("/search-customers-email", async (req, res) => {
   try {
     const { email } = req.body;

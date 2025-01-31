@@ -27,7 +27,6 @@ export function adaptCustomer(apiCustomer: APICustomer): Customer {
     lastName: apiCustomer.family_name,
     email: apiCustomer.email_address,
     phone: apiCustomer.phone_number,
-    // TODO: Extract membershipType from data
     membershipType: 'Member' // Default value
   };
 }
