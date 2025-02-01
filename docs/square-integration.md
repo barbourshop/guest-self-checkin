@@ -4,6 +4,7 @@
 This document provides a detailed explanation of the integration with Square's APIs, focusing on searching for customers, determining membership status, handling member check-in, and managing waivers.
 
 ## Environments
+All square credentials are stored in environment variables and must be obtained from the Square developer consoler
 ### Sandbox
 `BtvGateApp` Square application
 
