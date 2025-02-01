@@ -54,6 +54,53 @@ async function searchSquareCustomers(searchParams) {
 }
 
 /**
+ * Helper function to search customers in Square API.
+ * 
+ * @param {Object} searchParams - The search parameters to filter customers.
+ * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
+ * @throws Will throw an error if the Square API request fails.
+ */
+async function searchSquareOrders(searchParams) {
+  try {
+    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
+      method: 'POST',
+      headers: SQUARE_API_CONFIG.headers,
+      body: JSON.stringify({
+        query: {
+          filter: {
+            customer_filter : {
+              customer_ids : [searchParams]
+            }
+          }
+        },
+        "location_ids": [
+          "LDH1GBS49SASE"
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
+    }
+
+    const data = await response.json();
+    if (data.orders && data.orders.length > 0) {
+      const hasPoolPass = data.orders.some(order => 
+      order.line_items?.some(item => 
+        item.catalog_object_id === '5P3J4MLH7EFZKG6FGWBGZ46G'
+      )
+      );
+      return hasPoolPass ? data.orders[0].customer_id : null;
+    }
+    return null;
+  } catch (error) {
+    console.error('Square API Error:', error);
+    throw error;
+  }
+}
+
+/**
  * Endpoint to search customers by phone number.
  * 
  * @param {Object} req - The request object.
@@ -146,6 +193,35 @@ app.get("/list-customers", async (req, res) => {
     console.error("Error listing customers:", error);
     res.status(500).json({ 
       error: "Failed to list customers",
+      detail: error.message 
+    });
+  }
+});
+
+/**
+ * Endpoint to look for customers purchase of a pool pass.
+ * 
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {void}
+ */
+app.post("/check-for-access", async (req, res) => {
+  try {
+    const { customerId } = req.body;
+    
+    if (!customerId) {
+      return res.status(400).json({ error: "customerId is required" });
+    }
+
+    console.log("Searching for customerId:", customerId);
+    
+    const customers = await searchSquareOrders(customerId);
+
+    res.json(customers);
+  } catch (error) {
+    console.error("Error searching customers by customerId:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch customers by customerId",
       detail: error.message 
     });
   }
