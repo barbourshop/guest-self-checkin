@@ -19,7 +19,7 @@ test.describe('Customer Check-in Flow', () => {
 test('search for member by phone fragment', async ({ page }) => {
     
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', '303');
+    await page.fill('[data-testid="search-input"]', '650');
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
@@ -40,7 +40,7 @@ test('search for member by email fragment', async ({ page }) => {
     
     await page.click('[data-testid="email-search"]');
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', 'bv');
+    await page.fill('[data-testid="search-input"]', 'gmail');
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
@@ -58,5 +58,25 @@ test('search for member by email fragment with no results', async ({ page }) => 
     // Wait for search results to load
     const memberElement = await page.waitForSelector('[data-testid="member-not-found"]');
     expect(memberElement).toBeTruthy();
+});
+
+test('member shows up appropriately', async ({ page }) => {
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.fill('[data-testid="search-input"]', '650');
+  await page.click('[data-testid="search-button"]');
+  
+  // Use locator with text matcher
+  await expect(page.locator('[data-testid="membership-type"]'))
+    .toHaveText('Member');
+});
+
+test('non-member shows up appropriately', async ({ page }) => {
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.fill('[data-testid="search-input"]', '303');
+  await page.click('[data-testid="search-button"]');
+  
+  // Use locator with text matcher
+  await expect(page.locator('[data-testid="membership-type"]'))
+    .toHaveText('Non-Member');
 });
 });

@@ -282,14 +282,17 @@ function App() {
                         <div className="bg-blue-100 p-3 rounded-full">
                           <User className="h-6 w-6 text-blue-600" />
                         </div>
-                        <div className="flex-1">
+                        <div 
+                        className="flex-1">
                           <h3 className="font-medium text-gray-900">
                             {customer.firstName} {customer.lastName}
                           </h3>
                           <p className="text-sm text-gray-500">{customer.email}</p>
                           <p className="text-sm text-gray-500">{customer.phone}</p>
                           {customer.membershipType && (
-                            <span className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                            <span 
+                            data-testid="membership-type"
+                            className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                               {customer.membershipType}
                             </span>
                           )}
