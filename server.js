@@ -242,34 +242,34 @@ app.get("/list-customers", async (req, res) => {
   }
 });
 
-/**
- * Endpoint to look for customers purchase of a pool pass.
- * 
- * @param {Object} req - The request object.
- * @param {Object} res - The response object.
- * @returns {void}
- */
-app.post("/check-for-access", async (req, res) => {
-  try {
-    const { customerId } = req.body;
+// /**
+//  * Endpoint to look for customers purchase of a pool pass.
+//  * 
+//  * @param {Object} req - The request object.
+//  * @param {Object} res - The response object.
+//  * @returns {void}
+//  */
+// app.post("/check-for-access", async (req, res) => {
+//   try {
+//     const { customerId } = req.body;
     
-    if (!customerId) {
-      return res.status(400).json({ error: "customerId is required" });
-    }
+//     if (!customerId) {
+//       return res.status(400).json({ error: "customerId is required" });
+//     }
 
-    console.log("Searching for customerId:", customerId);
+//     console.log("Searching for customerId:", customerId);
     
-    const customers = await searchSquareOrders(customerId);
+//     const customers = await searchSquareOrders(customerId);
 
-    res.json(customers);
-  } catch (error) {
-    console.error("Error searching customers by customerId:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch customers by customerId",
-      detail: error.message 
-    });
-  }
-});
+//     res.json(customers);
+//   } catch (error) {
+//     console.error("Error searching customers by customerId:", error);
+//     res.status(500).json({ 
+//       error: "Failed to fetch customers by customerId",
+//       detail: error.message 
+//     });
+//   }
+// });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
