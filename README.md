@@ -13,9 +13,9 @@ Web application that allows guests at a recreation center to check in using thei
 │   ├── types.ts           # Type definitions
 │   ├── index.css          # Tailwind CSS styles
 │   └── vite-env.d.ts      # Vite environment types
+├── tests/                 # Tests for UI and backend code
 ├── config/                 # Configuration files
 │   └── square.js          # Square API configuration
-├── public/                 # Static files
 ├── server.js              # Express server
 ├── package.json           # Project metadata
 └── tsconfig.json          # TypeScript configuration
@@ -28,42 +28,41 @@ Web application that allows guests at a recreation center to check in using thei
 #### App.tsx
 - Main component for user interactions and UI
 - Handles profile search via phone/email
+- Displays membership status and pool pass information
 - Manages check-in process and waiver acceptance
 
 #### api.ts
 - Provides `searchCustomers` function
 - Handles backend API communication
+- Returns enhanced customer data with membership status
 
 #### types.ts
-- Defines TypeScript interfaces
+- Defines TypeScript interfaces for customers and orders
 - Contains `adaptCustomer` utility function
+- Includes membership type definitions
 
 ### Backend
 
 #### server.js
 - Express server for API handling
-- Customer search endpoints
+- Customer search endpoints with membership verification
+- Order history lookup for pool pass validation
 - Square API integration
 - Static file serving
 
-#### config/square.js
-- Square API configuration settings
+## Square API Integration
 
-## Configuration
-
-- `vite.config.ts`: Vite build configuration
-- `tsconfig.json`: TypeScript settings
-- `postcss.config.js`: PostCSS settings
-- `tailwind.config.js`: Tailwind CSS settings
+### Customer Search
+- Searches by email or phone number
+- Returns customer profiles with order history
+- Verifies pool pass membership status by retrieving customer order history and looking for presence of a specific catalog_order_id
 
 ## Scripts
 
 ```bash
 npm run dev      # Start development server for front end
 npm run server      # Start development server for back end
-npm run build    # Build for production
-npm run lint     # Run ESLint
-npm run preview  # Preview production build
+npx playwright test     # Run playwright e2e tests for the ui (must run dev and server in advance)
 ```
 
 ## Dependencies
@@ -79,32 +78,3 @@ npm run preview  # Preview production build
 - CORS
 - dotenv
 - Square API
-
-## Usage
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/guest-self-checkin.git
-    cd guest-self-checkin
-    ```
-
-2. Install dependencies:
-    ```bash
-    npm install
-    ```
-
-3. Create `.env` file with Square API token
-
-4. Start development server:
-    ```bash
-    npm run dev
-    ```
-
-## API Endpoints
-
-### POST /search-customers-phone
-Search customers by phone number
-
-### POST /search-customers-email
-Search customers by email address
-
