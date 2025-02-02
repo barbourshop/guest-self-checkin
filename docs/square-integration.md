@@ -5,6 +5,7 @@ This document provides a detailed explanation of the integration with Square's A
 
 ## Environments
 All square credentials are stored in environment variables and must be obtained from the Square developer consoler
+
 ### Sandbox
 `BtvGateApp` Square application
 
@@ -18,6 +19,8 @@ All square credentials are stored in environment variables and must be obtained 
 |--------------|-------|-------|
 | R3MR2SWBFFHJ8M00B869EBFV6W | Purchased Membership plus 10, Waiver Signed |
 | WN30VQSTG8SHS42CAY50DAFT4C | No Purchased Membership, No Waiver |
+| 34VPFNT2YBNZ8KW85YM3QQY0H8 | Purchased Membership, No Waiver |
+| HHHV3G1BFJ3BYVZEK5SRF3XN40 | No Purchased Membership, Waiver-Signed |
 
 ### Production
 
