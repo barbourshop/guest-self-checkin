@@ -100,7 +100,7 @@ function App() {
           <CustomerDetail
             customer={selectedCustomer}
             guestCount={guestCount}
-            showWaiver={showWaiver}
+            showWaiver={selectedCustomer ? !selectedCustomer.hasSignedWaiver : false}
             onGuestCountChange={setGuestCount}
             onCheckIn={handleCheckIn}
             onWaiverResponse={handleWaiverResponse}
