@@ -70,13 +70,13 @@ async function searchSquareCustomers(searchType, searchValue) {
      const customersWithOrders = await Promise.all((data.customers || []).map(async (customer) => {
       console.log(`\n=== Fetching orders for customer ${customer.id} ===`);
       const orders = await getCustomerOrders(customer.id);
-      const hasPoolPass = orders.some(order => 
+      const hasMembership = orders.some(order => 
         order.line_items?.some(item => 
           POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
         )
       );
-      console.log(`Pool pass status for ${customer.id}: ${hasPoolPass}`);
-      return { ...customer, orders, hasPoolPass };
+      console.log(`Membership status for ${customer.id}: ${hasMembership}`);
+      return { ...customer, orders, hasMembership };
     }));
 
     console.log('\n=== Final Results ===');
