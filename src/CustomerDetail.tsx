@@ -94,19 +94,19 @@ export const CustomerDetail = ({
                 data-testid="signwaiver-text"
                 className="text-lg font-medium text-gray-900 mb-4"
               >
-                Sign Waiver
+                Waiver Already Signed
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Please review and sign our liability waiver before proceeding.
+                You have previously signed our liability waiver before proceeding, no further signing is required.
               </p>
-              <button
+              {/* <button
                 data-testid="signwaiver-button"
                 onClick={onShowWaiver}
                 className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2"
               >
                 <FileText className="h-5 w-5" />
                 <span>View Waiver</span>
-              </button>
+              </button> */}
             </div>
           )}
         </div>
