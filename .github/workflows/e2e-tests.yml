@@ -31,7 +31,7 @@ jobs:
         run: npx playwright install-deps
         
       - name: Run Playwright tests
-        run: npx playwright test --headed=false
+        run: npx playwright test
 
       - name: Upload Playwright test results
         if: failure()
