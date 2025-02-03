@@ -12,7 +12,7 @@ test.describe('Customer Check-in Flow', () => {
 test('click on member from search', async ({ page }) => {
     
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', '303');
+    await page.fill('[data-testid="search-input"]', '650');
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
@@ -32,7 +32,7 @@ test('click on member from search', async ({ page }) => {
 test('Sign in member', async ({ page }) => {
     
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', '303');
+    await page.fill('[data-testid="search-input"]', '650');
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load

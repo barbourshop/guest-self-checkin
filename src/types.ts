@@ -29,20 +29,18 @@ export interface Customer {
   lastName: string;
   email: string;
   phone: string;
-  membershipType: 'Member' | 'Non-Member';
-  hasPoolPass: boolean;
-  hasSignedWaiver: boolean; // Add this field
+  membershipType?: string;
+  hasSignedWaiver?: boolean;
 }
 
-export function adaptCustomer(apiCustomer: APICustomerWithOrders): Customer {
+export function adaptCustomer(data: any): Customer {
   return {
-    id: apiCustomer.id,
-    firstName: apiCustomer.given_name,
-    lastName: apiCustomer.family_name,
-    email: apiCustomer.email_address,
-    phone: apiCustomer.phone_number,
-    membershipType: apiCustomer.hasPoolPass ? 'Member' : 'Non-Member',
-    hasPoolPass: apiCustomer.hasPoolPass || false,
-    hasSignedWaiver: false
+    id: data.id,
+    firstName: data.given_name,
+    lastName: data.family_name,
+    email: data.email_address,
+    phone: data.phone_number,
+    membershipType: data.membershipType,
+    hasSignedWaiver: false // Default value until checked
   };
 }
