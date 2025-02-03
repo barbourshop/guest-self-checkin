@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Mail, Phone, Loader2, User, X, Users, FileText, Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
-import { searchCustomers } from './api';
+import { checkWaiverStatus, searchCustomers } from './api';
 
 const WAIVER_TEXT = `RELEASE AND WAIVER OF LIABILITY
 
@@ -30,16 +30,28 @@ function App() {
       setCustomers([]);
       return;
     }
-
+  
     setIsLoading(true);
     setError(null);
-
+  
     try {
       const results = await searchCustomers(searchType, searchQuery);
       const adaptedCustomers = results.map(adaptCustomer);
-      console.log("\nMapped Customers:\n", adaptedCustomers);
       
-      setCustomers(adaptedCustomers);
+      // Check waiver status for each customer
+      const customersWithWaiverStatus = await Promise.all(
+        adaptedCustomers.map(async (customer) => {
+          try {
+            const hasSignedWaiver = await checkWaiverStatus(customer.id);
+            return { ...customer, hasSignedWaiver };
+          } catch (error) {
+            console.error(`Failed to check waiver status for customer ${customer.id}:`, error);
+            return customer;
+          }
+        })
+      );
+      
+      setCustomers(customersWithWaiverStatus);
     } catch (err) {
       setError('Unable to search customers. Please try again.');
       setCustomers([]);
@@ -290,12 +302,25 @@ function App() {
                           <p className="text-sm text-gray-500">{customer.email}</p>
                           <p className="text-sm text-gray-500">{customer.phone}</p>
                           {customer.membershipType && (
+                          <div className="flex gap-2 mt-1">
                             <span 
-                            data-testid="membership-type"
-                            className="inline-block mt-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                              data-testid="membership-type"
+                              className="inline-block px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded"
+                            >
                               {customer.membershipType}
                             </span>
-                          )}
+                            <span 
+                              data-testid="waiver-status"
+                              className={`inline-block px-2 py-1 text-xs font-medium rounded ${
+                                customer.hasSignedWaiver 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {customer.hasSignedWaiver ? 'Waiver Signed' : 'No Waiver'}
+                            </span>
+                          </div>
+                        )}
                         </div>
                       </div>
                     </li>

@@ -38,3 +38,27 @@ export async function searchCustomers(type: 'email' | 'phone', query: string): P
     throw error;
   }
 }
+
+export async function checkWaiverStatus(customerId: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/check-waiver/${customerId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to check waiver status');
+    }
+
+    const data = await response.json();
+    return data.hasSignedWaiver;
+  } catch (error) {
+    console.error('Waiver check error:', error);
+    throw error;
+  }
+}
