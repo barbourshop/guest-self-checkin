@@ -18,10 +18,10 @@ export interface APIOrder {
   }>;
 }
 
-export interface APICustomerWithOrders extends APICustomer {
-  orders?: APIOrder[];
-  hasPoolPass?: boolean;
-}
+// export interface APICustomerWithOrders extends APICustomer {
+//   orders?: APIOrder[];
+//   hasPoolPass?: boolean;
+// }
 
 export interface Customer {
   id: string;
@@ -29,7 +29,7 @@ export interface Customer {
   lastName: string;
   email: string;
   phone: string;
-  membershipType?: string;
+  membershipType?: String;
   hasSignedWaiver?: boolean;
 }
 
@@ -40,7 +40,7 @@ export function adaptCustomer(data: any): Customer {
     lastName: data.family_name,
     email: data.email_address,
     phone: data.phone_number,
-    membershipType: data.membershipType,
+    membershipType: data.membershipStatus,
     hasSignedWaiver: false // Default value until checked
   };
 }

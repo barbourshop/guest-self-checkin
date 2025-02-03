@@ -75,8 +75,9 @@ async function searchSquareCustomers(searchType, searchValue) {
           POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
         )
       );
-      console.log(`Membership status for ${customer.id}: ${hasMembership}`);
-      return { ...customer, orders, hasMembership };
+      const membershipStatus = hasMembership ? 'Member' : 'Non-Member';
+      console.log(`Membership status for ${customer.id}: ${membershipStatus}`);
+      return { ...customer, orders, membershipStatus };
     }));
 
     console.log('\n=== Final Results ===');
@@ -89,54 +90,54 @@ async function searchSquareCustomers(searchType, searchValue) {
   }
 }
 
-/**
- * Helper function to search customers in Square API.
- * 
- * @param {Object} searchParams - The search parameters to filter customers.
- * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
- * @throws Will throw an error if the Square API request fails.
- */
-async function searchSquareOrders(searchParams) {
-  console.log('Search Orders parameters:', JSON.stringify(searchParams, null, 2));
-  try {
-    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-      method: 'POST',
-      headers: SQUARE_API_CONFIG.headers,
-      body: JSON.stringify({
-        query: {
-          filter: {
-            customer_filter : {
-              customer_ids : [searchParams]
-            }
-          }
-        },
-        "location_ids": [
-          "LDH1GBS49SASE"
-        ]
-      })
-    });
+// /**
+//  * Helper function to search customers in Square API.
+//  * 
+//  * @param {Object} searchParams - The search parameters to filter customers.
+//  * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
+//  * @throws Will throw an error if the Square API request fails.
+//  */
+// async function searchSquareOrders(searchParams) {
+//   console.log('Search Orders parameters:', JSON.stringify(searchParams, null, 2));
+//   try {
+//     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
+//       method: 'POST',
+//       headers: SQUARE_API_CONFIG.headers,
+//       body: JSON.stringify({
+//         query: {
+//           filter: {
+//             customer_filter : {
+//               customer_ids : [searchParams]
+//             }
+//           }
+//         },
+//         "location_ids": [
+//           "LDH1GBS49SASE"
+//         ]
+//       })
+//     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
-    }
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
+//     }
 
-    const data = await response.json();
-    console.log('Order data:', JSON.stringify(data.orders, null, 2));
-    if (data.orders && data.orders.length > 0) {
-      const hasPoolPass = data.orders.some(order => 
-      order.line_items?.some(item => 
-        POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
-      )
-      );
-      return hasPoolPass ? data.orders[0].customer_id : null;
-    }
-    return null;
-  } catch (error) {
-    console.error('Square API Error:', error);
-    throw error;
-  }
-}
+//     const data = await response.json();
+//     console.log('Order data:', JSON.stringify(data.orders, null, 2));
+//     if (data.orders && data.orders.length > 0) {
+//       const hasPoolPass = data.orders.some(order => 
+//       order.line_items?.some(item => 
+//         POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
+//       )
+//       );
+//       return hasPoolPass ? data.orders[0].customer_id : null;
+//     }
+//     return null;
+//   } catch (error) {
+//     console.error('Square API Error:', error);
+//     throw error;
+//   }
+// }
 
 /**
  * Helper function to get customer orders in Square API.
@@ -216,6 +217,7 @@ app.post("/search-customers-phone", async (req, res) => {
   try {
     const { phone } = req.body;
     const customers = await searchSquareCustomers('phone', phone);
+    console.log(customers);
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });

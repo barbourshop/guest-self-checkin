@@ -31,7 +31,7 @@ export async function searchCustomers(type: 'email' | 'phone', query: string): P
     if (!response.ok) {
       throw new Error('Search failed');
     }
-
+    
     return response.json();
   } catch (error) {
     console.error('Search error:', error);

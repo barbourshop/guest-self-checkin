@@ -30,7 +30,9 @@ function App() {
   
     try {
       const results = await searchCustomers(type, query);
+      //console.log("raw search results", results);
       const adaptedCustomers = results.map(adaptCustomer);
+      console.log("search results", adaptedCustomers);  
       const customersWithWaiverStatus = await Promise.all(
         adaptedCustomers.map(async (customer) => {
           try {
