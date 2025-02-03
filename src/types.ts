@@ -31,6 +31,7 @@ export interface Customer {
   phone: string;
   membershipType: 'Member' | 'Non-Member';
   hasPoolPass: boolean;
+  hasSignedWaiver: boolean; // Add this field
 }
 
 export function adaptCustomer(apiCustomer: APICustomerWithOrders): Customer {
@@ -41,6 +42,7 @@ export function adaptCustomer(apiCustomer: APICustomerWithOrders): Customer {
     email: apiCustomer.email_address,
     phone: apiCustomer.phone_number,
     membershipType: apiCustomer.hasPoolPass ? 'Member' : 'Non-Member',
-    hasPoolPass: apiCustomer.hasPoolPass || false
+    hasPoolPass: apiCustomer.hasPoolPass || false,
+    hasSignedWaiver: false
   };
 }

@@ -176,6 +176,35 @@ async function getCustomerOrders(customerId) {
   return data.orders || [];
 }
 
+
+async function checkWaiverStatus(customerId) {
+  try {
+    const response = await fetch(
+      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+      {
+        method: 'GET',
+        headers: SQUARE_API_CONFIG.headers
+      }
+    );
+    
+    // If response is 404, waiver is not signed
+    if (response.status === 404) {
+      return false;
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to check waiver status');
+    }
+    
+    return true;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 /**
  * Endpoint to search customers by phone number.
  * 
@@ -242,34 +271,15 @@ app.get("/list-customers", async (req, res) => {
   }
 });
 
-// /**
-//  * Endpoint to look for customers purchase of a pool pass.
-//  * 
-//  * @param {Object} req - The request object.
-//  * @param {Object} res - The response object.
-//  * @returns {void}
-//  */
-// app.post("/check-for-access", async (req, res) => {
-//   try {
-//     const { customerId } = req.body;
-    
-//     if (!customerId) {
-//       return res.status(400).json({ error: "customerId is required" });
-//     }
-
-//     console.log("Searching for customerId:", customerId);
-    
-//     const customers = await searchSquareOrders(customerId);
-
-//     res.json(customers);
-//   } catch (error) {
-//     console.error("Error searching customers by customerId:", error);
-//     res.status(500).json({ 
-//       error: "Failed to fetch customers by customerId",
-//       detail: error.message 
-//     });
-//   }
-// });
+app.get("/check-waiver/:customerId", async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const hasSignedWaiver = await checkWaiverStatus(customerId);
+    res.json({ hasSignedWaiver });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
