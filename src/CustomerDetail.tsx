@@ -97,7 +97,7 @@ export const CustomerDetail = ({
                 Waiver Already Signed
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                You have previously signed our liability waiver before proceeding, no further signing is required.
+                You have previously signed the liability waiver, Thank You!
               </p>
               {/* <button
                 data-testid="signwaiver-button"
