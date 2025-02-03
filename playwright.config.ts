@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:5173',
-    headless: true,
+    headless: false,
     viewport: { width: 1280, height: 720 },
     trace: 'on',
     video: 'on-first-retry'
