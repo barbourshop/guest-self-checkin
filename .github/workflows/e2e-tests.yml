@@ -27,8 +27,8 @@ jobs:
           npm run dev &
           sleep 10 # Give time for servers to start
       
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+      - name: Install Playwright Dependencies
+        run: npx playwright install-deps
         
       - name: Run Playwright tests
         run: npx playwright test --headed=false
