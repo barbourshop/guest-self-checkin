@@ -1,6 +1,6 @@
 import { APICustomer } from './types';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 /**
  * Searches for customers by email or phone.
@@ -16,7 +16,7 @@ export async function searchCustomers(type: 'email' | 'phone', query: string): P
     const queryParam = type === 'email' ? 'email' : 'phone';
 
     const response = await fetch(
-      `${API_BASE_URL}/${endpoint}`,
+      `${API_BASE_URL}/customers/${endpoint}`,
       {
         method: 'POST',
         headers: {
@@ -42,7 +42,7 @@ export async function searchCustomers(type: 'email' | 'phone', query: string): P
 export async function checkWaiverStatus(customerId: string): Promise<boolean> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/check-waiver/${customerId}`,
+      `${API_BASE_URL}/waivers/check-waiver/${customerId}`,
       {
         method: 'GET',
         headers: {
@@ -64,7 +64,7 @@ export async function checkWaiverStatus(customerId: string): Promise<boolean> {
 }
 
 export const signWaiver = (customerId: string): void => {
-  fetch(`${API_BASE_URL}/set-waiver/${customerId}`, {
+  fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
     method: 'POST',
   })
   .catch(error => console.error('Error signing waiver:', error));
