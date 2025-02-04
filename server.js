@@ -90,55 +90,6 @@ async function searchSquareCustomers(searchType, searchValue) {
   }
 }
 
-// /**
-//  * Helper function to search customers in Square API.
-//  * 
-//  * @param {Object} searchParams - The search parameters to filter customers.
-//  * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
-//  * @throws Will throw an error if the Square API request fails.
-//  */
-// async function searchSquareOrders(searchParams) {
-//   console.log('Search Orders parameters:', JSON.stringify(searchParams, null, 2));
-//   try {
-//     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-//       method: 'POST',
-//       headers: SQUARE_API_CONFIG.headers,
-//       body: JSON.stringify({
-//         query: {
-//           filter: {
-//             customer_filter : {
-//               customer_ids : [searchParams]
-//             }
-//           }
-//         },
-//         "location_ids": [
-//           "LDH1GBS49SASE"
-//         ]
-//       })
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
-//     }
-
-//     const data = await response.json();
-//     console.log('Order data:', JSON.stringify(data.orders, null, 2));
-//     if (data.orders && data.orders.length > 0) {
-//       const hasPoolPass = data.orders.some(order => 
-//       order.line_items?.some(item => 
-//         POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
-//       )
-//       );
-//       return hasPoolPass ? data.orders[0].customer_id : null;
-//     }
-//     return null;
-//   } catch (error) {
-//     console.error('Square API Error:', error);
-//     throw error;
-//   }
-// }
-
 /**
  * Helper function to get customer orders in Square API.
  * 
@@ -176,7 +127,6 @@ async function getCustomerOrders(customerId) {
   console.log('Order details:', JSON.stringify(data.orders, null, 2));
   return data.orders || [];
 }
-
 
 async function checkWaiverStatus(customerId) {
   try {

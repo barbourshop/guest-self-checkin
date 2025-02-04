@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Users, FileText } from 'lucide-react';
 import { Customer } from './types';
+import { signWaiver } from './api';
 
 type CustomerDetailProps = {
   customer: Customer;
@@ -85,7 +86,10 @@ export const CustomerDetail = ({
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => onWaiverResponse(true)}
+                  onClick={() => {
+                    signWaiver(customer.id);
+                    onWaiverResponse(true);
+                  }}
                   className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
                   Accept
