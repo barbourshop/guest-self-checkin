@@ -59,11 +59,21 @@ export const CustomerDetail = ({
           <button
             data-testid="checkin-button"
             onClick={onCheckIn}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+            disabled={showWaiver}
+            className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 ${
+              !showWaiver 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
             <Users className="h-5 w-5" />
-            <span>Check In Now</span>
+            <span>{showWaiver ? 'Please Sign Waiver First' : 'Check In Now'}</span>
           </button>
+          {showWaiver && (
+            <p className="mt-2 text-sm text-red-600">
+              You must sign the waiver before checking in
+            </p>
+          )}
         </div>
 
         <div className="bg-gray-50 p-6 rounded-lg">
