@@ -206,6 +206,39 @@ async function checkWaiverStatus(customerId) {
   }
 }
 
+async function setWaiverStatus(customerId) {
+  try {
+    const timestamp = new Date().toLocaleString();
+    const idempotencyKey = crypto.randomUUID(); // Requires Node.js 15.6.0 or later
+
+    const response = await fetch(
+      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+      {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify({
+          idempotency_key: idempotencyKey,
+          custom_attribute: {
+            key: "waiver-signed",
+            value: timestamp
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error setting waiver status:', error);
+    throw error;
+  }
+}
+
 /**
  * Endpoint to search customers by phone number.
  * 
@@ -280,6 +313,20 @@ app.get("/check-waiver/:customerId", async (req, res) => {
     res.json({ hasSignedWaiver });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/set-waiver/:customerId", async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const result = await setWaiverStatus(customerId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error setting waiver status:", error);
+    res.status(500).json({ 
+      error: "Failed to set waiver status",
+      detail: error.message 
+    });
   }
 });
 
