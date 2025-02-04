@@ -90,55 +90,6 @@ async function searchSquareCustomers(searchType, searchValue) {
   }
 }
 
-// /**
-//  * Helper function to search customers in Square API.
-//  * 
-//  * @param {Object} searchParams - The search parameters to filter customers.
-//  * @returns {Promise<Array>} - A promise that resolves to an array of customer objects.
-//  * @throws Will throw an error if the Square API request fails.
-//  */
-// async function searchSquareOrders(searchParams) {
-//   console.log('Search Orders parameters:', JSON.stringify(searchParams, null, 2));
-//   try {
-//     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-//       method: 'POST',
-//       headers: SQUARE_API_CONFIG.headers,
-//       body: JSON.stringify({
-//         query: {
-//           filter: {
-//             customer_filter : {
-//               customer_ids : [searchParams]
-//             }
-//           }
-//         },
-//         "location_ids": [
-//           "LDH1GBS49SASE"
-//         ]
-//       })
-//     });
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
-//     }
-
-//     const data = await response.json();
-//     console.log('Order data:', JSON.stringify(data.orders, null, 2));
-//     if (data.orders && data.orders.length > 0) {
-//       const hasPoolPass = data.orders.some(order => 
-//       order.line_items?.some(item => 
-//         POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
-//       )
-//       );
-//       return hasPoolPass ? data.orders[0].customer_id : null;
-//     }
-//     return null;
-//   } catch (error) {
-//     console.error('Square API Error:', error);
-//     throw error;
-//   }
-// }
-
 /**
  * Helper function to get customer orders in Square API.
  * 
@@ -177,7 +128,6 @@ async function getCustomerOrders(customerId) {
   return data.orders || [];
 }
 
-
 async function checkWaiverStatus(customerId) {
   try {
     const response = await fetch(
@@ -202,6 +152,39 @@ async function checkWaiverStatus(customerId) {
     if (error.response?.status === 404) {
       return false;
     }
+    throw error;
+  }
+}
+
+async function setWaiverStatus(customerId) {
+  try {
+    const timestamp = new Date().toLocaleString();
+    const idempotencyKey = crypto.randomUUID(); // Requires Node.js 15.6.0 or later
+
+    const response = await fetch(
+      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+      {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify({
+          idempotency_key: idempotencyKey,
+          custom_attribute: {
+            key: "waiver-signed",
+            value: timestamp
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error setting waiver status:', error);
     throw error;
   }
 }
@@ -280,6 +263,20 @@ app.get("/check-waiver/:customerId", async (req, res) => {
     res.json({ hasSignedWaiver });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/set-waiver/:customerId", async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const result = await setWaiverStatus(customerId);
+    res.json(result);
+  } catch (error) {
+    console.error("Error setting waiver status:", error);
+    res.status(500).json({ 
+      error: "Failed to set waiver status",
+      detail: error.message 
+    });
   }
 });
 

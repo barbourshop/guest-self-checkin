@@ -62,3 +62,10 @@ export async function checkWaiverStatus(customerId: string): Promise<boolean> {
     throw error;
   }
 }
+
+export const signWaiver = (customerId: string): void => {
+  fetch(`${API_BASE_URL}/set-waiver/${customerId}`, {
+    method: 'POST',
+  })
+  .catch(error => console.error('Error signing waiver:', error));
+};
