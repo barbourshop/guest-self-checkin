@@ -1,7 +1,12 @@
 name: CI Tests
 on:
-  # Only run this manually
+  # Run manually or on a pull request to main
   workflow_dispatch:
+
+  pull_request:
+      branches:
+        - main
+  
 
 jobs:
   ci-tests:
