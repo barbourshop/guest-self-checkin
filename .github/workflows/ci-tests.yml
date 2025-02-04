@@ -1,0 +1,24 @@
+name: CI Tests
+on:
+  # Only run this manually
+  workflow_dispatch:
+
+jobs:
+  ci-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Jest tests
+        run: npm test
