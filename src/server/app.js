@@ -1,3 +1,28 @@
+/**
+ * Express application setup and configuration
+ * 
+ * Available Endpoints:
+ * 
+ * Customer Routes (/api/customers):
+ * - POST /search-phone - Search customers by phone number
+ *   body: { phone: string }
+ * 
+ * - POST /search-email - Search customers by email
+ *   body: { email: string }
+ * 
+ * - GET / - List all customers
+ *   query: { limit?: number, cursor?: string }
+ * 
+ * Waiver Routes (/api/waivers):
+ * - GET /:customerId - Check waiver status
+ *   response: { hasSignedWaiver: boolean }
+ * 
+ * - POST /:customerId - Set waiver as signed
+ *   response: { success: boolean }
+ * 
+ * @module app
+ */
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');

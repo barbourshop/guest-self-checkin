@@ -1,7 +1,19 @@
 const { SQUARE_API_CONFIG } = require('../config/square');
 const crypto = require('crypto');
 
+/**
+ * Service for managing customer waiver status in Square API
+ * @class WaiverService
+ */
 class WaiverService {
+  /**
+   * Check if a customer has signed the waiver
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<boolean>} True if waiver is signed, false otherwise
+   * @throws {Error} If API request fails (except 404)
+   * @example
+   * const hasWaiver = await waiverService.checkStatus('CUSTOMER_ID')
+   */
   async checkStatus(customerId) {
     // console.log('Checking Waiver Status for customerId', customerId);
     try {
@@ -22,6 +34,17 @@ class WaiverService {
     }
   }
 
+  /**
+   * Set waiver status for a customer
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<Object>} Square API response
+   * @throws {Error} If API request fails
+   * @example
+   * await waiverService.setStatus('CUSTOMER_ID')
+   * 
+   * @note Uses UUID for idempotency key to prevent duplicate submissions
+   * @note Stores timestamp as waiver signature date
+   */
   async setStatus(customerId) {
     const timestamp = new Date().toLocaleString();
     const idempotencyKey = crypto.randomUUID();

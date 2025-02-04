@@ -1,6 +1,20 @@
 const { SQUARE_API_CONFIG, POOL_PASS_CATALOG_IDS } = require('../config/square');
 
+/**
+ * Service for interacting with Square API customer and order endpoints
+ * @class SquareService
+ */
 class SquareService {
+  /**
+   * Search for customers by email or phone number
+   * @param {'email' | 'phone'} searchType - Type of search to perform
+   * @param {string} searchValue - Value to search for
+   * @returns {Promise<Array<Object>>} Array of enriched customer objects
+   * @throws {Error} If search type is invalid or API request fails
+   * @example
+   * await squareService.searchCustomers('email', 'john@example.com')
+   * await squareService.searchCustomers('phone', '555-0123')
+   */
   async searchCustomers(searchType, searchValue) {
     if (!['email', 'phone'].includes(searchType)) {
       throw new Error('Invalid search type. Must be either email or phone');
@@ -35,6 +49,13 @@ class SquareService {
     return customersWithOrders;
   }
 
+  /**
+   * Enrich customer data with orders and membership status
+   * @param {Object} customer - Square customer object
+   * @returns {Promise<Object>} Customer object with orders and membership status
+   * @example
+   * const enrichedCustomer = await squareService.enrichCustomerData(customer)
+   */
   async enrichCustomerData(customer) {
     const orders = await this.getCustomerOrders(customer.id);
     const hasMembership = orders.some(order => 
@@ -49,6 +70,14 @@ class SquareService {
     };
   }
 
+  /**
+   * Fetch all orders for a specific customer
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<Array<Object>>} Array of customer orders
+   * @throws {Error} If API request fails
+   * @example
+   * const orders = await squareService.getCustomerOrders('CUSTOMER_ID')
+   */
   async getCustomerOrders(customerId) {
     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
       method: 'POST',
