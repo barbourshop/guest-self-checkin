@@ -22,7 +22,7 @@ Web application that allows guests at a recreation center to check in using thei
 └── tsconfig.json          # TypeScript configuration
 ```
 
-## Key Components
+## Application Components
 
 ### Frontend Components
 
