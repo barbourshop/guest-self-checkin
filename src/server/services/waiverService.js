@@ -15,7 +15,6 @@ class WaiverService {
    * const hasWaiver = await waiverService.checkStatus('CUSTOMER_ID')
    */
   async checkStatus(customerId) {
-    // console.log('Checking Waiver Status for customerId', customerId);
     try {
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
@@ -30,9 +29,14 @@ class WaiverService {
         throw new Error(errorData.errors?.[0]?.detail || 'API Error');
       }
 
-      return response.status !== 404;
+      if (response.status === 404) {
+        return false;
+      }
+
+      const data = await response.json();
+      return Boolean(data?.custom_attribute?.value);
     } catch (error) {
-      if (error.response?.status === 404) {
+      if (error.name === 'TypeError' || error.message === 'Network failure') {
         return false;
       }
       throw error;
@@ -50,31 +54,34 @@ class WaiverService {
    * @note Uses UUID for idempotency key to prevent duplicate submissions
    * @note Stores timestamp as waiver signature date
    */
-  async setStatus(customerId) {
-    const timestamp = new Date().toLocaleString();
+  async setStatus(customerId) {    const timestamp = new Date().toLocaleString();
     const idempotencyKey = crypto.randomUUID();
 
-    const response = await fetch(
-      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
-      {
-        method: 'POST',
-        headers: SQUARE_API_CONFIG.headers,
-        body: JSON.stringify({
-          idempotency_key: idempotencyKey,
-          custom_attribute: {
-            key: "waiver-signed",
-            value: timestamp
-          }
-        })
+    try {
+      const response = await fetch(
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+        {
+          method: 'POST',
+          headers: SQUARE_API_CONFIG.headers,
+          body: JSON.stringify({
+            idempotency_key: idempotencyKey,
+            custom_attribute: {
+              key: "waiver-signed",
+              value: timestamp
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
       }
-    );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
+      return response.json();
+    } catch (error) {
+      throw new Error('Failed to set waiver status');
     }
-
-    return response.json();
   }
 }
 

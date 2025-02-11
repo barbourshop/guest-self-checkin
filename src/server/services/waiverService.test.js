@@ -48,6 +48,23 @@ describe('WaiverService', () => {
         WaiverService.checkStatus('customer123')
       ).rejects.toThrow('Server Error');
     });
+
+    it('should handle network errors', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network failure'));
+
+      const result = await WaiverService.checkStatus('customer123');
+      expect(result).toBe(false);
+    });
+
+    it('should handle malformed response', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({})
+      });
+
+      const result = await WaiverService.checkStatus('customer123');
+      expect(result).toBe(false);
+    });
   });
 
   describe('setWaiverSigned', () => {
@@ -83,6 +100,14 @@ describe('WaiverService', () => {
       await expect(
         WaiverService.setStatus('customer123')
       ).rejects.toThrow('Failed to set waiver');
+    });
+
+    it('should handle network errors gracefully', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(
+        WaiverService.setStatus('customer123')
+      ).rejects.toThrow('Failed to set waiver status');
     });
   });
 });
