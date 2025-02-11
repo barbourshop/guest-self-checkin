@@ -126,6 +126,45 @@ describe('SquareService', () => {
         SquareService.getCustomerOrders('customer123')
       ).rejects.toThrow('Failed to fetch customer orders');
     });
+
+    it('should handle non-200 response with error details', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        json: () => Promise.resolve({
+          errors: [{
+            detail: 'Rate limit exceeded'
+          }]
+        })
+      });
+
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
+
+    it('should handle non-200 response without error details', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({})
+      });
+
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
+
+    it('should handle invalid JSON response', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.reject(new Error('Invalid JSON'))
+      });
+
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
   });
 
   describe('enrichCustomerData', () => {
@@ -185,6 +224,24 @@ describe('SquareService', () => {
       expect(result.membershipStatus).toBe("Non-Member");
     });
 
+    it('should handle malformed line items', async () => {
+        global.fetch.mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({
+            orders: [{
+              line_items: [
+                { catalog_object_id: null },
+                {},
+                { catalog_object_id: undefined }
+              ]
+            }]
+          })
+        });
+  
+        const result = await SquareService.enrichCustomerData({ id: 'customer123' });
+        expect(result.membershipStatus).toBe("Non-Member");
+      });
+
     it('should handle orders without line items', async () => {
       global.fetch.mockResolvedValueOnce({
         ok: true,
@@ -217,6 +274,32 @@ describe('SquareService', () => {
 
       const result = await SquareService.enrichCustomerData({ id: '123' });
       expect(result.membershipStatus).toBe("Member");
+    });
+
+    it('should handle complex line items structure', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          orders: [{
+            line_items: [{
+              catalog_object_id: null
+            }, {
+              catalog_object_id: POOL_PASS_CATALOG_IDS[0]
+            }, {
+              // Missing catalog_object_id
+            }]
+          }]
+        })
+      });
+
+      const result = await SquareService.enrichCustomerData({ id: '123' });
+      expect(result.membershipStatus).toBe("Member");
+    });
+
+    it('should handle missing customer ID', async () => {
+      await expect(
+        SquareService.enrichCustomerData({})
+      ).rejects.toThrow('Customer ID is required');
     });
   });
 });
