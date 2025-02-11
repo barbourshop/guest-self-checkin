@@ -79,30 +79,36 @@ class SquareService {
    * const orders = await squareService.getCustomerOrders('CUSTOMER_ID')
    */
   async getCustomerOrders(customerId) {
-    if (!customerId) { // Check for both null and empty string
+    if (!customerId) {
       throw new Error('Customer ID is required');
     }
-    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-      method: 'POST',
-      headers: SQUARE_API_CONFIG.headers,
-      body: JSON.stringify({
-        query: {
-          filter: {
-            customer_filter: {
-              customer_ids: [customerId]
+    
+    try {
+      const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify({
+          query: {
+            filter: {
+              customer_filter: {
+                customer_ids: [customerId]
+              }
             }
-          }
-        },
-        location_ids: ["LDH1GBS49SASE"]
-      })
-    });
+          },
+          location_ids: ["LDH1GBS49SASE"]
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch orders');
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      
+      const data = await response.json();
+      return data.orders || [];
+    } catch (error) {
+      // Wrap all errors (network, parsing, etc.) with our expected message
+      throw new Error('Failed to fetch customer orders');
     }
-    const data = await response.json();
-    //console.log("data.orders", data.orders);
-    return data.orders || [];
   }
 
   async listCustomers(limit = 5, cursor) {

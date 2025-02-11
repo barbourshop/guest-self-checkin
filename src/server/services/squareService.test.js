@@ -97,6 +97,35 @@ describe('SquareService', () => {
       const result = await SquareService.getCustomerOrders('customer123');
       expect(result).toEqual([]);
     });
+
+    it('should handle network errors', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
+
+    it('should handle malformed response', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(null)
+      });
+
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
+
+    it('should handle undefined response', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(undefined)
+      });
+      await expect(
+        SquareService.getCustomerOrders('customer123')
+      ).rejects.toThrow('Failed to fetch customer orders');
+    });
   });
 
   describe('enrichCustomerData', () => {
@@ -138,7 +167,7 @@ describe('SquareService', () => {
 
       await expect(
         SquareService.enrichCustomerData({ id: '123' })
-      ).rejects.toThrow('Failed to fetch orders');
+      ).rejects.toThrow('Failed to fetch customer orders');
     });
 
     it('should handle null line items', async () => {
