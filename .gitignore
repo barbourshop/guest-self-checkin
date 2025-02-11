@@ -4,3 +4,4 @@ test-results/
 .DS_Store
 src/.DS_Store
 server/.DS_Store
+coverage/
