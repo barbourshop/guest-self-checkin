@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+    "type-check": "tsc --noEmit",
     "server": "node src/server/server.js",
     "build": "vite build",
     "lint": "eslint .",
