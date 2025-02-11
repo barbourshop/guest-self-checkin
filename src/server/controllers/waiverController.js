@@ -15,7 +15,9 @@ class WaiverController {
   async checkStatus(req, res) {
     try {
       const { customerId } = req.params;
-      console.log('Checking Waiver Status for customerId', customerId);
+      if (!customerId) { // Check if customerId is missing
+        return res.status(400).json({ error: 'Customer ID is required' }); // Early return
+      }
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
       res.json({ hasSignedWaiver });
     } catch (error) {

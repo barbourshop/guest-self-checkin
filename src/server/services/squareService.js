@@ -79,6 +79,9 @@ class SquareService {
    * const orders = await squareService.getCustomerOrders('CUSTOMER_ID')
    */
   async getCustomerOrders(customerId) {
+    if (!customerId) { // Check for both null and empty string
+      throw new Error('Customer ID is required');
+    }
     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
       method: 'POST',
       headers: SQUARE_API_CONFIG.headers,

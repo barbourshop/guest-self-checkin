@@ -25,6 +25,11 @@ class WaiverService {
         }
       );
       
+      if (!response.ok && response.status !== 404) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'API Error');
+      }
+
       return response.status !== 404;
     } catch (error) {
       if (error.response?.status === 404) {

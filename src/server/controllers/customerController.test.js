@@ -1,35 +1,101 @@
-const request = require('supertest');
-const express = require('express');
-const customerController = require('../controllers/customerController');
-const squareService = require('../services/squareService'); // Import the instance
+const CustomerController = require('./customerController').CustomerController;
+const squareService = require('../services/squareService');
 
-jest.mock('../services/squareService'); // Mock the entire module
+describe('CustomerController', () => {
+  let controller;
+  let mockReq;
+  let mockRes;
 
-// Explicitly override instance methods
-squareService.searchCustomers = jest.fn();
-
-const app = express();
-app.use(express.json());
-app.post('/searchByPhone', customerController.searchByPhone);
-
-describe('CustomerController - searchByPhone', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    controller = new CustomerController(squareService);
+    mockReq = { body: {} };
+    mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
   });
 
-  it('should return customers when found', async () => {
-    const mockCustomers = [{ id: '123', name: 'John Doe' }];
-    
-    squareService.searchCustomers.mockResolvedValue(mockCustomers); // Mock the method
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
 
-    const response = await request(app)
-      .post('/searchByPhone')
-      .send({ phone: '555-0123' });
+  describe('searchByPhone', () => {
+    it('should validate phone number input', async () => {
+      await controller.searchByPhone(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ 
+        error: 'Phone number is required' 
+      });
+    });
 
-    console.log('Mock function called:', squareService.searchCustomers.mock.calls);
+    it('should handle service errors', async () => {
+      mockReq.body.phone = '555-0123';
+      jest.spyOn(squareService, 'searchCustomers')
+        .mockRejectedValueOnce(new Error('Service error'));
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(mockCustomers);
-    expect(squareService.searchCustomers).toHaveBeenCalledWith('phone', '555-0123');
+      await controller.searchByPhone(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('searchByEmail', () => {
+    it('should validate email input', async () => {
+      await controller.searchByEmail(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should return customers when found', async () => {
+      mockReq.body.email = 'test@example.com';
+      const mockCustomers = [{ id: '123', email: 'test@example.com' }];
+      
+      jest.spyOn(controller.squareService, 'searchCustomers')
+        .mockResolvedValueOnce(mockCustomers);
+
+      await controller.searchByEmail(mockReq, mockRes);
+      expect(mockRes.json).toHaveBeenCalledWith(mockCustomers);
+    });
+
+    it('should handle empty email', async () => {
+      mockReq.body.email = '';
+      await controller.searchByEmail(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        error: 'Email is required'
+      });
+    });
+
+    it('should handle service errors with detailed message', async () => {
+      mockReq.body.email = 'test@example.com';
+      const errorMessage = 'API rate limit exceeded';
+      jest.spyOn(controller.squareService, 'searchCustomers')
+        .mockRejectedValueOnce(new Error(errorMessage));
+
+      await controller.searchByEmail(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        error: `Error searching customers by email: ${errorMessage}`
+      });
+    });
+  });
+
+  describe('listCustomers', () => {
+    it('should handle pagination parameters', async () => {
+      mockReq.query = { limit: '10', cursor: 'abc123' };
+      const mockCustomers = [{ id: '123' }];
+      jest.spyOn(controller.squareService, 'listCustomers')
+        .mockResolvedValueOnce({ customers: mockCustomers, cursor: 'def456' });
+
+      await controller.listCustomers(mockReq, mockRes);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        customers: mockCustomers,
+        cursor: 'def456'
+      });
+    });
+
+    it('should handle missing pagination parameters', async () => {
+      mockReq.query = {};
+      await controller.listCustomers(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
   });
 });
