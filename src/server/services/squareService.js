@@ -42,33 +42,74 @@ class SquareService {
     }
 
     const data = await response.json();
-    const customersWithOrders = await Promise.all((data.customers || []).map(
+    
+    // Process each customer, even if there are multiple matches
+    const customersWithMembership = await Promise.all((data.customers || []).map(
       customer => this.enrichCustomerData(customer)
     ));
 
-    return customersWithOrders;
+    return customersWithMembership;
   }
 
   /**
-   * Enrich customer data with orders and membership status
+   * Enrich customer data with membership status
    * @param {Object} customer - Square customer object
-   * @returns {Promise<Object>} Customer object with orders and membership status
+   * @returns {Promise<Object>} Customer object with membership status
    * @example
    * const enrichedCustomer = await squareService.enrichCustomerData(customer)
    */
   async enrichCustomerData(customer) {
-    const orders = await this.getCustomerOrders(customer.id);
-    const hasMembership = orders.some(order => 
-      order.line_items?.some(item => 
-        POOL_PASS_CATALOG_IDS.includes(item.catalog_object_id)
-      )
-    );
-    return {
-      ...customer,
-      orders,
-      membershipStatus: hasMembership ? 'Member' : 'Non-Member'
-    };
+    try {
+      const hasMembership = await this.checkMembershipStatus(customer.id);
+      return {
+        ...customer,
+        membershipStatus: hasMembership ? 'Member' : 'Non-Member'
+      };
+    } catch (error) {
+      console.error(`Error enriching customer data for ID ${customer.id}:`, error);
+      return {
+        ...customer,
+        membershipStatus: 'Non-Member'
+      };
+    }
   }
+// Modify your checkMembershipStatus method to log the full error response
+async checkMembershipStatus(customerId) {
+
+  try {
+    console.log('Request URL', `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/2025-membership`);
+    
+    const response = await fetch(
+      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/2025-membership`,
+      {
+        method: 'GET',
+        headers: SQUARE_API_CONFIG.headers
+      }
+    );
+    
+    if (!response.ok) {
+      // Extract and log the error message
+      const errorData = await response.json();
+      console.error('Error response:', errorData);
+    }
+    
+    // If we get here, the response was successful
+    const data = await response.json();
+    console.log('Attribute data:', data);
+    
+    // Check if the attribute exists
+    return response.status === 200
+    
+  } catch (error) {
+    console.error(`Error checking membership for ${customerId}:`, error);
+    
+    // Handle 404 errors specifically
+    if (error.response?.status === 404 || error.status === 404) {
+      return false;
+    }
+    throw error;
+  }
+}
 
   /**
    * Fetch all orders for a specific customer
@@ -98,7 +139,6 @@ class SquareService {
       throw new Error('Failed to fetch orders');
     }
     const data = await response.json();
-    //console.log("data.orders", data.orders);
     return data.orders || [];
   }
 
