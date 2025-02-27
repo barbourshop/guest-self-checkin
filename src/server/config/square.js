@@ -20,3 +20,7 @@ module.exports = {
   POOL_PASS_CATALOG_IDS,
   MEMBERSHIP_ATTRIBUTE_KEY
 };
+
+const PROPERTY_ADDRESS_ATTRIBUTE = process.env.SQUARE_ENVIRONMENT === 'production'
+  ? 'square:5baa1c2d-51c5-4782-95f6-17223d840e2a'
+  : 'btv-address';
