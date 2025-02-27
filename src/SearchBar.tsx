@@ -7,7 +7,7 @@ type SearchBarProps = {
 };
 
 export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
-  const [searchType, setSearchType] = useState<'email' | 'phone' | 'lot'>('phone');
+  const [searchType, setSearchType] = useState<'email' | 'phone' | 'lot'>('lot');
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = () => {
@@ -17,6 +17,16 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex gap-2 mb-4">
+        <button
+          data-testid="lot-search"
+          onClick={() => setSearchType('lot')}
+          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
+            searchType === 'lot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          <Home size={18} />
+          <span>Lot #</span>
+        </button>
         <button
           data-testid="phone-search"
           onClick={() => setSearchType('phone')}
@@ -36,16 +46,6 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
         >
           <Mail size={18} />
           <span>Email</span>
-        </button>
-        <button
-          data-testid="lot-search"
-          onClick={() => setSearchType('lot')}
-          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
-            searchType === 'lot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          <Home size={18} />
-          <span>Lot #</span>
         </button>
       </div>
 

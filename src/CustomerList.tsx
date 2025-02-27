@@ -31,7 +31,7 @@ export const CustomerList = ({
 
   if (!customers.length) return (
     <div data-testid="member-not-found" className="p-8 text-center text-gray-500">
-      <p>{searchQuery ? 'No customers found' : 'Enter in 3 or more characters then search'}</p>
+      <p>{searchQuery ? 'No customers found' : 'Enter in 3 or more characters then search, results will appear here'}</p>
     </div>
   );
 
