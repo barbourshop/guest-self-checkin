@@ -10,33 +10,31 @@ const API_BASE_URL = 'http://localhost:3000/api';
  * @returns {Promise<APICustomer[]>} - A promise that resolves to an array of APICustomer objects.
  * @throws Will throw an error if the search fails.
  */
-export async function searchCustomers(type: 'email' | 'phone', query: string): Promise<APICustomer[]> {
-  try {
-    const endpoint = type === 'email' ? 'search-customers-email' : 'search-customers-phone';
-    const queryParam = type === 'email' ? 'email' : 'phone';
+// api.ts
+type SearchType = 'email' | 'phone' | 'lot';
 
-    const response = await fetch(
-      `${API_BASE_URL}/customers/${endpoint}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          [queryParam]: query
-        })
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Search failed');
-    }
-    
-    return response.json();
-  } catch (error) {
-    console.error('Search error:', error);
-    throw error;
+export async function searchCustomers(type: SearchType, value: string) {
+  const endpoint = `${API_BASE_URL}/customers/search/${type}`;
+  const payload = type === 'email' 
+    ? { email: value } 
+    : type === 'phone' 
+      ? { phone: value }
+      : { lot: value };
+      
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to search customers');
   }
+
+  return response.json();
 }
 
 export async function checkWaiverStatus(customerId: string): Promise<boolean> {

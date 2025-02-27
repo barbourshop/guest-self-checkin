@@ -9,6 +9,11 @@ export interface APICustomer {
   preferences: object;
   creation_source: string;
   version: number;
+  custom_attributes?: {
+    [key: string]: {
+      value: string | number | boolean;
+    };
+  };
 }
 
 export interface APIOrder {
@@ -18,11 +23,6 @@ export interface APIOrder {
   }>;
 }
 
-// export interface APICustomerWithOrders extends APICustomer {
-//   orders?: APIOrder[];
-//   hasPoolPass?: boolean;
-// }
-
 export interface Customer {
   id: string;
   firstName: string;
@@ -31,6 +31,7 @@ export interface Customer {
   phone: string;
   membershipType?: String;
   hasSignedWaiver?: boolean;
+  lotNumber?: string;
 }
 
 export function adaptCustomer(data: any): Customer {
@@ -41,6 +42,7 @@ export function adaptCustomer(data: any): Customer {
     email: data.email_address,
     phone: data.phone_number,
     membershipType: data.membershipStatus,
-    hasSignedWaiver: false // Default value until checked
+    hasSignedWaiver: false, // Default value until checked
+    lotNumber: data.reference_id
   };
 }

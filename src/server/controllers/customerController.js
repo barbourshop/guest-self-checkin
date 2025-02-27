@@ -40,6 +40,23 @@ class CustomerController {
   }
 
   /**
+ * Search customers by lot number
+ * @param {Request} req - Express request object with body: { lot: string }
+ * @param {Response} res - Express response object
+ * @returns {Promise<void>} - JSON response with customers array
+ * @throws {Error} Returns 500 if search fails
+ */
+async searchByLot(req, res) {
+  try {
+    const { lot } = req.body;
+    const customers = await squareService.searchCustomers('lot', lot);
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+  /**
    * List all customers with pagination
    * @param {Request} req - Express request object with query: { limit?: number, cursor?: string }
    * @param {Response} res - Express response object
