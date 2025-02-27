@@ -24,7 +24,7 @@ class WaiverService {
           headers: SQUARE_API_CONFIG.headers
         }
       );
-      
+      // Be aware that if the custom attribute has never been created in the first place, the API will return 400
       return response.status !== 404;
     } catch (error) {
       if (error.response?.status === 404) {

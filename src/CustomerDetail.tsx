@@ -24,6 +24,7 @@ export const CustomerDetail = ({
   onShowWaiver,
   onReset
 }: CustomerDetailProps) => {
+  // TODO - Replace with actual waiver text
   const WAIVER_TEXT = `RELEASE AND WAIVER OF LIABILITY IPSEM LOREM...`; 
 
   return (

@@ -12,7 +12,7 @@ const POOL_PASS_CATALOG_IDS = [
 ];
 
 const MEMBERSHIP_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
-  ? 'tbd'
+  ? 'square:a165388b-d8ce-4fc1-b8e0-6d1f2d8b8ada'
   : '2025-membership';
 
 module.exports = {
