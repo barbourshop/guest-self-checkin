@@ -20,17 +20,27 @@ class SquareService {
    * await squareService.searchCustomers('phone', '555-0123')
    */
   async searchCustomers(searchType, searchValue) {
-    if (!['email', 'phone'].includes(searchType)) {
-      throw new Error('Invalid search type. Must be either email or phone');
+    if (!['email', 'phone', 'lot'].includes(searchType)) {
+      throw new Error('Invalid search type. Must be either email, phone, or lot');
     }
 
+    /**
+     * Constructs search parameters for querying based on the provided search type and value.
+     *
+     * @param {string} searchType - The type of search to perform. Can be 'email', 'phone', or 'lot'.
+     *                              'email' searches by email address.
+     *                              'phone' searches by phone number.
+     *                              'lot' searches by reference ID.
+     * @param {string} searchValue - The value to search for.
+     * @returns {Object} The search parameters object.
+     */
     const searchParams = {
       query: {
-        filter: {
-          [searchType === 'email' ? 'email_address' : 'phone_number']: {
-            fuzzy: searchValue
-          }
+      filter: {
+        [searchType === 'email' ? 'email_address' : searchType === 'phone' ? 'phone_number' : 'reference_id']: {
+        fuzzy: searchValue
         }
+      }
       },
       "limit": 5
     };
@@ -66,9 +76,33 @@ class SquareService {
   async enrichCustomerData(customer) {
     try {
       const hasMembership = await this.checkMembershipStatus(customer.id);
+      const lotNumber = customer.reference_id;
+      // Get lot number if available
+      // let lotNumber = null;
+      // try {
+      //   const lotResponse = await fetch(
+      //     `${SQUARE_API_CONFIG.baseUrl}/customers/${customer.id}/custom-attributes/${LOT_NUMBER_ATTRIBUTE_KEY}`,
+      //     {
+      //       method: 'GET',
+      //       headers: SQUARE_API_CONFIG.headers
+      //     }
+      //   );
+        
+      //   if (lotResponse.ok) {
+      //     const lotData = await lotResponse.json();
+      //     lotNumber = lotData.custom_attribute?.value;
+      //   }
+      // } catch (error) {
+      //   console.error(`Error fetching lot number for customer ID ${customer.id}:`, error);
+      // }
+      
       return {
         ...customer,
-        membershipStatus: hasMembership ? 'Member' : 'Non-Member'
+        membershipStatus: hasMembership ? 'Member' : 'Non-Member',
+        custom_attributes: {
+          ...customer.custom_attributes,
+          lot_number: { value: lotNumber }
+        }
       };
     } catch (error) {
       console.error(`Error enriching customer data for ID ${customer.id}:`, error);
@@ -101,7 +135,7 @@ class SquareService {
       
       // If we get here, the response was successful
       const data = await response.json();
-      console.log('Attribute data:', data);
+     // console.log('Attribute data:', data);
       
       // Check if the attribute exists
       return true; // Since response.status is 200

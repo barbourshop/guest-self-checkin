@@ -18,7 +18,7 @@ function App() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearch = async (query: string, type: 'email' | 'phone') => {
+  const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot') => {
     if (!query.trim()) {
       setCustomers([]);
       return;
@@ -32,7 +32,7 @@ function App() {
       const results = await searchCustomers(type, query);
       //console.log("raw search results", results);
       const adaptedCustomers = results.map(adaptCustomer);
-      console.log("search results", adaptedCustomers);  
+      // console.log("search results", adaptedCustomers);  
       const customersWithWaiverStatus = await Promise.all(
         adaptedCustomers.map(async (customer) => {
           try {
@@ -80,8 +80,8 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-blue-600 text-white py-6 px-4 shadow-lg">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold">Welcome to the Rec Center</h1>
-          <p className="mt-2 text-blue-100">Please check in using your phone number or email</p>
+          <h1 className="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
+          <p className="mt-2 text-blue-100">Please check in using your phone number, email, or lot number</p>
         </div>
       </header>
 

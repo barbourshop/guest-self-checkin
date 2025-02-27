@@ -15,12 +15,15 @@ const MEMBERSHIP_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
   ? 'square:a165388b-d8ce-4fc1-b8e0-6d1f2d8b8ada'
   : '2025-membership';
 
+const LOT_NUMBER_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
+  ? 'reference_id'
+  : 'reference_id';
+
 module.exports = {
   SQUARE_API_CONFIG,
   POOL_PASS_CATALOG_IDS,
-  MEMBERSHIP_ATTRIBUTE_KEY
+  MEMBERSHIP_ATTRIBUTE_KEY,
+  LOT_NUMBER_ATTRIBUTE_KEY
 };
 
-const PROPERTY_ADDRESS_ATTRIBUTE = process.env.SQUARE_ENVIRONMENT === 'production'
-  ? 'square:5baa1c2d-51c5-4782-95f6-17223d840e2a'
-  : 'btv-address';
+

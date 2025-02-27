@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Mail, Phone, Loader2 } from 'lucide-react';
+import { Search, Mail, Phone, Home, Loader2 } from 'lucide-react';
 
 type SearchBarProps = {
-  onSearch: (query: string, type: 'email' | 'phone') => void;
+  onSearch: (query: string, type: 'email' | 'phone' | 'lot') => void;
   isLoading: boolean;
 };
 
 export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
-  const [searchType, setSearchType] = useState<'email' | 'phone'>('phone');
+  const [searchType, setSearchType] = useState<'email' | 'phone' | 'lot'>('lot');
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = () => {
@@ -16,25 +16,35 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-2 mb-4">
+        <button
+          data-testid="lot-search"
+          onClick={() => setSearchType('lot')}
+          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
+            searchType === 'lot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          <Home size={18} />
+          <span>Lot #</span>
+        </button>
         <button
           data-testid="phone-search"
           onClick={() => setSearchType('phone')}
-          className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
             searchType === 'phone' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}
         >
-          <Phone size={20} />
+          <Phone size={18} />
           <span>Phone</span>
         </button>
         <button
           data-testid="email-search"
           onClick={() => setSearchType('email')}
-          className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
             searchType === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}
         >
-          <Mail size={20} />
+          <Mail size={18} />
           <span>Email</span>
         </button>
       </div>
@@ -46,8 +56,14 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
           </div>
           <input
             data-testid="search-input"
-            type={searchType === 'email' ? 'email' : 'tel'}
-            placeholder={searchType === 'email' ? 'Enter your email' : 'Enter your phone number'}
+            type={searchType === 'email' ? 'email' : 'text'}
+            placeholder={
+              searchType === 'email' 
+                ? 'Enter email address' 
+                : searchType === 'phone' 
+                  ? 'Enter phone number' 
+                  : 'Enter lot number'
+            }
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
