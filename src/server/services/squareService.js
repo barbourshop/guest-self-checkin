@@ -1,4 +1,8 @@
-const { SQUARE_API_CONFIG, POOL_PASS_CATALOG_IDS } = require('../config/square');
+const { 
+  SQUARE_API_CONFIG, 
+  POOL_PASS_CATALOG_IDS, 
+  MEMBERSHIP_ATTRIBUTE_KEY 
+} = require('../config/square');
 
 /**
  * Service for interacting with Square API customer and order endpoints
@@ -27,7 +31,8 @@ class SquareService {
             fuzzy: searchValue
           }
         }
-      }
+      },
+      "limit": 5
     };
 
     const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
@@ -73,43 +78,44 @@ class SquareService {
       };
     }
   }
-// Modify your checkMembershipStatus method to log the full error response
-async checkMembershipStatus(customerId) {
 
-  try {
-    console.log('Request URL', `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/2025-membership`);
-    
-    const response = await fetch(
-      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/2025-membership`,
-      {
-        method: 'GET',
-        headers: SQUARE_API_CONFIG.headers
+  async checkMembershipStatus(customerId) {
+    try {
+      console.log('Request URL', `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`);
+      
+      const response = await fetch(
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`,
+        {
+          method: 'GET',
+          headers: SQUARE_API_CONFIG.headers
+        }
+      );
+      
+      // First check if the response is OK
+      if (!response.ok) {
+        // Only read the error data if not OK
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        return false; // Return false for non-OK responses
       }
-    );
-    
-    if (!response.ok) {
-      // Extract and log the error message
-      const errorData = await response.json();
-      console.error('Error response:', errorData);
+      
+      // If we get here, the response was successful
+      const data = await response.json();
+      console.log('Attribute data:', data);
+      
+      // Check if the attribute exists
+      return true; // Since response.status is 200
+      
+    } catch (error) {
+      console.error(`Error checking membership for ${customerId}:`, error);
+      
+      // Handle 404 errors specifically
+      if (error.response?.status === 404 || error.status === 404) {
+        return false;
+      }
+      throw error;
     }
-    
-    // If we get here, the response was successful
-    const data = await response.json();
-    console.log('Attribute data:', data);
-    
-    // Check if the attribute exists
-    return response.status === 200
-    
-  } catch (error) {
-    console.error(`Error checking membership for ${customerId}:`, error);
-    
-    // Handle 404 errors specifically
-    if (error.response?.status === 404 || error.status === 404) {
-      return false;
-    }
-    throw error;
   }
-}
 
   /**
    * Fetch all orders for a specific customer
