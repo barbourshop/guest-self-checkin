@@ -6,3 +6,5 @@ test-results/
 src/.DS_Store
 server/.DS_Store
 coverage/
+dist/
+dist-electron/
