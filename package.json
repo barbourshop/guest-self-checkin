@@ -23,6 +23,7 @@
   "description": "Rec Center Self Check-in System",
   "build": {
     "appId": "com.reccenter.checkin",
+    "publish" : null,
     "productName": "Rec Center Check-in",
     "win": {
       "target": "nsis",
