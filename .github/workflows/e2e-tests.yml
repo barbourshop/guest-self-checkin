@@ -27,9 +27,6 @@ jobs:
 
       - name: Install Playwright Dependencies
         run: npx playwright install --with-deps
-
-      - name: Start the application
-        run: npm run dev
         
       - name: Run Playwright tests (with virtual display)
         run: xvfb-run --auto-servernum npx playwright test

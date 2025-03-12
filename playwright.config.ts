@@ -5,6 +5,12 @@ export default defineConfig({
   timeout: 10000,
   workers: 1,
   reporter: 'list',
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    timeout: 10000,
+    ignoreHTTPSErrors: true
+  },  
   use: {
     baseURL: 'http://localhost:5173',
     headless: false,
