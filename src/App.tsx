@@ -3,7 +3,6 @@ import { Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
 import { checkWaiverStatus, searchCustomers } from './api';
 
-
 import { SearchBar } from './SearchBar';
 import { CustomerList } from './CustomerList';
 import { CustomerDetail } from './CustomerDetail';
@@ -18,6 +17,8 @@ function App() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+
   const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot') => {
     if (!query.trim()) {
       setCustomers([]);
@@ -30,9 +31,8 @@ function App() {
   
     try {
       const results = await searchCustomers(type, query);
-      //console.log("raw search results", results);
       const adaptedCustomers = results.map(adaptCustomer);
-      // console.log("search results", adaptedCustomers);  
+      
       const customersWithWaiverStatus = await Promise.all(
         adaptedCustomers.map(async (customer) => {
           try {
@@ -82,6 +82,11 @@ function App() {
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
           <p className="mt-2 text-blue-100">Please check in using your phone number, email, or lot number</p>
+          {USE_MOCK_API && (
+            <div className="mt-1 px-2 py-1 bg-yellow-500 text-white text-xs inline-block rounded">
+              Demo Mode: Using Mock Data
+            </div>
+          )}
         </div>
       </header>
 
