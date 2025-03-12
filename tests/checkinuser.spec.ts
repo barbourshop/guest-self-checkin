@@ -137,8 +137,4 @@ test('Check in not allowed for nonmember without signed waiver', async ({ page }
   expect(cantCheckInElement).toBeTruthy();
 });
 
-
-// TODO - add tests to cover different logical paths a user can go through this flow
-// Member vs non member - no difference
-// Waiver signed vs not signed - cant sign in without waiver
 });

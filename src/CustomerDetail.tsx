@@ -89,6 +89,7 @@ export const CustomerDetail = ({
               </div>
               <div className="flex gap-3">
                 <button
+                  data-testid="accept-waiver-button"
                   onClick={() => {
                     signWaiver(customer.id);
                     onWaiverResponse(true);
@@ -98,6 +99,7 @@ export const CustomerDetail = ({
                   Accept
                 </button>
                 <button
+                  data-testid="decline-waiver-button"
                   onClick={() => onWaiverResponse(false)}
                   className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
