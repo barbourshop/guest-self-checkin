@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Run UI Acceptance Tests
 
 on:
   # Only run this manually
@@ -18,17 +18,18 @@ jobs:
           node-version: 23
           cache: 'npm'
 
+      - name: Create .env file for mock API
+        run: |
+          echo VITE_USE_MOCK_API=true >> .env
+
       - name: Install dependencies
         run: npm install
 
-      - name: Start the application and server
-        run: |
-          npm run server & 
-          npm run dev &
-          sleep 10 # Give time for servers to start
-      
       - name: Install Playwright Dependencies
         run: npx playwright install --with-deps
+
+      - name: Start the application
+        run: npm run dev
         
       - name: Run Playwright tests (with virtual display)
         run: xvfb-run --auto-servernum npx playwright test
