@@ -18,9 +18,13 @@ jobs:
           node-version: 23
           cache: 'npm'
 
-      - name: Create .env file for mock API
+      - name: Create .env file
         run: |
-          echo VITE_USE_MOCK_API=true >> .env
+            echo SQUARE_ACCESS_TOKEN=fake >> .env
+            echo SQUARE_API_URL=fake >> .env
+            echo SQUARE_API_VERSION=fake >> .env
+            echo SQUARE_ENVIRONMENT=fake >> .env
+            echo VITE_USE_MOCK_API=true >> .env
 
       - name: Install dependencies
         run: npm install
