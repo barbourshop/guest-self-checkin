@@ -137,4 +137,24 @@ test('Check in not allowed for nonmember without signed waiver', async ({ page }
   expect(cantCheckInElement).toBeTruthy();
 });
 
+test('Check in 10 guests, member sees a confirmation', async ({ page }) => {
+  await page.click('[data-testid="phone-search"]');  
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
+  await page.click('[data-testid="search-button"]');
+  
+  // Wait for search results to load
+  const memberElement = await page.waitForSelector('.member-item');
+
+  // click on the member
+  await page.click('.member-item');
+  // Wait for checkin input to load
+  await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible' });
+  await page.fill('[data-testid="checkin-input"]', '10');
+
+  await page.click('[data-testid="checkin-button"]');
+  const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible' });
+  expect(checkedInElement).toBeTruthy();
+});
+
 });
