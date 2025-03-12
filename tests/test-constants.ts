@@ -1,8 +1,9 @@
-export const testmember_phoneNumber = '6503216547';  
-export const nonmember_phoneNumber = '8887776543';  
+export const testmember_phoneNumber = '5551234567';  
+export const checkinmember_phoneNumber = '5551234567';  
+export const nonmember_phoneNumber = '5554567890';  
 export const noresults_phoneNumber = '0000000000';  
-export const testmember_email = 'bv@gmail.com';
-export const nonmember_email = 'cheapskate@free.com';
+export const testmember_email = 'john.doe@example.com';
+export const nonmember_email = 'michael.j@example.com';
 export const noresults_email = 'thisistextthatwontmatchanyemail';  
-export const waiversigned_member_phoneNumber = '6503216547';  
-export const nowaiversigned_member_phoneNumber = '8887776543';  
+export const waiversigned_member_phoneNumber = '5551234567';  
+export const nowaiversigned_member_phoneNumber = '5557890123';  

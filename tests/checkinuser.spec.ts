@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { testmember_phoneNumber } from './test-constants';
+import { checkinmember_phoneNumber } from './test-constants';
 
 
 test.describe('Customer Check-in Flow', () => {
@@ -11,9 +11,10 @@ test.describe('Customer Check-in Flow', () => {
   });
 
 test('click on member from search', async ({ page }) => {
-    
+  
+    await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
+    await page.fill('[data-testid="search-input"]', checkinmember_phoneNumber);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
@@ -31,9 +32,9 @@ test('click on member from search', async ({ page }) => {
 });
 
 test('Sign in member', async ({ page }) => {
-    
+    await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-    await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
+    await page.fill('[data-testid="search-input"]', checkinmember_phoneNumber);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load

@@ -19,10 +19,6 @@ const LOT_NUMBER_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
   ? 'reference_id'
   : 'reference_id';
 
-const USE_MOCK = process.env.SQUARE_ENVIRONMENT === 'mock'
-  ? true
-  : false;
-  
 module.exports = {
   SQUARE_API_CONFIG,
   POOL_PASS_CATALOG_IDS,

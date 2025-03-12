@@ -27,12 +27,7 @@ export async function searchCustomers(type: 'email' | 'phone' | 'lot', value: st
       if (type === 'lot') return customer.reference_id.toLowerCase().includes(normalizedValue);
       return false;
     });
-    
-    // Simulate errors occasionally (1 in 10 chance)
-    if (Math.random() < 0.1) {
-      throw new Error('Simulated search error');
-    }
-    
+
     return results;
   }
   

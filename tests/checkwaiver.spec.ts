@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { nowaiversigned_member_phoneNumber, waiversigned_member_phoneNumber } from './test-constants';
 
 
-test.describe('Customer Check-in Flow', () => {
+test.describe('Customer Waiver Signing Flow', () => {
   test.beforeEach(async ({ page }) => {
     test.setTimeout(5000);
 
@@ -11,6 +11,7 @@ test.describe('Customer Check-in Flow', () => {
   });
 
   test('signed-waiver shows up appropriately in search', async ({ page }) => {
+    await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
     await page.click('[data-testid="search-button"]');
@@ -20,6 +21,7 @@ test.describe('Customer Check-in Flow', () => {
       .toHaveText('Waiver Signed');
   });
   test('unsigned-waiver shows up appropriately in search', async ({ page }) => {
+    await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', nowaiversigned_member_phoneNumber);
     await page.click('[data-testid="search-button"]');

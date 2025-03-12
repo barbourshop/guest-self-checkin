@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { testmember_phoneNumber, noresults_phoneNumber, testmember_email, nonmember_email, noresults_email, nonmember_phoneNumber } from './test-constants';
 
 
-test.describe('Customer Check-in Flow', () => {
+test.describe('Search User Flow', () => {
   test.beforeEach(async ({ page }) => {
     test.setTimeout(5000);
 
@@ -18,7 +18,7 @@ test.describe('Customer Check-in Flow', () => {
     expect(title).toBeTruthy();
   });
 test('search for member by phone fragment', async ({ page }) => {
-    
+    await page.click('[data-testid="phone-search"]');   
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
     await page.click('[data-testid="search-button"]');
@@ -29,6 +29,7 @@ test('search for member by phone fragment', async ({ page }) => {
 });
 test('search for member by phone fragment with no results', async ({ page }) => {
       
+    await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', noresults_phoneNumber);
     await page.click('[data-testid="search-button"]');
@@ -50,7 +51,6 @@ test('search for member by email fragment', async ({ page }) => {
 });
 test('search for member by email fragment with no results', async ({ page }) => {
 
-    
     await page.click('[data-testid="email-search"]');
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', noresults_email);
@@ -61,6 +61,8 @@ test('search for member by email fragment with no results', async ({ page }) => 
     expect(memberElement).toBeTruthy();
 });
 test('member shows up appropriately', async ({ page }) => {
+
+  await page.click('[data-testid="phone-search"]');  
   await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
   await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
   await page.click('[data-testid="search-button"]');
@@ -70,6 +72,8 @@ test('member shows up appropriately', async ({ page }) => {
     .toHaveText('Member');
 });
 test('non-member shows up appropriately', async ({ page }) => {
+
+  await page.click('[data-testid="phone-search"]');  
   await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
   await page.fill('[data-testid="search-input"]', nonmember_phoneNumber);
   await page.click('[data-testid="search-button"]');
