@@ -7,3 +7,6 @@ export const nonmember_email = 'michael.j@example.com';
 export const noresults_email = 'thisistextthatwontmatchanyemail';  
 export const waiversigned_member_phoneNumber = '5551234567';  
 export const nowaiversigned_member_phoneNumber = '5557890123';  
+export const testmember_lotNumber = 'A123';
+export const nonmember_lotNumber = 'C7889';
+export const noresults_lotNumber = '0000';
