@@ -31,6 +31,8 @@ test.describe('Customer Waiver Signing Flow', () => {
       .toHaveText('No Waiver');
   });
 
+  
+
   // TODO - add tests for
   // - user explicitly agreeing to the waiver
   // - user explicitly declining the waiver

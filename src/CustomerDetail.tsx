@@ -72,7 +72,9 @@ export const CustomerDetail = ({
             <span>{showWaiver ? 'Please Sign Waiver First' : 'Check In Now'}</span>
           </button>
           {showWaiver && (
-            <p className="mt-2 text-sm text-red-600">
+            <p 
+            data-testid="nowaiver-cant-checkin" 
+            className="mt-2 text-sm text-red-600">
               You must sign the waiver before checking in
             </p>
           )}
