@@ -1,4 +1,4 @@
-name: CI Tests
+name: Run CI Tests
 on:
   # Run manually or on a pull request to main
   workflow_dispatch:
