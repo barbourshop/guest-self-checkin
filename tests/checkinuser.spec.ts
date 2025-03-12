@@ -10,7 +10,7 @@ test.describe('Customer Check-in Flow', () => {
     console.log('Page loaded');
   });
 
-test('click on member from search', async ({ page }) => {
+test('Enter customer details page from search', async ({ page }) => {
   
     await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
@@ -31,7 +31,7 @@ test('click on member from search', async ({ page }) => {
 
 });
 
-test('Sign in member', async ({ page }) => {
+test('Sign in member from customer details page', async ({ page }) => {
     await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
     await page.fill('[data-testid="search-input"]', checkinmember_phoneNumber);
@@ -50,4 +50,7 @@ test('Sign in member', async ({ page }) => {
     expect(checkedInElement).toBeTruthy();
 });
 
+// TODO - add tests to cover different logical paths a user can go through this flow
+// Member vs non member - no difference
+// Waiver signed vs not signed - cant sign in without waiver
 });

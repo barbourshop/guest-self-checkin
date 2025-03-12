@@ -30,4 +30,9 @@ test.describe('Customer Waiver Signing Flow', () => {
     await expect(page.locator('[data-testid="waiver-status"]'))
       .toHaveText('No Waiver');
   });
+
+  // TODO - add tests for
+  // - user explicitly agreeing to the waiver
+  // - user explicitly declining the waiver
+  // - Waiver text being displayed correctly
 });
