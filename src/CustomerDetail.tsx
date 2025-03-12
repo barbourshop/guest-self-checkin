@@ -72,7 +72,9 @@ export const CustomerDetail = ({
             <span>{showWaiver ? 'Please Sign Waiver First' : 'Check In Now'}</span>
           </button>
           {showWaiver && (
-            <p className="mt-2 text-sm text-red-600">
+            <p 
+            data-testid="nowaiver-cant-checkin" 
+            className="mt-2 text-sm text-red-600">
               You must sign the waiver before checking in
             </p>
           )}
@@ -87,6 +89,7 @@ export const CustomerDetail = ({
               </div>
               <div className="flex gap-3">
                 <button
+                  data-testid="accept-waiver-button"
                   onClick={() => {
                     signWaiver(customer.id);
                     onWaiverResponse(true);
@@ -96,6 +99,7 @@ export const CustomerDetail = ({
                   Accept
                 </button>
                 <button
+                  data-testid="decline-waiver-button"
                   onClick={() => onWaiverResponse(false)}
                   className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
