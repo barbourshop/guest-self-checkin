@@ -1,4 +1,4 @@
-name: Build Electron App
+name: Build Windows App
 
 on:
   # push:
@@ -19,6 +19,14 @@ jobs:
         node-version: 23
         cache: 'npm'
 
+    - name: Create .env file
+      run: |
+        echo SQUARE_ACCESS_TOKEN=${{ secrets.SQUARE_ACCESS_TOKEN }} >> .env
+        echo SQUARE_API_URL=${{ secrets.SQUARE_API_URL }} >> .env
+        echo SQUARE_API_VERSION=${{ secrets.SQUARE_API_VERSION }} >> .env
+        echo SQUARE_ENVIRONMENT=${{ secrets.SQUARE_ENVIRONMENT }} >> .env
+        echo VITE_USE_MOCK_API=false >> .env
+    
     - name: Install dependencies
       run: npm install
       
