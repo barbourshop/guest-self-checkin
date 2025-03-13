@@ -56,25 +56,6 @@ async searchByLot(req, res) {
   }
 }
 
-  /**
-   * List all customers with pagination
-   * @param {Request} req - Express request object with query: { limit?: number, cursor?: string }
-   * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with customers and pagination data
-   * @throws {Error} Returns 500 if listing fails
-   */
-  async listCustomers(req, res) {
-    try {
-      const { limit, cursor } = req.query;
-      const data = await squareService.listCustomers(limit, cursor);
-      res.json(data);
-    } catch (error) {
-      res.status(500).json({
-        error: "Failed to list customers",
-        detail: error.message
-      });
-    }
-  }
 }
 
 module.exports = new CustomerController();

@@ -69,32 +69,12 @@ class SquareService {
   /**
    * Enrich customer data with membership status
    * @param {Object} customer - Square customer object
-   * @returns {Promise<Object>} Customer object with membership status
-   * @example
-   * const enrichedCustomer = await squareService.enrichCustomerData(customer)
+   * @returns {Promise<Object>} Customer object with membership status 
    */
   async enrichCustomerData(customer) {
     try {
       const hasMembership = await this.checkMembershipStatus(customer.id);
       const lotNumber = customer.reference_id;
-      // Get lot number if available
-      // let lotNumber = null;
-      // try {
-      //   const lotResponse = await fetch(
-      //     `${SQUARE_API_CONFIG.baseUrl}/customers/${customer.id}/custom-attributes/${LOT_NUMBER_ATTRIBUTE_KEY}`,
-      //     {
-      //       method: 'GET',
-      //       headers: SQUARE_API_CONFIG.headers
-      //     }
-      //   );
-        
-      //   if (lotResponse.ok) {
-      //     const lotData = await lotResponse.json();
-      //     lotNumber = lotData.custom_attribute?.value;
-      //   }
-      // } catch (error) {
-      //   console.error(`Error fetching lot number for customer ID ${customer.id}:`, error);
-      // }
       
       return {
         ...customer,
@@ -113,6 +93,12 @@ class SquareService {
     }
   }
 
+  /**
+   * Check if a customer has a membership status by querying for 
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<boolean>} True if the customer has a membership status, false otherwise
+   * @throws {Error} If API request fails
+   */
   async checkMembershipStatus(customerId) {
     try {
       console.log('Request URL', `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`);
@@ -135,8 +121,7 @@ class SquareService {
       
       // If we get here, the response was successful
       const data = await response.json();
-     // console.log('Attribute data:', data);
-      
+           
       // Check if the attribute exists
       return true; // Since response.status is 200
       
@@ -149,57 +134,6 @@ class SquareService {
       }
       throw error;
     }
-  }
-
-  /**
-   * Fetch all orders for a specific customer
-   * @param {string} customerId - Square customer ID
-   * @returns {Promise<Array<Object>>} Array of customer orders
-   * @throws {Error} If API request fails
-   * @example
-   * const orders = await squareService.getCustomerOrders('CUSTOMER_ID')
-   */
-  async getCustomerOrders(customerId) {
-    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-      method: 'POST',
-      headers: SQUARE_API_CONFIG.headers,
-      body: JSON.stringify({
-        query: {
-          filter: {
-            customer_filter: {
-              customer_ids: [customerId]
-            }
-          }
-        },
-        location_ids: ["LDH1GBS49SASE"]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch orders');
-    }
-    const data = await response.json();
-    return data.orders || [];
-  }
-
-  async listCustomers(limit = 5, cursor) {
-    const url = new URL(`${SQUARE_API_CONFIG.baseUrl}/customers`);
-    url.searchParams.append('limit', limit);
-    if (cursor) {
-      url.searchParams.append('cursor', cursor);
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: SQUARE_API_CONFIG.headers
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.errors?.[0]?.detail || 'Failed to list customers');
-    }
-
-    return response.json();
   }
 }
 

@@ -16,13 +16,6 @@ export interface APICustomer {
   };
 }
 
-export interface APIOrder {
-  id: string;
-  line_items?: Array<{
-    catalog_object_id: string;
-  }>;
-}
-
 export interface Customer {
   id: string;
   firstName: string;
