@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { testmember_phoneNumber, noresults_phoneNumber, testmember_email, nonmember_email, noresults_email, nonmember_phoneNumber, noresults_lotNumber, testmember_lotNumber } from './test-constants';
 
+test.describe.configure({ mode: 'parallel' });
 
 test.describe('Search For User Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,7 +14,7 @@ test.describe('Search For User Flow', () => {
   test('basic navigation test', async ({ page }) => {
     
     const title = await page.title();
-    console.log('Page title:', title);
+    //console.log('Page title:', title);
     
     expect(title).toBeTruthy();
   });
