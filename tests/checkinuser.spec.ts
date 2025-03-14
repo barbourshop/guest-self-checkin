@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { checkinmember_phoneNumber, nowaiversigned_member_phoneNumber, nowaiversigned_nonmember_phoneNumber, waiversigned_member_phoneNumber, waiversigned_nonmember_phoneNumber } from './test-constants';
 
+test.describe.configure({ mode: 'parallel' });
 
 test.describe('User Check-in Flows', () => {
   test.beforeEach(async ({ page }) => {
