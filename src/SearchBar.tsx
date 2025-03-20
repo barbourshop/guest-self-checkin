@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Search, Mail, Phone, Home, Loader2 } from 'lucide-react';
+import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 
 type SearchBarProps = {
   onSearch: (query: string, type: 'email' | 'phone' | 'lot') => void;
   isLoading: boolean;
 };
 
+// Action creators
+const setSearchQuery = (query: string) => ({ type: 'SET_SEARCH_QUERY', payload: query });
+const setSearchType = (type: 'email' | 'phone' | 'lot') => ({ type: 'SET_SEARCH_TYPE', payload: type });
+
 export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
-  const [searchType, setSearchType] = useState<'email' | 'phone' | 'lot'>('lot');
-  const [searchQuery, setSearchQuery] = useState('');
+  const dispatch = useDispatch();
+  const searchType = useSelector((state: RootState) => state.searchType);
+  const searchQuery = useSelector((state: RootState) => state.searchQuery);
 
   const handleSearch = () => {
     onSearch(searchQuery, searchType);
@@ -19,7 +26,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
       <div className="flex gap-2 mb-4">
         <button
           data-testid="lot-search"
-          onClick={() => setSearchType('lot')}
+          onClick={() => dispatch(setSearchType('lot'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
             searchType === 'lot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}
@@ -29,7 +36,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
         </button>
         <button
           data-testid="phone-search"
-          onClick={() => setSearchType('phone')}
+          onClick={() => dispatch(setSearchType('phone'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
             searchType === 'phone' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}
@@ -39,7 +46,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
         </button>
         <button
           data-testid="email-search"
-          onClick={() => setSearchType('email')}
+          onClick={() => dispatch(setSearchType('email'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
             searchType === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
           }`}
@@ -66,7 +73,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
             }
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>

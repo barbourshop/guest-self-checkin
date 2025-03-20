@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
 import { checkWaiverStatus, searchCustomers } from './api';
@@ -7,34 +8,58 @@ import { SearchBar } from './SearchBar';
 import { CustomerList } from './CustomerList';
 import { CustomerDetail } from './CustomerDetail';
 
+// Define the Redux state type
+export interface RootState {
+  customers: Customer[];
+  isLoading: boolean;
+  error: string | null;
+  selectedCustomer: Customer | null;
+  guestCount: number;
+  showWaiver: boolean;
+  showConfirmation: boolean;
+  searchQuery: string;
+  searchType: 'email' | 'phone' | 'lot';
+}
+
+// Action creators
+const setCustomers = (customers: Customer[]) => ({ type: 'SET_CUSTOMERS', payload: customers });
+const setLoading = (isLoading: boolean) => ({ type: 'SET_LOADING', payload: isLoading });
+const setError = (error: string | null) => ({ type: 'SET_ERROR', payload: error });
+const setSelectedCustomer = (customer: Customer | null) => ({ type: 'SET_SELECTED_CUSTOMER', payload: customer });
+const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: count });
+const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
+const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
+const setSearchQuery = (query: string) => ({ type: 'SET_SEARCH_QUERY', payload: query });
+
 function App() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [guestCount, setGuestCount] = useState(1);
-  const [showWaiver, setShowWaiver] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const dispatch = useDispatch();
+  const customers = useSelector((state: RootState) => state.customers);
+  const isLoading = useSelector((state: RootState) => state.isLoading);
+  const error = useSelector((state: RootState) => state.error);
+  const selectedCustomer = useSelector((state: RootState) => state.selectedCustomer);
+  const guestCount = useSelector((state: RootState) => state.guestCount);
+  const showWaiver = useSelector((state: RootState) => state.showWaiver);
+  const showConfirmation = useSelector((state: RootState) => state.showConfirmation);
+  const searchQuery = useSelector((state: RootState) => state.searchQuery);
 
   const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
   const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot') => {
     if (!query.trim()) {
-      setCustomers([]);
+      dispatch(setCustomers([]));
       return;
     }
   
-    setIsLoading(true);
-    setError(null);
-    setSearchQuery(query);
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+    dispatch(setSearchQuery(query));
   
     try {
       const results = await searchCustomers(type, query);
       const adaptedCustomers = results.map(adaptCustomer);
       
       const customersWithWaiverStatus = await Promise.all(
-        adaptedCustomers.map(async (customer) => {
+        adaptedCustomers.map(async (customer: Customer) => {
           try {
             const hasSignedWaiver = await checkWaiverStatus(customer.id);
             return { ...customer, hasSignedWaiver };
@@ -44,32 +69,32 @@ function App() {
           }
         })
       );
-      setCustomers(customersWithWaiverStatus);
+      dispatch(setCustomers(customersWithWaiverStatus));
     } catch (err) {
-      setError('Unable to search customers. Please try again.');
-      setCustomers([]);
+      dispatch(setError('Unable to search customers. Please try again.'));
+      dispatch(setCustomers([]));
     } finally {
-      setIsLoading(false);
+      dispatch(setLoading(false));
     }
   };
 
   const resetState = () => {
-    setSelectedCustomer(null);
-    setShowWaiver(false);
-    setShowConfirmation(false);
-    setGuestCount(1);
-    setSearchQuery('');
-    setCustomers([]);
+    dispatch(setSelectedCustomer(null));
+    dispatch(setShowWaiver(false));
+    dispatch(setShowConfirmation(false));
+    dispatch(setGuestCount(1));
+    dispatch(setSearchQuery(''));
+    dispatch(setCustomers([]));
   };
 
   const handleCheckIn = () => {
-    setShowConfirmation(true);
+    dispatch(setShowConfirmation(true));
     setTimeout(resetState, 3000);
   };
 
   const handleWaiverResponse = (accepted: boolean) => {
     if (accepted) {
-      setShowConfirmation(true);
+      dispatch(setShowConfirmation(true));
       setTimeout(resetState, 3000);
     } else {
       resetState();
@@ -106,10 +131,10 @@ function App() {
             customer={selectedCustomer}
             guestCount={guestCount}
             showWaiver={selectedCustomer ? !selectedCustomer.hasSignedWaiver : false}
-            onGuestCountChange={setGuestCount}
+            onGuestCountChange={(count) => dispatch(setGuestCount(count))}
             onCheckIn={handleCheckIn}
             onWaiverResponse={handleWaiverResponse}
-            onShowWaiver={() => setShowWaiver(true)}
+            onShowWaiver={() => dispatch(setShowWaiver(true))}
             onReset={resetState}
           />
         ) : (
@@ -118,7 +143,7 @@ function App() {
             <div className="bg-white rounded-lg shadow-md">
               <CustomerList
                 customers={customers}
-                onSelectCustomer={setSelectedCustomer}
+                onSelectCustomer={(customer) => dispatch(setSelectedCustomer(customer))}
                 isLoading={isLoading}
                 error={error}
                 searchQuery={searchQuery}

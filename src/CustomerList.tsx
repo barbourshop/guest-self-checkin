@@ -1,21 +1,18 @@
 import { User, Loader2 } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 import { Customer } from './types';
 
-type CustomerListProps = {
-  customers: Customer[];
-  onSelectCustomer: (customer: Customer) => void;
-  isLoading: boolean;
-  error: string | null;
-  searchQuery: string;
-};
+// Action creators
+const setSelectedCustomer = (customer: Customer) => ({ type: 'SET_SELECTED_CUSTOMER', payload: customer });
 
-export const CustomerList = ({
-  customers,
-  onSelectCustomer,
-  isLoading,
-  error,
-  searchQuery
-}: CustomerListProps) => {
+export const CustomerList = () => {
+  const dispatch = useDispatch();
+  const customers = useSelector((state: RootState) => state.customers);
+  const isLoading = useSelector((state: RootState) => state.isLoading);
+  const error = useSelector((state: RootState) => state.error);
+  const searchQuery = useSelector((state: RootState) => state.searchQuery);
+
   if (isLoading) return (
     <div className="p-8 text-center text-gray-500">
       <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
@@ -41,7 +38,7 @@ export const CustomerList = ({
         <li
           key={customer.id}
           className="p-4 hover:bg-gray-50 cursor-pointer member-item"
-          onClick={() => onSelectCustomer(customer)}
+          onClick={() => dispatch(setSelectedCustomer(customer))}
         >
           <div className="flex items-center gap-4">
             <div className="bg-blue-100 p-3 rounded-full">

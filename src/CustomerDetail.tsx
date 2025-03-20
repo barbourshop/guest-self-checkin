@@ -1,31 +1,25 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { X, Users, FileText } from 'lucide-react';
+import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 import { Customer } from './types';
 import { signWaiver } from './api';
 
-type CustomerDetailProps = {
-  customer: Customer;
-  guestCount: number;
-  showWaiver: boolean;
-  onGuestCountChange: (count: number) => void;
-  onCheckIn: () => void;
-  onWaiverResponse: (accepted: boolean) => void;
-  onShowWaiver: () => void;
-  onReset: () => void;
-};
+// Action creators
+const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: count });
+const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
+const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
 
-export const CustomerDetail = ({
-  customer,
-  guestCount,
-  showWaiver,
-  onGuestCountChange,
-  onCheckIn,
-  onWaiverResponse,
-  onShowWaiver,
-  onReset
-}: CustomerDetailProps) => {
+export const CustomerDetail = () => {
+  const dispatch = useDispatch();
+  const customer = useSelector((state: RootState) => state.selectedCustomer);
+  const guestCount = useSelector((state: RootState) => state.guestCount);
+  const showWaiver = useSelector((state: RootState) => state.showWaiver);
+
+  if (!customer) return null; // Handle case where no customer is selected
+
   // TODO - Replace with actual waiver text
-  const WAIVER_TEXT = `RELEASE AND WAIVER OF LIABILITY IPSEM LOREM...`; 
+  const WAIVER_TEXT = `RELEASE AND WAIVER OF LIABILITY IPSEM LOREM...`;
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -34,7 +28,7 @@ export const CustomerDetail = ({
           Welcome, {customer.firstName}!
         </h2>
         <button
-          onClick={onReset}
+          onClick={() => dispatch(setShowWaiver(false))}
           className="p-2 text-gray-400 hover:text-gray-600"
         >
           <X className="h-6 w-6" />
@@ -54,13 +48,13 @@ export const CustomerDetail = ({
               min="1"
               max="10"
               value={guestCount}
-              onChange={(e) => onGuestCountChange(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={(e) => dispatch(setGuestCount(Math.max(1, parseInt(e.target.value) || 1)))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
           <button
             data-testid="checkin-button"
-            onClick={onCheckIn}
+            onClick={() => dispatch(setShowConfirmation(true))}
             disabled={showWaiver}
             className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 ${
               !showWaiver 
@@ -92,7 +86,7 @@ export const CustomerDetail = ({
                   data-testid="accept-waiver-button"
                   onClick={() => {
                     signWaiver(customer.id);
-                    onWaiverResponse(true);
+                    dispatch(setShowConfirmation(true));
                   }}
                   className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
@@ -100,7 +94,7 @@ export const CustomerDetail = ({
                 </button>
                 <button
                   data-testid="decline-waiver-button"
-                  onClick={() => onWaiverResponse(false)}
+                  onClick={() => dispatch(setShowWaiver(false))}
                   className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Decline
@@ -120,7 +114,7 @@ export const CustomerDetail = ({
               </p>
               {/* <button
                 data-testid="signwaiver-button"
-                onClick={onShowWaiver}
+                onClick={() => dispatch(setShowWaiver(true))}
                 className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2"
               >
                 <FileText className="h-5 w-5" />

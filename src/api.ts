@@ -1,4 +1,3 @@
-import { APICustomer } from './types';
 import { mockCustomers, mockWaiverStatus, mockDelays } from './mocks/mockData';
 
 const API_BASE_URL = 'http://localhost:3000/api';
