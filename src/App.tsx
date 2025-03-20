@@ -38,7 +38,6 @@ function App() {
   const error = useSelector((state: RootState) => state.error);
   const selectedCustomer = useSelector((state: RootState) => state.selectedCustomer);
   const guestCount = useSelector((state: RootState) => state.guestCount);
-  const showWaiver = useSelector((state: RootState) => state.showWaiver);
   const showConfirmation = useSelector((state: RootState) => state.showConfirmation);
   const searchQuery = useSelector((state: RootState) => state.searchQuery);
 

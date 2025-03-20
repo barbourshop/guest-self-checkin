@@ -1,6 +1,5 @@
-import { createStore, combineReducers, applyMiddleware, Store } from 'redux';
-import {thunk} from 'redux-thunk';
-import { composeWithDevTools } from 'redux-devtools-extension';
+import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers } from 'redux';
 import { AnyAction } from 'redux';
 
 // Initial state
@@ -122,12 +121,12 @@ const rootReducer = combineReducers({
   searchType: searchTypeReducer,
 });
 
-// Create store
-const store = createStore(
-  rootReducer,
-  composeWithDevTools(
-    applyMiddleware(thunk)
-  )
-);
+// Create store using configureStore
+const store = configureStore({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware(),
+  devTools: process.env.NODE_ENV !== 'production', // Enable Redux DevTools in development
+});
 
-export default store; 
+export default store;
+export { rootReducer }; 
