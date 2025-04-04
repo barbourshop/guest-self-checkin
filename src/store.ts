@@ -1,18 +1,19 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { combineReducers } from 'redux';
 import { AnyAction } from 'redux';
+import { Customer } from './types';
 
 // Initial state
 const initialState = {
-  customers: [],
+  customers: [] as Customer[],
   isLoading: false,
-  error: null,
-  selectedCustomer: null,
+  error: null as string | null,
+  selectedCustomer: null as Customer | null,
   guestCount: 1,
   showWaiver: false,
   showConfirmation: false,
   searchQuery: '',
-  searchType: 'email', // Default to 'email'
+  searchType: 'email' as 'email' | 'phone' | 'lot',
 };
 
 // Action types
@@ -26,12 +27,19 @@ const SET_SHOW_CONFIRMATION = 'SET_SHOW_CONFIRMATION';
 const SET_SEARCH_QUERY = 'SET_SEARCH_QUERY';
 const SET_SEARCH_TYPE = 'SET_SEARCH_TYPE';
 const RESET_STATE = 'RESET_STATE';
+const UPDATE_CUSTOMER_WAIVER_STATUS = 'UPDATE_CUSTOMER_WAIVER_STATUS';
 
 // Reducers
 const customersReducer = (state = initialState.customers, action: AnyAction) => {
   switch (action.type) {
     case SET_CUSTOMERS:
       return action.payload;
+    case UPDATE_CUSTOMER_WAIVER_STATUS:
+      return state.map(customer => 
+        customer.id === action.payload.customerId
+          ? { ...customer, hasSignedWaiver: action.payload.hasSignedWaiver }
+          : customer
+      );
     case RESET_STATE:
       return initialState.customers;
     default:
@@ -65,6 +73,10 @@ const selectedCustomerReducer = (state = initialState.selectedCustomer, action: 
   switch (action.type) {
     case SET_SELECTED_CUSTOMER:
       return action.payload;
+    case UPDATE_CUSTOMER_WAIVER_STATUS:
+      return state && state.id === action.payload.customerId
+        ? { ...state, hasSignedWaiver: action.payload.hasSignedWaiver }
+        : state;
     case RESET_STATE:
       return initialState.selectedCustomer;
     default:

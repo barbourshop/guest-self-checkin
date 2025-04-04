@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, Users, FileText } from 'lucide-react';
 import { RootState } from './App'; // Assuming RootState is exported from App.tsx
@@ -10,12 +10,23 @@ const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: co
 const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
 const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
 const resetState = () => ({ type: 'RESET_STATE' });
+const updateCustomerWaiverStatus = (customerId: string, hasSignedWaiver: boolean) => ({
+  type: 'UPDATE_CUSTOMER_WAIVER_STATUS',
+  payload: { customerId, hasSignedWaiver }
+});
 
 export const CustomerDetail = () => {
   const dispatch = useDispatch();
   const customer = useSelector((state: RootState) => state.selectedCustomer);
   const guestCount = useSelector((state: RootState) => state.guestCount);
   const showWaiver = useSelector((state: RootState) => state.showWaiver);
+
+  // Update showWaiver state when customer changes
+  useEffect(() => {
+    if (customer) {
+      dispatch(setShowWaiver(!customer.hasSignedWaiver));
+    }
+  }, [customer, dispatch]);
 
   if (!customer) return null; // Handle case where no customer is selected
 
@@ -69,8 +80,9 @@ export const CustomerDetail = () => {
           </button>
           {showWaiver && (
             <p 
-            data-testid="nowaiver-cant-checkin" 
-            className="mt-2 text-sm text-red-600">
+              data-testid="nowaiver-cant-checkin" 
+              className="mt-2 text-sm text-red-600"
+            >
               You must sign the waiver before checking in
             </p>
           )}
@@ -86,9 +98,13 @@ export const CustomerDetail = () => {
               <div className="flex gap-3">
                 <button
                   data-testid="accept-waiver-button"
-                  onClick={() => {
-                    signWaiver(customer.id);
-                    dispatch(setShowConfirmation(true));
+                  onClick={async () => {
+                    const success = await signWaiver(customer.id);
+                    if (success) {
+                      dispatch(updateCustomerWaiverStatus(customer.id, true));
+                      dispatch(setShowWaiver(false));
+                      dispatch(setShowConfirmation(true));
+                    }
                   }}
                   className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
@@ -96,7 +112,7 @@ export const CustomerDetail = () => {
                 </button>
                 <button
                   data-testid="decline-waiver-button"
-                  onClick={() => dispatch(setShowWaiver(false))}
+                  onClick={() => dispatch(resetState())}
                   className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Decline

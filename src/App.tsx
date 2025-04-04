@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
@@ -44,6 +44,19 @@ function App() {
 
   const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
+  // Add useEffect to handle auto-dismiss of confirmation banner
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showConfirmation) {
+      timer = setTimeout(() => {
+        dispatch(resetState());
+      }, 3000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [showConfirmation, dispatch]);
+
   const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot') => {
     if (!query.trim()) {
       dispatch(setCustomers([]));
@@ -80,13 +93,11 @@ function App() {
 
   const handleCheckIn = () => {
     dispatch(setShowConfirmation(true));
-    setTimeout(() => dispatch(resetState()), 3000);
   };
 
   const handleWaiverResponse = (accepted: boolean) => {
     if (accepted) {
       dispatch(setShowConfirmation(true));
-      setTimeout(() => dispatch(resetState()), 3000);
     } else {
       dispatch(resetState());
     }

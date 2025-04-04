@@ -131,7 +131,7 @@ describe('CustomerDetail', () => {
   describe('Reset Functionality', () => {
     it('calls onReset when clicking the close button', () => {
       renderWithProvider(<CustomerDetail />, waiverSignedStore);
-      const closeButton = screen.getByRole('button', { name: '' }); // X button has no text
+      const closeButton = screen.getByRole('button', { name: 'Close' });
       fireEvent.click(closeButton);
     });
   });
