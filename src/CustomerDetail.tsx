@@ -9,6 +9,7 @@ import { signWaiver } from './api';
 const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: count });
 const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
 const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
+const resetState = () => ({ type: 'RESET_STATE' });
 
 export const CustomerDetail = () => {
   const dispatch = useDispatch();
@@ -23,13 +24,14 @@ export const CustomerDetail = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">
+      <div className="flex justify-between items-start mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">
           Welcome, {customer.firstName}!
         </h2>
         <button
-          onClick={() => dispatch(setShowWaiver(false))}
-          className="p-2 text-gray-400 hover:text-gray-600"
+          onClick={() => dispatch(resetState())}
+          className="text-gray-400 hover:text-gray-500"
+          aria-label="Close"
         >
           <X className="h-6 w-6" />
         </button>

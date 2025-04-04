@@ -30,6 +30,7 @@ const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: co
 const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
 const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
 const setSearchQuery = (query: string) => ({ type: 'SET_SEARCH_QUERY', payload: query });
+const resetState = () => ({ type: 'RESET_STATE' });
 
 function App() {
   const dispatch = useDispatch();
@@ -77,26 +78,17 @@ function App() {
     }
   };
 
-  const resetState = () => {
-    dispatch(setSelectedCustomer(null));
-    dispatch(setShowWaiver(false));
-    dispatch(setShowConfirmation(false));
-    dispatch(setGuestCount(1));
-    dispatch(setSearchQuery(''));
-    dispatch(setCustomers([]));
-  };
-
   const handleCheckIn = () => {
     dispatch(setShowConfirmation(true));
-    setTimeout(resetState, 3000);
+    setTimeout(() => dispatch(resetState()), 3000);
   };
 
   const handleWaiverResponse = (accepted: boolean) => {
     if (accepted) {
       dispatch(setShowConfirmation(true));
-      setTimeout(resetState, 3000);
+      setTimeout(() => dispatch(resetState()), 3000);
     } else {
-      resetState();
+      dispatch(resetState());
     }
   };
 

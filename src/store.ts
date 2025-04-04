@@ -25,12 +25,15 @@ const SET_SHOW_WAIVER = 'SET_SHOW_WAIVER';
 const SET_SHOW_CONFIRMATION = 'SET_SHOW_CONFIRMATION';
 const SET_SEARCH_QUERY = 'SET_SEARCH_QUERY';
 const SET_SEARCH_TYPE = 'SET_SEARCH_TYPE';
+const RESET_STATE = 'RESET_STATE';
 
 // Reducers
 const customersReducer = (state = initialState.customers, action: AnyAction) => {
   switch (action.type) {
     case SET_CUSTOMERS:
       return action.payload;
+    case RESET_STATE:
+      return initialState.customers;
     default:
       return state;
   }
@@ -40,6 +43,8 @@ const loadingReducer = (state = initialState.isLoading, action: AnyAction) => {
   switch (action.type) {
     case SET_LOADING:
       return action.payload;
+    case RESET_STATE:
+      return initialState.isLoading;
     default:
       return state;
   }
@@ -49,6 +54,8 @@ const errorReducer = (state = initialState.error, action: AnyAction) => {
   switch (action.type) {
     case SET_ERROR:
       return action.payload;
+    case RESET_STATE:
+      return initialState.error;
     default:
       return state;
   }
@@ -58,6 +65,8 @@ const selectedCustomerReducer = (state = initialState.selectedCustomer, action: 
   switch (action.type) {
     case SET_SELECTED_CUSTOMER:
       return action.payload;
+    case RESET_STATE:
+      return initialState.selectedCustomer;
     default:
       return state;
   }
@@ -67,6 +76,8 @@ const guestCountReducer = (state = initialState.guestCount, action: AnyAction) =
   switch (action.type) {
     case SET_GUEST_COUNT:
       return action.payload;
+    case RESET_STATE:
+      return initialState.guestCount;
     default:
       return state;
   }
@@ -76,6 +87,8 @@ const showWaiverReducer = (state = initialState.showWaiver, action: AnyAction) =
   switch (action.type) {
     case SET_SHOW_WAIVER:
       return action.payload;
+    case RESET_STATE:
+      return initialState.showWaiver;
     default:
       return state;
   }
@@ -85,6 +98,8 @@ const showConfirmationReducer = (state = initialState.showConfirmation, action: 
   switch (action.type) {
     case SET_SHOW_CONFIRMATION:
       return action.payload;
+    case RESET_STATE:
+      return initialState.showConfirmation;
     default:
       return state;
   }
@@ -94,6 +109,8 @@ const searchQueryReducer = (state = initialState.searchQuery, action: AnyAction)
   switch (action.type) {
     case SET_SEARCH_QUERY:
       return action.payload;
+    case RESET_STATE:
+      return initialState.searchQuery;
     default:
       return state;
   }
@@ -103,6 +120,8 @@ const searchTypeReducer = (state = initialState.searchType, action: AnyAction) =
   switch (action.type) {
     case SET_SEARCH_TYPE:
       return action.payload;
+    case RESET_STATE:
+      return initialState.searchType;
     default:
       return state;
   }
