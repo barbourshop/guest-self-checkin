@@ -38,9 +38,6 @@ jobs:
 
       - name: Print Playwright Version
         run: npx playwright --version
-
-      - name: Print Playwright Browsers
-        run: npx playwright show-report
         
       - name: Run Playwright tests (with virtual display)
         run: xvfb-run --auto-servernum npx playwright test --headed
