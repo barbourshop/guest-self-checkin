@@ -1,4 +1,3 @@
-import { APICustomer } from './types';
 import { mockCustomers, mockWaiverStatus, mockDelays } from './mocks/mockData';
 
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -88,17 +87,28 @@ export async function checkWaiverStatus(customerId: string): Promise<boolean> {
   }
 }
 
-export const signWaiver = (customerId: string): void => {
+export const signWaiver = async (customerId: string): Promise<boolean> => {
   if (USE_MOCK_API) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
+    
     // Update mock waiver status
     mockWaiverStatus[customerId] = true;
     console.log(`Mock waiver signed for customer ${customerId}`);
-    return;
+    return true;
   }
   
   // Original implementation for real API
-  fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
+  const response = await fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
     method: 'POST',
-  })
-  .catch(error => console.error('Error signing waiver:', error));
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to sign waiver');
+  }
+
+  return true;
 };

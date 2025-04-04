@@ -115,8 +115,6 @@ class SquareService {
 
   async checkMembershipStatus(customerId) {
     try {
-      console.log('Request URL', `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`);
-      
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`,
         {
@@ -125,25 +123,26 @@ class SquareService {
         }
       );
       
-      // First check if the response is OK
-      if (!response.ok) {
-        // Only read the error data if not OK
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        return false; // Return false for non-OK responses
+      if (response.status === 404) {
+        return false;
       }
       
-      // If we get here, the response was successful
-      const data = await response.json();
-     // console.log('Attribute data:', data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        return false;
+      }
       
-      // Check if the attribute exists
-      return true; // Since response.status is 200
+      const data = await response.json();
+      const membershipDate = new Date(data.custom_attribute.value);
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      return membershipDate > oneYearAgo;
       
     } catch (error) {
       console.error(`Error checking membership for ${customerId}:`, error);
       
-      // Handle 404 errors specifically
       if (error.response?.status === 404 || error.status === 404) {
         return false;
       }

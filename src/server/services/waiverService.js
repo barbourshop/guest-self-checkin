@@ -15,7 +15,6 @@ class WaiverService {
    * const hasWaiver = await waiverService.checkStatus('CUSTOMER_ID')
    */
   async checkStatus(customerId) {
-    // console.log('Checking Waiver Status for customerId', customerId);
     try {
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
@@ -24,8 +23,22 @@ class WaiverService {
           headers: SQUARE_API_CONFIG.headers
         }
       );
-      // Be aware that if the custom attribute has never been created in the first place, the API will return 400
-      return response.status !== 404;
+      
+      if (response.status === 404) {
+        return false;
+      }
+      
+      if (!response.ok) {
+        throw new Error('Failed to check waiver status');
+      }
+
+      const data = await response.json();
+      // Check if the waiver was signed within the last year
+      const waiverDate = new Date(data.custom_attribute.value);
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      return waiverDate > oneYearAgo;
     } catch (error) {
       if (error.response?.status === 404) {
         return false;

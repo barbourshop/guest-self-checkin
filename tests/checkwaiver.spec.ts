@@ -32,26 +32,34 @@ test.describe('Customer Waiver Signing Flow', () => {
   });
 
   test('User accepts waiver', async ({ page }) => {
-  await page.click('[data-testid="phone-search"]');  
-  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
-  await page.fill('[data-testid="search-input"]', nowaiversigned_nonmember_phoneNumber);
-  await page.click('[data-testid="search-button"]');
-  
-  // Wait for search results to load
-  const memberElement = await page.waitForSelector('.member-item');
-  
-  // click on the member
-  await page.click('.member-item');
+    await page.click('[data-testid="phone-search"]');  
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    await page.fill('[data-testid="search-input"]', nowaiversigned_nonmember_phoneNumber);
+    await page.click('[data-testid="search-button"]');
+    
+    // Wait for search results to load
+    const memberElement = await page.waitForSelector('.member-item');
+    console.log('Member element found');
+    
+    // click on the member
+    await page.click('.member-item');
+    console.log('Member clicked');
 
-  // Check that the user has been notified that they cant check in unless they sign the waiver
-  const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible' });
-  expect(cantCheckInElement).toBeTruthy();
+    // Add a small delay to allow for waiver status check
+    await page.waitForTimeout(1000);
 
-  // Accept the waiver, which also checks the user in
-  await page.click('[data-testid="accept-waiver-button"]');
-   const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible' });
-   expect(checkedInElement).toBeTruthy();
+    // Check that the user has been notified that they cant check in unless they sign the waiver
+    const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 5000 });
+    console.log('Cant check in element found:', await cantCheckInElement.textContent());
+    expect(cantCheckInElement).toBeTruthy();
 
+    // Accept the waiver, which also checks the user in
+    await page.click('[data-testid="accept-waiver-button"]');
+    console.log('Accept waiver button clicked');
+    
+    const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 5000 });
+    console.log('Checked in element found');
+    expect(checkedInElement).toBeTruthy();
   });
 
 
@@ -63,20 +71,25 @@ test.describe('Customer Waiver Signing Flow', () => {
     
     // Wait for search results to load
     const memberElement = await page.waitForSelector('.member-item');
+    console.log('Member element found');
     
     // click on the member
     await page.click('.member-item');
+    console.log('Member clicked');
   
     // Check that the user has been notified that they cant check in unless they sign the waiver
-    const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible' });
+    const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 5000 });
+    console.log('Cant check in element found:', await cantCheckInElement.textContent());
     expect(cantCheckInElement).toBeTruthy();
   
     // Decline the waiver, which takes the user back to the main screen
     await page.click('[data-testid="decline-waiver-button"]');
-    const homePage = await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    console.log('Decline waiver button clicked');
+    
+    const homePage = await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 5000 });
+    console.log('Home page search input found');
     expect(homePage).toBeTruthy();
-  
-    });
+  });
   
 
   // TODO - add tests for
