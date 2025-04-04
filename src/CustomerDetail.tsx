@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Users, FileText } from 'lucide-react';
 import { Customer } from './types';
 import { signWaiver } from './api';
+import { WAIVER_TEXT } from './constants';
 
 type CustomerDetailProps = {
   customer: Customer;
@@ -24,9 +25,6 @@ export const CustomerDetail = ({
   onShowWaiver,
   onReset
 }: CustomerDetailProps) => {
-  // TODO - Replace with actual waiver text
-  const WAIVER_TEXT = `RELEASE AND WAIVER OF LIABILITY IPSEM LOREM...`; 
-
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
