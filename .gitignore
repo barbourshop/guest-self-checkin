@@ -2,6 +2,7 @@
 *.env
 node_modules/
 test-results/
+playwright-report/
 .DS_Store
 src/.DS_Store
 server/.DS_Store

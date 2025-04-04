@@ -95,7 +95,7 @@ export const mockCustomers = [
   ];
   
   // Mock waiver status data
-  export const mockWaiverStatus = {
+  export const mockWaiverStatus: { [key: string]: boolean } = {
     'cust_001': true,
     'cust_002': false,
     'cust_003': true,
@@ -106,5 +106,6 @@ export const mockCustomers = [
   // Mock delays to simulate network latency (in milliseconds)
   export const mockDelays = {
     search: 500,
-    waiverCheck: 300
+    waiverCheck: 300,
+    waiverSign: 300
   };

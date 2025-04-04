@@ -3,8 +3,11 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: './tests',
   timeout: 10000,
-  workers: 1,
-  reporter: 'list',
+  workers: 2,
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }]
+  ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
