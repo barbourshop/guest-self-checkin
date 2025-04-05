@@ -97,7 +97,8 @@ function App() {
 
   const handleWaiverResponse = (accepted: boolean) => {
     if (accepted) {
-      dispatch(setShowConfirmation(true));
+      // Don't automatically show confirmation dialog
+      // dispatch(setShowConfirmation(true));
     } else {
       dispatch(resetState());
     }
