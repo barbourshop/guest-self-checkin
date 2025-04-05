@@ -95,10 +95,10 @@ describe('CustomerDetail', () => {
       expect(screen.getByText(`Welcome, ${mockCustomer.firstName}!`)).toBeInTheDocument();
     });
 
-    it('shows guest count input with initial value', () => {
+    it('shows guest count select with initial value', () => {
       renderCustomerDetail(waiverSignedStore);
-      const input = screen.getByTestId('checkin-input') as HTMLInputElement;
-      expect(input.value).toBe('1');
+      const select = screen.getByTestId('guest-count-select') as HTMLSelectElement;
+      expect(select.value).toBe('1');
     });
   });
 
@@ -144,16 +144,54 @@ describe('CustomerDetail', () => {
   });
 
   describe('Guest Count Functionality', () => {
-    it('updates guest count when input changes', () => {
+    it('updates guest count when select value changes', () => {
       renderCustomerDetail(waiverSignedStore);
-      const input = screen.getByTestId('checkin-input');
-      fireEvent.change(input, { target: { value: '3' } });
+      const select = screen.getByTestId('guest-count-select');
+      
+      // First, we need to select a value from the dropdown
+      fireEvent.change(select, { target: { value: '3' } });
+      
+      // Then we need to verify the store was updated
+      const state = waiverSignedStore.getState();
+      expect(state.guestCount).toBe(3);
     });
 
-    it('prevents guest count from going below 1', () => {
+    it('shows input field when "Other" is selected', () => {
       renderCustomerDetail(waiverSignedStore);
+      const select = screen.getByTestId('guest-count-select');
+      
+      // Select "Other" option
+      fireEvent.change(select, { target: { value: 'other' } });
+      
+      // Now the input field should be visible
       const input = screen.getByTestId('checkin-input');
+      expect(input).toBeInTheDocument();
+      
+      // Test entering a valid guest count
+      fireEvent.change(input, { target: { value: '5' } });
+      
+      // Verify the store was updated
+      const state = waiverSignedStore.getState();
+      expect(state.guestCount).toBe(5);
+    });
+
+    it('prevents guest count from going below 1 when using "Other" input', () => {
+      renderCustomerDetail(waiverSignedStore);
+      const select = screen.getByTestId('guest-count-select');
+      
+      // Select "Other" option
+      fireEvent.change(select, { target: { value: 'other' } });
+      
+      const input = screen.getByTestId('checkin-input');
+      
+      // The input should not allow values below 1
+      expect(input).toHaveAttribute('min', '1');
+      
+      // Try to set a value of 0
       fireEvent.change(input, { target: { value: '0' } });
+      
+      // The input should not allow values below 1
+      expect(input).toHaveAttribute('min', '1');
     });
   });
 

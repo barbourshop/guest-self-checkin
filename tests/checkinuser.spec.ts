@@ -23,11 +23,11 @@ test('Open customer details page from search', async ({ page }) => {
 
     // click on the member
     await page.click('.member-item');
-    // Wait for checkin input to load
-    const checkinElement = await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
-    // Wait for checkin input to load
+    // Wait for guest count select to load
+    const guestCountSelect = await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+    // Wait for waiver text to load
     const waiverElement = await page.waitForSelector('[data-testid="signwaiver-text"]', { state: 'visible', timeout: 10000 });
-    expect(checkinElement).toBeTruthy();
+    expect(guestCountSelect).toBeTruthy();
     expect(waiverElement).toBeTruthy();
 
 });
@@ -43,10 +43,20 @@ test('After check in, member sees a confirmation', async ({ page }) => {
 
     // click on the member
     await page.click('.member-item');
-    // Wait for checkin input to load
-    await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
+    // Wait for guest count select to load
+    await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+    
+    // Select a guest count
+    await page.selectOption('[data-testid="guest-count-select"]', '2');
 
-    await page.click('[data-testid="checkin-button"]');
+    // Check that the check-in button is enabled
+    const checkInButton = await page.locator('[data-testid="checkin-button"]');
+    await expect(checkInButton).toBeEnabled();
+    
+    // Click the check-in button
+    await checkInButton.click();
+    
+    // Verify confirmation appears
     const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 10000 });
     expect(checkedInElement).toBeTruthy();
 });
@@ -62,10 +72,20 @@ test('After Check in, non-member sees a confirmation', async ({ page }) => {
 
   // click on the member
   await page.click('.member-item');
-  // Wait for checkin input to load
-  await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
+  // Wait for guest count select to load
+  await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+  
+  // Select a guest count
+  await page.selectOption('[data-testid="guest-count-select"]', '3');
 
-  await page.click('[data-testid="checkin-button"]');
+  // Check that the check-in button is enabled
+  const checkInButton = await page.locator('[data-testid="checkin-button"]');
+  await expect(checkInButton).toBeEnabled();
+  
+  // Click the check-in button
+  await checkInButton.click();
+  
+  // Verify confirmation appears
   const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 10000 });
   expect(checkedInElement).toBeTruthy();
 });
@@ -82,9 +102,14 @@ test('Check in allowed for member with signed waiver', async ({ page }) => {
   // click on the member
   await page.click('.member-item');
 
-  // Check that the user can check in since they have a previously signed waiver
-  const CheckinButton = await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
-  expect(CheckinButton).toBeTruthy();
+  // Check that the guest count select is visible
+  const guestCountSelect = await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+  expect(guestCountSelect).toBeTruthy();
+  
+  // Check that the check-in button is initially disabled
+  const checkInButton = await page.locator('[data-testid="checkin-button"]');
+  await expect(checkInButton).toBeDisabled();
+  await expect(checkInButton).toContainText('Please Select Number of Guests');
 });
 
 test('Check in allowed for non-member with signed waiver', async ({ page }) => {
@@ -99,9 +124,14 @@ test('Check in allowed for non-member with signed waiver', async ({ page }) => {
   // click on the member
   await page.click('.member-item');
 
-  // Check that the user can check in since they have a previously signed waiver
-  const CheckinButton = await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
-  expect(CheckinButton).toBeTruthy();
+  // Check that the guest count select is visible
+  const guestCountSelect = await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+  expect(guestCountSelect).toBeTruthy();
+  
+  // Check that the check-in button is initially disabled
+  const checkInButton = await page.locator('[data-testid="checkin-button"]');
+  await expect(checkInButton).toBeDisabled();
+  await expect(checkInButton).toContainText('Please Select Number of Guests');
 });
 
 test('Check in not allowed for member without signed waiver', async ({ page }) => {
@@ -149,11 +179,60 @@ test('Check in 10 guests, member sees a confirmation', async ({ page }) => {
 
   // click on the member
   await page.click('.member-item');
-  // Wait for checkin input to load
-  await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
-  await page.fill('[data-testid="checkin-input"]', '10');
+  // Wait for guest count select to load
+  await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+  
+  // Select 10 guests from the dropdown
+  await page.selectOption('[data-testid="guest-count-select"]', '10');
+  
+  // Check that the large display shows 10
+  const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+  await expect(largeDisplay).toHaveText('10');
 
-  await page.click('[data-testid="checkin-button"]');
+  // Check that the check-in button is enabled
+  const checkInButton = await page.locator('[data-testid="checkin-button"]');
+  await expect(checkInButton).toBeEnabled();
+  
+  // Click the check-in button
+  await checkInButton.click();
+  
+  // Verify confirmation appears
+  const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 10000 });
+  expect(checkedInElement).toBeTruthy();
+});
+
+test('Check in with custom number of guests', async ({ page }) => {
+  await page.click('[data-testid="phone-search"]');  
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+  await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
+  await page.click('[data-testid="search-button"]');
+  
+  // Wait for search results to load
+  const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
+
+  // click on the member
+  await page.click('.member-item');
+  // Wait for guest count select to load
+  await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+  
+  // Select "Other" from the dropdown
+  await page.selectOption('[data-testid="guest-count-select"]', 'other');
+  
+  // Enter a custom number
+  await page.fill('[data-testid="checkin-input"]', '15');
+  
+  // Check that the large display shows 15
+  const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+  await expect(largeDisplay).toHaveText('15');
+
+  // Check that the check-in button is enabled
+  const checkInButton = await page.locator('[data-testid="checkin-button"]');
+  await expect(checkInButton).toBeEnabled();
+  
+  // Click the check-in button
+  await checkInButton.click();
+  
+  // Verify confirmation appears
   const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 10000 });
   expect(checkedInElement).toBeTruthy();
 });

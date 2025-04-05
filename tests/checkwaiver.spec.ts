@@ -45,9 +45,6 @@ test.describe('Customer Waiver Signing Flow', () => {
     await page.click('.member-item');
     console.log('Member clicked');
 
-    // Add a small delay to allow for waiver status check
-    await page.waitForTimeout(2000);
-
     // Check that the user has been notified that they cant check in unless they sign the waiver
     const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
     console.log('Cant check in element found:', await cantCheckInElement.textContent());
@@ -57,16 +54,16 @@ test.describe('Customer Waiver Signing Flow', () => {
     await page.click('[data-testid="accept-waiver-button"]');
     console.log('Accept waiver button clicked');
     
-    // Wait for the waiver panel to disappear and the guest count input to be focused
-    await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 10000 });
-    console.log('Guest count input is visible');
-    
     // Verify the waiver is now signed
     await expect(page.locator('[data-testid="signwaiver-text"]')).toHaveText('Waiver Already Signed', { timeout: 10000 });
     
-    // Now the user should manually check in by entering guest count and clicking check in
-    await page.fill('[data-testid="checkin-input"]', '2');
+    // Select guest count from dropdown
+    await page.selectOption('[data-testid="guest-count-select"]', '2');
+    console.log('Selected 2 guests from dropdown');
+    
+    // Click check in button
     await page.click('[data-testid="checkin-button"]');
+    console.log('Clicked check in button');
     
     // Verify the check-in confirmation appears
     const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 10000 });
