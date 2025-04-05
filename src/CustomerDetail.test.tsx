@@ -196,11 +196,20 @@ describe('CustomerDetail', () => {
   });
 
   describe('Reset Functionality', () => {
-    it('calls onReset when clicking the close button', () => {
+    it('calls onReset and dispatches resetState when clicking the close button', () => {
       renderCustomerDetail(waiverSignedStore, { onReset: mockOnReset });
       const closeButton = screen.getByRole('button', { name: 'Close' });
       fireEvent.click(closeButton);
+      
+      // Verify onReset was called
       expect(mockOnReset).toHaveBeenCalled();
+      
+      // Verify the store state was reset
+      const state = waiverSignedStore.getState();
+      expect(state.selectedCustomer).toBeNull();
+      expect(state.guestCount).toBe(0);
+      expect(state.showWaiver).toBe(false);
+      expect(state.showConfirmation).toBe(false);
     });
   });
 });

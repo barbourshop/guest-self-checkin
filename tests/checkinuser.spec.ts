@@ -237,4 +237,30 @@ test('Check in with custom number of guests', async ({ page }) => {
   expect(checkedInElement).toBeTruthy();
 });
 
+test('Clicking close button returns to search page', async ({ page }) => {
+    // First search for and select a member
+    await page.click('[data-testid="phone-search"]');  
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+    await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
+    await page.click('[data-testid="search-button"]');
+    
+    // Wait for search results to load and click on the member
+    await page.waitForSelector('.member-item', { timeout: 10000 });
+    await page.click('.member-item');
+    
+    // Wait for the customer detail view to load
+    await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
+    
+    // Click the close button
+    await page.click('button[aria-label="Close"]');
+    
+    // Verify we're back on the search page
+    const searchInput = await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+    expect(searchInput).toBeTruthy();
+    
+    // Verify the customer detail view is no longer visible
+    const guestCountSelect = await page.$('[data-testid="guest-count-select"]');
+    expect(guestCountSelect).toBeNull();
+});
+
 });
