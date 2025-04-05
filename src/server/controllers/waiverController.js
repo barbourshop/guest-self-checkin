@@ -15,10 +15,18 @@ class WaiverController {
   async checkStatus(req, res) {
     try {
       const { customerId } = req.params;
-      console.log('Checking Waiver Status for customerId', customerId);
+      
+      // Log waiver status check
+      console.log(`${new Date().toISOString()} [ CHECK WAIVER STATUS ] Customer ID: ${customerId}`);
+      
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
+      
+      // Log result
+      console.log(`${new Date().toISOString()} [ WAIVER STATUS RESULT ] Customer ID: ${customerId}, Has Signed: ${hasSignedWaiver}`);
+      
       res.json({ hasSignedWaiver });
     } catch (error) {
+      console.error(`${new Date().toISOString()} [ CHECK WAIVER STATUS ERROR ] ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   }
@@ -33,9 +41,18 @@ class WaiverController {
   async setStatus(req, res) {
     try {
       const { customerId } = req.params;
+      
+      // Log waiver status update
+      console.log(`${new Date().toISOString()} [ SET WAIVER STATUS ] Customer ID: ${customerId}`);
+      
       const result = await waiverService.setStatus(customerId);
+      
+      // Log result
+      console.log(`${new Date().toISOString()} [ WAIVER STATUS UPDATED ] Customer ID: ${customerId}, Result: ${JSON.stringify(result)}`);
+      
       res.json(result);
     } catch (error) {
+      console.error(`${new Date().toISOString()} [ SET WAIVER STATUS ERROR ] ${error.message}`);
       res.status(500).json({
         error: "Failed to set waiver status",
         detail: error.message

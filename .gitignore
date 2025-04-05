@@ -9,3 +9,4 @@ server/.DS_Store
 coverage/
 dist/
 dist-electron/
+logs/

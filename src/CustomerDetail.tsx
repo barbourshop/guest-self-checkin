@@ -78,7 +78,7 @@ export const CustomerDetail = ({
             </div>
             <button
               data-testid="checkin-button"
-              onClick={() => dispatch(setShowConfirmation(true))}
+              onClick={() => onCheckIn()}
               disabled={showWaiver || !hasSelected}
               className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 mb-6 ${
                 !showWaiver && hasSelected

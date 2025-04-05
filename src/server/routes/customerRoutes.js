@@ -8,4 +8,7 @@ router.post('/search/email', customerController.searchByEmail);
 router.post('/search/lot', customerController.searchByLot);
 router.get('/list', customerController.listCustomers);
 
+// Check-in endpoint
+router.post('/checkin', customerController.checkIn);
+
 module.exports = router;

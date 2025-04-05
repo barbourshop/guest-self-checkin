@@ -112,3 +112,59 @@ export const signWaiver = async (customerId: string): Promise<boolean> => {
 
   return true;
 };
+
+/**
+ * Log a customer check-in
+ * @param {string} customerId - The ID of the customer checking in
+ * @param {number} guestCount - The number of guests checking in
+ * @param {string} firstName - The customer's first name
+ * @param {string} lastName - The customer's last name
+ * @param {string} lotNumber - The customer's lot number
+ * @returns {Promise<boolean>} - A promise that resolves to true if the check-in was successful
+ * @throws Will throw an error if the check-in fails
+ */
+export const logCheckIn = async (
+  customerId: string, 
+  guestCount: number, 
+  firstName: string, 
+  lastName: string, 
+  lotNumber?: string
+): Promise<boolean> => {
+  console.log('logCheckIn called with:', { customerId, guestCount, firstName, lastName, lotNumber });
+  
+  if (USE_MOCK_API) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
+    
+    console.log(`Mock check-in logged for ${firstName} ${lastName} (${lotNumber || 'N/A'}) with ${guestCount} guests`);
+    return true;
+  }
+  
+  // Original implementation for real API
+  try {
+    console.log('Sending check-in request to:', `${API_BASE_URL}/customers/checkin`);
+    const response = await fetch(`${API_BASE_URL}/customers/checkin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        customerId, 
+        guestCount, 
+        firstName, 
+        lastName, 
+        lotNumber 
+      }),
+    });
+
+    console.log('Check-in response:', response);
+    if (!response.ok) {
+      throw new Error('Failed to log check-in');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Check-in error:', error);
+    throw error;
+  }
+};
