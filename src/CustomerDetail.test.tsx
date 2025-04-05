@@ -4,7 +4,6 @@ import { signWaiver } from './api';
 import { Customer } from './types';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
-import thunk from 'redux-thunk';
 import { rootReducer } from './store';
 
 // Mock the api module
@@ -59,15 +58,45 @@ const renderWithProvider = (ui: React.ReactElement, store: ReturnType<typeof cre
   return render(<Provider store={store}>{ui}</Provider>);
 };
 
+// Mock functions for props
+const mockOnGuestCountChange = jest.fn();
+const mockOnCheckIn = jest.fn();
+const mockOnWaiverResponse = jest.fn();
+const mockOnShowWaiver = jest.fn();
+const mockOnReset = jest.fn();
+
+// Helper function to create CustomerDetail with required props
+const renderCustomerDetail = (store: ReturnType<typeof createMockStore>, additionalProps = {}) => {
+  const state = store.getState();
+  const customer = state.selectedCustomer;
+  const guestCount = state.guestCount;
+  const showWaiver = state.showWaiver;
+  
+  return renderWithProvider(
+    <CustomerDetail 
+      customer={customer}
+      guestCount={guestCount}
+      showWaiver={showWaiver}
+      onGuestCountChange={mockOnGuestCountChange}
+      onCheckIn={mockOnCheckIn}
+      onWaiverResponse={mockOnWaiverResponse}
+      onShowWaiver={mockOnShowWaiver}
+      onReset={mockOnReset}
+      {...additionalProps}
+    />, 
+    store
+  );
+};
+
 describe('CustomerDetail', () => {
   describe('Initial Render', () => {
     it('displays welcome message with customer name', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       expect(screen.getByText(`Welcome, ${mockCustomer.firstName}!`)).toBeInTheDocument();
     });
 
     it('shows guest count input with initial value', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       const input = screen.getByTestId('checkin-input') as HTMLInputElement;
       expect(input.value).toBe('1');
     });
@@ -75,39 +104,39 @@ describe('CustomerDetail', () => {
 
   describe('Waiver Not Signed', () => {
     it('disables check-in button when waiver needs to be signed', () => {
-      renderWithProvider(<CustomerDetail />, waiverNotSignedStore);
+      renderCustomerDetail(waiverNotSignedStore);
       const checkInButton = screen.getByTestId('checkin-button');
       expect(checkInButton).toBeDisabled();
       expect(checkInButton).toHaveTextContent('Please Sign Waiver First');
     });
 
     it('displays waiver text and accept/decline buttons when waiver needs signing', () => {
-      renderWithProvider(<CustomerDetail />, waiverNotSignedStore);
+      renderCustomerDetail(waiverNotSignedStore);
       expect(screen.getByText('Liability Waiver')).toBeInTheDocument();
       expect(screen.getByText('Accept')).toBeInTheDocument();
       expect(screen.getByText('Decline')).toBeInTheDocument();
     });
 
     it('calls appropriate functions when accepting waiver', () => {
-      renderWithProvider(<CustomerDetail />, waiverNotSignedStore);
+      renderCustomerDetail(waiverNotSignedStore);
       fireEvent.click(screen.getByText('Accept'));
       expect(signWaiver).toHaveBeenCalledWith(mockCustomer.id);
     });
 
     it('calls appropriate functions when declining waiver', () => {
-      renderWithProvider(<CustomerDetail />, waiverNotSignedStore);
+      renderCustomerDetail(waiverNotSignedStore);
       fireEvent.click(screen.getByText('Decline'));
     });
   });
 
   describe('Waiver Already Signed', () => {
     it('shows waiver signed message when waiver is already signed', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       expect(screen.getByTestId('signwaiver-text')).toHaveTextContent('Waiver Already Signed');
     });
 
     it('enables check-in button when waiver is signed', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       const checkInButton = screen.getByTestId('checkin-button');
       expect(checkInButton).not.toBeDisabled();
       expect(checkInButton).toHaveTextContent('Check In Now');
@@ -116,13 +145,13 @@ describe('CustomerDetail', () => {
 
   describe('Guest Count Functionality', () => {
     it('updates guest count when input changes', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       const input = screen.getByTestId('checkin-input');
       fireEvent.change(input, { target: { value: '3' } });
     });
 
     it('prevents guest count from going below 1', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore);
       const input = screen.getByTestId('checkin-input');
       fireEvent.change(input, { target: { value: '0' } });
     });
@@ -130,9 +159,10 @@ describe('CustomerDetail', () => {
 
   describe('Reset Functionality', () => {
     it('calls onReset when clicking the close button', () => {
-      renderWithProvider(<CustomerDetail />, waiverSignedStore);
+      renderCustomerDetail(waiverSignedStore, { onReset: mockOnReset });
       const closeButton = screen.getByRole('button', { name: 'Close' });
       fireEvent.click(closeButton);
+      expect(mockOnReset).toHaveBeenCalled();
     });
   });
 });
