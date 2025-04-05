@@ -55,7 +55,10 @@ export const CustomerDetail = ({
           Welcome, {customer.firstName}!
         </h2>
         <button
-          onClick={() => onReset()}
+          onClick={() => {
+            dispatch(resetState());
+            onReset();
+          }}
           className="text-gray-400 hover:text-gray-500"
           aria-label="Close"
         >
