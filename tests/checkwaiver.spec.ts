@@ -53,10 +53,22 @@ test.describe('Customer Waiver Signing Flow', () => {
     console.log('Cant check in element found:', await cantCheckInElement.textContent());
     expect(cantCheckInElement).toBeTruthy();
 
-    // Accept the waiver, which also checks the user in
+    // Accept the waiver
     await page.click('[data-testid="accept-waiver-button"]');
     console.log('Accept waiver button clicked');
     
+    // Wait for the waiver panel to disappear and the guest count input to be focused
+    await page.waitForSelector('[data-testid="checkin-input"]', { state: 'visible', timeout: 5000 });
+    console.log('Guest count input is visible');
+    
+    // Verify the waiver is now signed
+    await expect(page.locator('[data-testid="signwaiver-text"]')).toHaveText('Waiver Already Signed');
+    
+    // Now the user should manually check in by entering guest count and clicking check in
+    await page.fill('[data-testid="checkin-input"]', '2');
+    await page.click('[data-testid="checkin-button"]');
+    
+    // Verify the check-in confirmation appears
     const checkedInElement = await page.waitForSelector('[data-testid="green-checkmark"]', { state: 'visible', timeout: 5000 });
     console.log('Checked in element found');
     expect(checkedInElement).toBeTruthy();

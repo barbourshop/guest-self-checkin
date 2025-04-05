@@ -1,10 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, Users, FileText } from 'lucide-react';
 import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 import { Customer } from './types';
 import { signWaiver } from './api';
 import { WAIVER_TEXT } from './constants';
+
+// Action creators
+const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: count });
+const setShowConfirmation = (show: boolean) => ({ type: 'SET_SHOW_CONFIRMATION', payload: show });
+const setShowWaiver = (show: boolean) => ({ type: 'SET_SHOW_WAIVER', payload: show });
+const updateCustomerWaiverStatus = (customerId: string, hasSignedWaiver: boolean) => ({
+  type: 'UPDATE_CUSTOMER_WAIVER_STATUS',
+  payload: { customerId, hasSignedWaiver }
+});
+const resetState = () => ({ type: 'RESET_STATE' });
 
 type CustomerDetailProps = {
   customer: Customer;
@@ -27,6 +37,9 @@ export const CustomerDetail = ({
   onShowWaiver,
   onReset
 }: CustomerDetailProps) => {
+  const dispatch = useDispatch();
+  const guestCountInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-start mb-6">
@@ -51,6 +64,7 @@ export const CustomerDetail = ({
             </label>
             <input
               data-testid="checkin-input"
+              ref={guestCountInputRef}
               type="number"
               min="1"
               max="10"
@@ -97,7 +111,10 @@ export const CustomerDetail = ({
                     if (success) {
                       dispatch(updateCustomerWaiverStatus(customer.id, true));
                       dispatch(setShowWaiver(false));
-                      dispatch(setShowConfirmation(true));
+                      onWaiverResponse(true);
+                      setTimeout(() => {
+                        guestCountInputRef.current?.focus();
+                      }, 100);
                     }
                   }}
                   className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -106,7 +123,10 @@ export const CustomerDetail = ({
                 </button>
                 <button
                   data-testid="decline-waiver-button"
-                  onClick={() => dispatch(resetState())}
+                  onClick={() => {
+                    dispatch(resetState());
+                    onWaiverResponse(false);
+                  }}
                   className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Decline
