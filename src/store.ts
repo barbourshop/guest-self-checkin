@@ -9,7 +9,7 @@ const initialState = {
   isLoading: false,
   error: null as string | null,
   selectedCustomer: null as Customer | null,
-  guestCount: 1,
+  guestCount: 0,
   showWaiver: false,
   showConfirmation: false,
   searchQuery: '',
