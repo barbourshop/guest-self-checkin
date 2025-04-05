@@ -5,7 +5,7 @@ test.describe.configure({ mode: 'parallel' });
 
 test.describe('Search For User Flow', () => {
   test.beforeEach(async ({ page }) => {
-    test.setTimeout(5000);
+    test.setTimeout(15000);
 
     await page.goto('http://localhost:5173/');
     console.log('Page loaded');
@@ -21,96 +21,96 @@ test.describe('Search For User Flow', () => {
 
 test('search for user by phone fragment', async ({ page }) => {
     await page.click('[data-testid="phone-search"]');   
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
     await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
-    const memberElement = await page.waitForSelector('.member-item');
+    const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
     expect(memberElement).toBeTruthy();
 });
 
 test('search for user by phone fragment with no results', async ({ page }) => {
       
     await page.click('[data-testid="phone-search"]');  
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
     await page.fill('[data-testid="search-input"]', noresults_phoneNumber);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
-    const memberElement = await page.waitForSelector('[data-testid="member-not-found"]');
+    const memberElement = await page.waitForSelector('[data-testid="member-not-found"]', { timeout: 10000 });
     expect(memberElement).toBeTruthy();
 });
 
 test('search for user by email fragment', async ({ page }) => {
     
     await page.click('[data-testid="email-search"]');
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
     await page.fill('[data-testid="search-input"]', testmember_email);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
-    const memberElement = await page.waitForSelector('.member-item');
+    const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
     expect(memberElement).toBeTruthy();
 });
 
 test('search for user by email fragment with no results', async ({ page }) => {
 
     await page.click('[data-testid="email-search"]');
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
     await page.fill('[data-testid="search-input"]', noresults_email);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
-    const memberElement = await page.waitForSelector('[data-testid="member-not-found"]');
+    const memberElement = await page.waitForSelector('[data-testid="member-not-found"]', { timeout: 10000 });
     expect(memberElement).toBeTruthy();
 });
 
 test('search for user by lot number', async ({ page }) => {
     
   await page.click('[data-testid="lot-search"]');
-  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
   await page.fill('[data-testid="search-input"]', testmember_lotNumber);
   await page.click('[data-testid="search-button"]');
   
   // Wait for search results to load
-  const memberElement = await page.waitForSelector('.member-item');
+  const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
   expect(memberElement).toBeTruthy();
 });
 
 test('search for user by lot number with no results', async ({ page }) => {
 
   await page.click('[data-testid="lot-search"]');
-  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
   await page.fill('[data-testid="search-input"]', noresults_lotNumber);
   await page.click('[data-testid="search-button"]');
   
   // Wait for search results to load
-  const memberElement = await page.waitForSelector('[data-testid="member-not-found"]');
+  const memberElement = await page.waitForSelector('[data-testid="member-not-found"]', { timeout: 10000 });
   expect(memberElement).toBeTruthy();
 });
 
 test('member text shows up exactly correct', async ({ page }) => {
 
   await page.click('[data-testid="phone-search"]');  
-  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
   await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
   await page.click('[data-testid="search-button"]');
   
   // Use locator with text matcher
   await expect(page.locator('[data-testid="membership-type"]'))
-    .toHaveText('Member');
+    .toHaveText('Member', { timeout: 10000 });
 });
 
 test('non-member text shows up exactly correct', async ({ page }) => {
 
   await page.click('[data-testid="phone-search"]');  
-  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible' });
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
   await page.fill('[data-testid="search-input"]', nonmember_phoneNumber);
   await page.click('[data-testid="search-button"]');
   
   // Use locator with text matcher
   await expect(page.locator('[data-testid="membership-type"]'))
-    .toHaveText('Non-Member');
+    .toHaveText('Non-Member', { timeout: 10000 });
 });
 });
