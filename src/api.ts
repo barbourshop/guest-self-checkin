@@ -15,7 +15,21 @@ export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: st
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.search));
-    return mockCustomers;
+    
+    // Filter customers based on search type and query
+    return mockCustomers.filter(customer => {
+      const searchValue = type === 'email' ? customer.email_address :
+                         type === 'phone' ? customer.phone_number :
+                         customer.reference_id;
+      
+      // For phone numbers, use exact matching
+      if (type === 'phone') {
+        return searchValue === query;
+      }
+      
+      // For other types, use partial matching
+      return searchValue.toLowerCase().includes(query.toLowerCase());
+    });
   }
 
   try {

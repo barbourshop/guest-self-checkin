@@ -67,7 +67,10 @@ export const CustomerDetail = ({
             <Settings className="h-5 w-5" />
           </button>
           <button
-            onClick={onReset}
+            onClick={() => {
+              dispatch(resetState());
+              onReset();
+            }}
             className="p-2 text-gray-500 hover:text-gray-700"
             data-testid="close-details"
           >
