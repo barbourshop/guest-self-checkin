@@ -91,6 +91,7 @@ class SquareService {
    */
   async checkMembershipStatus(customerId) {
     try {
+      console.log(`[checkMembershipStatus] Checking membership for customer ${customerId}`);
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`,
         {
@@ -100,24 +101,31 @@ class SquareService {
       );
       
       if (response.status === 404) {
+        console.log(`[checkMembershipStatus] No membership attribute found for customer ${customerId}`);
         return false;
       }
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Error response:', errorData);
+        console.error('[checkMembershipStatus] Error response:', errorData);
         return false;
       }
       
       const data = await response.json();
+      console.log(`[checkMembershipStatus] Raw membership data for ${customerId}:`, data);
+      
       const membershipDate = new Date(data.custom_attribute.value);
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       
+      console.log(`[checkMembershipStatus] Membership date: ${membershipDate.toISOString()}`);
+      console.log(`[checkMembershipStatus] One year ago: ${oneYearAgo.toISOString()}`);
+      console.log(`[checkMembershipStatus] Is membership active? ${membershipDate > oneYearAgo}`);
+      
       return membershipDate > oneYearAgo;
       
     } catch (error) {
-      console.error(`Error checking membership for ${customerId}:`, error);
+      console.error(`[checkMembershipStatus] Error checking membership for ${customerId}:`, error);
       
       if (error.response?.status === 404 || error.status === 404) {
         return false;
