@@ -84,6 +84,41 @@ class WaiverService {
 
     return response.json();
   }
+
+  /**
+   * Clear waiver status for a customer
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<boolean>} True if successful, false otherwise
+   * @throws {Error} If API request fails
+   * @example
+   * await waiverService.clearStatus('CUSTOMER_ID')
+   */
+  async clearStatus(customerId) {
+    try {
+      const response = await fetch(
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+        {
+          method: 'DELETE',
+          headers: SQUARE_API_CONFIG.headers
+        }
+      );
+      
+      // 404 means the attribute doesn't exist, which is fine for clearing
+      if (response.status === 404) {
+        return true;
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Failed to clear waiver status');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error clearing waiver status:', error);
+      return false;
+    }
+  }
 }
 
 module.exports = new WaiverService();

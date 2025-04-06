@@ -92,7 +92,7 @@ describe('CustomerDetail', () => {
   describe('Initial Render', () => {
     it('displays welcome message with customer name', () => {
       renderCustomerDetail(waiverSignedStore);
-      expect(screen.getByText(`Welcome, ${mockCustomer.firstName}!`)).toBeInTheDocument();
+      expect(screen.getByText(`Hi, ${mockCustomer.firstName}`)).toBeInTheDocument();
     });
 
     it('shows guest count select with initial value', () => {
@@ -198,7 +198,7 @@ describe('CustomerDetail', () => {
   describe('Reset Functionality', () => {
     it('calls onReset and dispatches resetState when clicking the close button', () => {
       renderCustomerDetail(waiverSignedStore, { onReset: mockOnReset });
-      const closeButton = screen.getByRole('button', { name: 'Close' });
+      const closeButton = screen.getByTestId('close-details');
       fireEvent.click(closeButton);
       
       // Verify onReset was called

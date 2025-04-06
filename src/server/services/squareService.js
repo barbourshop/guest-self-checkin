@@ -13,7 +13,7 @@ class SquareService {
    * Search for customers by email or phone number
    * @param {'email' | 'phone'} searchType - Type of search to perform
    * @param {string} searchValue - Value to search for
-   * @returns {Promise<Array<Object>>} Array of enriched customer objects
+   * @returns {Promise<Array<Object>>} Array of customer objects from Square API
    * @throws {Error} If search type is invalid or API request fails
    * @example
    * await squareService.searchCustomers('email', 'john@example.com')
@@ -57,62 +57,38 @@ class SquareService {
     }
 
     const data = await response.json();
-    
-    // Process each customer, even if there are multiple matches
-    const customersWithMembership = await Promise.all((data.customers || []).map(
-      customer => this.enrichCustomerData(customer)
-    ));
-
-    return customersWithMembership;
+    return data.customers || [];
   }
 
   /**
-   * Enrich customer data with membership status
-   * @param {Object} customer - Square customer object
-   * @returns {Promise<Object>} Customer object with membership status
-   * @example
-   * const enrichedCustomer = await squareService.enrichCustomerData(customer)
+   * Get a single customer by ID from Square API
+   * @param {string} customerId - The customer ID
+   * @returns {Promise<Object>} The customer object from Square API
+   * @throws {Error} If the customer is not found or the request fails
    */
-  async enrichCustomerData(customer) {
-    try {
-      const hasMembership = await this.checkMembershipStatus(customer.id);
-      const lotNumber = customer.reference_id;
-      // Get lot number if available
-      // let lotNumber = null;
-      // try {
-      //   const lotResponse = await fetch(
-      //     `${SQUARE_API_CONFIG.baseUrl}/customers/${customer.id}/custom-attributes/${LOT_NUMBER_ATTRIBUTE_KEY}`,
-      //     {
-      //       method: 'GET',
-      //       headers: SQUARE_API_CONFIG.headers
-      //     }
-      //   );
-        
-      //   if (lotResponse.ok) {
-      //     const lotData = await lotResponse.json();
-      //     lotNumber = lotData.custom_attribute?.value;
-      //   }
-      // } catch (error) {
-      //   console.error(`Error fetching lot number for customer ID ${customer.id}:`, error);
-      // }
-      
-      return {
-        ...customer,
-        membershipStatus: hasMembership ? 'Member' : 'Non-Member',
-        custom_attributes: {
-          ...customer.custom_attributes,
-          lot_number: { value: lotNumber }
-        }
-      };
-    } catch (error) {
-      console.error(`Error enriching customer data for ID ${customer.id}:`, error);
-      return {
-        ...customer,
-        membershipStatus: 'Non-Member'
-      };
+  async getCustomer(customerId) {
+    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`, {
+      method: 'GET',
+      headers: SQUARE_API_CONFIG.headers
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Failed to get customer');
     }
+
+    const data = await response.json();
+    return data.customer;
   }
 
+  /**
+   * Check if a customer has an active membership
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<boolean>} True if customer has active membership
+   * @throws {Error} If API request fails (except 404)
+   * @example
+   * const hasMembership = await squareService.checkMembershipStatus('CUSTOMER_ID')
+   */
   async checkMembershipStatus(customerId) {
     try {
       const response = await fetch(
@@ -181,6 +157,15 @@ class SquareService {
     return data.orders || [];
   }
 
+  /**
+   * List customers with pagination
+   * @param {number} limit - Maximum number of customers to return
+   * @param {string} cursor - Pagination cursor
+   * @returns {Promise<Object>} Response with customers and pagination info
+   * @throws {Error} If API request fails
+   * @example
+   * const { customers, cursor } = await squareService.listCustomers(10)
+   */
   async listCustomers(limit = 5, cursor) {
     const url = new URL(`${SQUARE_API_CONFIG.baseUrl}/customers`);
     url.searchParams.append('limit', limit);
@@ -199,6 +184,29 @@ class SquareService {
     }
 
     return response.json();
+  }
+
+  /**
+   * Update a customer's information
+   * @param {string} customerId - The customer ID
+   * @param {Object} updates - The updates to apply to the customer
+   * @returns {Promise<Object>} The updated customer object
+   * @throws {Error} If the update fails
+   */
+  async updateCustomer(customerId, updates) {
+    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`, {
+      method: 'PUT',
+      headers: SQUARE_API_CONFIG.headers,
+      body: JSON.stringify(updates)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Failed to update customer');
+    }
+
+    const data = await response.json();
+    return data.customer;
   }
 }
 

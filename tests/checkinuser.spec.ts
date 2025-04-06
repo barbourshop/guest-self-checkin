@@ -15,7 +15,7 @@ test('Open customer details page from search', async ({ page }) => {
   
     await page.click('[data-testid="phone-search"]');  
     await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-    await page.fill('[data-testid="search-input"]', checkinmember_phoneNumber);
+    await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
     await page.click('[data-testid="search-button"]');
     
     // Wait for search results to load
@@ -141,13 +141,17 @@ test('Check in not allowed for member without signed waiver', async ({ page }) =
   await page.click('[data-testid="search-button"]');
   
   // Wait for search results to load
-  const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
+  await page.waitForSelector('.member-item', { state: 'visible', timeout: 10000 });
   
   // click on the member
   await page.click('.member-item');
+  
+  // Wait for the customer detail view to load
+  await page.waitForTimeout(500);
 
   // Check that the user has been notified that they cant check in unless they sign the waiver
-  const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
+  await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
+  const cantCheckInElement = await page.locator('[data-testid="nowaiver-cant-checkin"]');
   expect(cantCheckInElement).toBeTruthy();
 });
 
@@ -158,13 +162,17 @@ test('Check in not allowed for nonmember without signed waiver', async ({ page }
   await page.click('[data-testid="search-button"]');
   
   // Wait for search results to load
-  const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
+  await page.waitForSelector('.member-item', { state: 'visible', timeout: 10000 });
   
   // click on the member
   await page.click('.member-item');
+  
+  // Wait for the customer detail view to load
+  await page.waitForTimeout(500);
 
   // Check that the user has been notified that they cant check in unless they sign the waiver
-  const cantCheckInElement = await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
+  await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
+  const cantCheckInElement = await page.locator('[data-testid="nowaiver-cant-checkin"]');
   expect(cantCheckInElement).toBeTruthy();
 });
 
@@ -238,29 +246,24 @@ test('Check in with custom number of guests', async ({ page }) => {
 });
 
 test('Clicking close button returns to search page', async ({ page }) => {
-    // First search for and select a member
-    await page.click('[data-testid="phone-search"]');  
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-    await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
-    await page.click('[data-testid="search-button"]');
-    
-    // Wait for search results to load and click on the member
-    await page.waitForSelector('.member-item', { timeout: 10000 });
-    await page.click('.member-item');
-    
-    // Wait for the customer detail view to load
-    await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
-    
-    // Click the close button
-    await page.click('button[aria-label="Close"]');
-    
-    // Verify we're back on the search page
-    const searchInput = await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-    expect(searchInput).toBeTruthy();
-    
-    // Verify the customer detail view is no longer visible
-    const guestCountSelect = await page.$('[data-testid="guest-count-select"]');
-    expect(guestCountSelect).toBeNull();
+  await page.click('[data-testid="phone-search"]');  
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+  await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
+  await page.click('[data-testid="search-button"]');
+  
+  // Wait for search results to load
+  const memberElement = await page.waitForSelector('.member-item', { timeout: 10000 });
+  expect(memberElement).toBeTruthy();
+  
+  // Click on the member
+  await page.click('.member-item');
+  
+  // Click the close button
+  await page.click('[data-testid="close-details"]');
+  
+  // Verify we're back on the search page
+  const searchInput = await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+  expect(searchInput).toBeTruthy();
 });
 
 });

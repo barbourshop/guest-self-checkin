@@ -1,4 +1,5 @@
 const squareService = require('../services/squareService');
+const customerService = require('../services/customerService');
 const fs = require('fs');
 const path = require('path');
 
@@ -8,118 +9,180 @@ const path = require('path');
  */
 class CustomerController {
   /**
-   * Search customers by phone number
-   * @param {Request} req - Express request object with body: { phone: string }
+   * Search for customers by phone number
+   * @param {Request} req - Express request object
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with customers array
-   * @throws {Error} Returns 500 if search fails
    */
   async searchByPhone(req, res) {
     try {
       const { phone } = req.body;
       
-      // Log search request
-      console.log(`${new Date().toISOString()} [ SEARCH BY PHONE ] Phone: ${phone}`);
+      if (!phone) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
       
-      const customers = await squareService.searchCustomers('phone', phone);
+      // Use customerService to search and enrich customer data
+      const customers = await customerService.searchCustomers('phone', phone);
+      
       res.json(customers);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ SEARCH BY PHONE ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      console.error('Error searching by phone:', error);
+      res.status(500).json({ error: 'Failed to search customers' });
     }
   }
 
   /**
-   * Search customers by email address
-   * @param {Request} req - Express request object with body: { email: string }
+   * Search for customers by email
+   * @param {Request} req - Express request object
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with customers array
-   * @throws {Error} Returns 500 if search fails
    */
   async searchByEmail(req, res) {
     try {
       const { email } = req.body;
       
-      // Log search request
-      console.log(`${new Date().toISOString()} [ SEARCH BY EMAIL ] Email: ${email}`);
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
       
-      const customers = await squareService.searchCustomers('email', email);
+      // Use customerService to search and enrich customer data
+      const customers = await customerService.searchCustomers('email', email);
+      
       res.json(customers);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ SEARCH BY EMAIL ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      console.error('Error searching by email:', error);
+      res.status(500).json({ error: 'Failed to search customers' });
     }
   }
 
   /**
-   * Search customers by lot number
-   * @param {Request} req - Express request object with body: { lot: string }
+   * Search for customers by lot number
+   * @param {Request} req - Express request object
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with customers array
-   * @throws {Error} Returns 500 if search fails
    */
   async searchByLot(req, res) {
     try {
       const { lot } = req.body;
       
-      // Log search request
-      console.log(`${new Date().toISOString()} [ SEARCH BY LOT ] Lot: ${lot}`);
+      if (!lot) {
+        return res.status(400).json({ error: 'Lot number is required' });
+      }
       
-      const customers = await squareService.searchCustomers('lot', lot);
+      // Use customerService to search and enrich customer data
+      const customers = await customerService.searchCustomers('lot', lot);
+      
       res.json(customers);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ SEARCH BY LOT ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      console.error('Error searching by lot:', error);
+      res.status(500).json({ error: 'Failed to search customers' });
     }
   }
 
   /**
-   * List all customers with pagination
-   * @param {Request} req - Express request object with query: { limit?: number, cursor?: string }
+   * List all customers
+   * @param {Request} req - Express request object
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with customers and pagination data
-   * @throws {Error} Returns 500 if listing fails
    */
   async listCustomers(req, res) {
     try {
       const { limit, cursor } = req.query;
       
-      // Log list request
-      console.log(`${new Date().toISOString()} [ LIST CUSTOMERS ] Limit: ${limit || 'default'}, Cursor: ${cursor || 'none'}`);
+      const result = await squareService.listCustomers(
+        limit ? parseInt(limit, 10) : 5,
+        cursor
+      );
       
-      const data = await squareService.listCustomers(limit, cursor);
-      res.json(data);
+      res.json(result);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ LIST CUSTOMERS ERROR ] ${error.message}`);
-      res.status(500).json({
-        error: "Failed to list customers",
-        detail: error.message
-      });
+      console.error('Error listing customers:', error);
+      res.status(500).json({ error: 'Failed to list customers' });
+    }
+  }
+
+  /**
+   * Get detailed customer information (admin only)
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   */
+  async getCustomerDetails(req, res) {
+    try {
+      const { customerId } = req.params;
+      const customer = await customerService.getCustomerById(customerId);
+      
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+
+      res.json(customer);
+    } catch (error) {
+      console.error('Error getting customer details:', error);
+      res.status(500).json({ error: 'Failed to get customer details' });
+    }
+  }
+
+  /**
+   * Update customer's waiver status
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   */
+  async updateWaiverStatus(req, res) {
+    try {
+      const { customerId } = req.params;
+      const { hasSignedWaiver } = req.body;
+
+      if (typeof hasSignedWaiver !== 'boolean') {
+        return res.status(400).json({ error: 'hasSignedWaiver must be a boolean' });
+      }
+
+      const updated = await customerService.updateWaiverStatus(customerId, hasSignedWaiver);
+      
+      if (!updated) {
+        return res.status(404).json({ error: 'Customer not found' });
+      }
+
+      res.json({ success: true, hasSignedWaiver });
+    } catch (error) {
+      console.error('Error updating waiver status:', error);
+      res.status(500).json({ error: 'Failed to update waiver status' });
     }
   }
 
   /**
    * Log a customer check-in
-   * @param {Request} req - Express request object with body: { customerId: string, guestCount: number, firstName: string, lastName: string, lotNumber: string }
+   * @param {Request} req - Express request object
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with success status
-   * @throws {Error} Returns 500 if check-in fails
    */
-  async checkIn(req, res) {
+  async logCheckIn(req, res) {
     try {
       const { customerId, guestCount, firstName, lastName, lotNumber } = req.body;
       
-      // Create log entry
-      const timestamp = new Date().toISOString();
-      const guestName = `${firstName} ${lastName}`;
+      // Validate required fields
+      if (!customerId || !guestCount || !firstName || !lastName) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: customerId, guestCount, firstName, lastName' 
+        });
+      }
       
-      // Log to console with single line format
-      console.log(`${timestamp} [ CHECK-IN ] Guest: ${guestName}, Count: ${guestCount}, Lot: ${lotNumber || 'N/A'}, ID: ${customerId}`);
+      // Validate guest count is a positive number
+      if (typeof guestCount !== 'number' || guestCount < 0) {
+        return res.status(400).json({ error: 'Guest count must be a positive number' });
+      }
       
-      res.json({ success: true, message: "Check-in logged successfully" });
+      // Log the check-in to console
+      const checkInData = {
+        customerId,
+        guestCount,
+        firstName,
+        lastName,
+        lotNumber,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('CHECK-IN:', JSON.stringify(checkInData, null, 2));
+      
+      res.json({ success: true, checkIn: checkInData });
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ CHECK-IN ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      console.error('Error logging check-in:', error);
+      res.status(500).json({ error: 'Failed to log check-in' });
     }
   }
 }
