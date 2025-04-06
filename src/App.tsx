@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
-import { checkWaiverStatus, searchCustomers } from './api';
+import { checkWaiverStatus, searchCustomers, logCheckIn } from './api';
 
 import { SearchBar } from './SearchBar';
 import { CustomerList } from './CustomerList';
@@ -91,8 +91,40 @@ function App() {
     }
   };
 
-  const handleCheckIn = () => {
-    dispatch(setShowConfirmation(true));
+  const handleCheckIn = async () => {
+    console.log('handleCheckIn called with:', { selectedCustomer, guestCount });
+    if (selectedCustomer && guestCount > 0) {
+      try {
+        console.log('Attempting to log check-in with:', {
+          id: selectedCustomer.id,
+          guestCount,
+          firstName: selectedCustomer.firstName,
+          lastName: selectedCustomer.lastName,
+          lotNumber: selectedCustomer.lotNumber
+        });
+        
+        // Log the check-in with customer information
+        await logCheckIn(
+          selectedCustomer.id, 
+          guestCount, 
+          selectedCustomer.firstName, 
+          selectedCustomer.lastName, 
+          selectedCustomer.lotNumber
+        );
+        
+        console.log('Check-in logged successfully');
+        
+        // Show confirmation
+        dispatch(setShowConfirmation(true));
+      } catch (error) {
+        console.error('Failed to log check-in:', error);
+        // Still show confirmation even if logging fails
+        dispatch(setShowConfirmation(true));
+      }
+    } else {
+      console.log('Invalid check-in attempt:', { selectedCustomer, guestCount });
+      dispatch(setShowConfirmation(true));
+    }
   };
 
   const handleWaiverResponse = (accepted: boolean) => {
