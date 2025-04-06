@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { X, Users, FileText } from 'lucide-react';
+import { X, Users, FileText, Settings } from 'lucide-react';
 import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 import { Customer } from './types';
 import { signWaiver } from './api';
 import { WAIVER_TEXT } from './constants';
+import { AdminView } from './AdminView';
 
 // Action creators
 const setGuestCount = (count: number) => ({ type: 'SET_GUEST_COUNT', payload: count });
@@ -35,13 +36,14 @@ export const CustomerDetail = ({
   onCheckIn,
   onWaiverResponse,
   onShowWaiver,
-  onReset
+  onReset,
 }: CustomerDetailProps) => {
   const dispatch = useDispatch();
   const guestCountInputRef = useRef<HTMLInputElement>(null);
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [customGuestCount, setCustomGuestCount] = useState('');
   const [hasSelected, setHasSelected] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Initialize hasSelected based on guestCount
   useEffect(() => {
@@ -51,21 +53,36 @@ export const CustomerDetail = ({
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-start mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Welcome, {customer.firstName}!
-        </h2>
-        <button
-          onClick={() => {
-            dispatch(resetState());
-            onReset();
-          }}
-          className="text-gray-400 hover:text-gray-500"
-          aria-label="Close"
-        >
-          <X className="h-6 w-6" />
-        </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Hi, {customer.firstName}
+          </h2>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowAdmin(true)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+            title="Admin View"
+          >
+            <Settings className="h-5 w-5" />
+          </button>
+          <button
+            onClick={onReset}
+            className="p-2 text-gray-500 hover:text-gray-700"
+            data-testid="close-details"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
-      
+
+      {showAdmin && (
+        <AdminView
+          customer={customer}
+          onClose={() => setShowAdmin(false)}
+        />
+      )}
+
       <div className="grid md:grid-cols-2 gap-6">
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Check In</h3>

@@ -29,6 +29,57 @@ const SET_SEARCH_TYPE = 'SET_SEARCH_TYPE';
 const RESET_STATE = 'RESET_STATE';
 const UPDATE_CUSTOMER_WAIVER_STATUS = 'UPDATE_CUSTOMER_WAIVER_STATUS';
 
+// Action creators
+export const setCustomers = (customers: Customer[]) => ({
+  type: SET_CUSTOMERS,
+  payload: customers,
+});
+
+export const setLoading = (isLoading: boolean) => ({
+  type: SET_LOADING,
+  payload: isLoading,
+});
+
+export const setError = (error: string | null) => ({
+  type: SET_ERROR,
+  payload: error,
+});
+
+export const setSelectedCustomer = (customer: Customer | null) => ({
+  type: SET_SELECTED_CUSTOMER,
+  payload: customer,
+});
+
+export const setGuestCount = (guestCount: number) => ({
+  type: SET_GUEST_COUNT,
+  payload: guestCount,
+});
+
+export const setShowWaiver = (showWaiver: boolean) => ({
+  type: SET_SHOW_WAIVER,
+  payload: showWaiver,
+});
+
+export const setShowConfirmation = (showConfirmation: boolean) => ({
+  type: SET_SHOW_CONFIRMATION,
+  payload: showConfirmation,
+});
+
+export const setSearchQuery = (searchQuery: string) => ({
+  type: SET_SEARCH_QUERY,
+  payload: searchQuery,
+});
+
+export const setSearchType = (searchType: 'email' | 'phone' | 'lot') => ({
+  type: SET_SEARCH_TYPE,
+  payload: searchType,
+});
+
+export const updateCustomerWaiverStatus = (customerId: string, hasSignedWaiver: boolean) => ({
+  type: UPDATE_CUSTOMER_WAIVER_STATUS,
+  payload: { customerId, hasSignedWaiver },
+});
+
 // Reducers
 const customersReducer = (state = initialState.customers, action: AnyAction) => {
   switch (action.type) {
@@ -74,9 +125,10 @@ const selectedCustomerReducer = (state = initialState.selectedCustomer, action: 
     case SET_SELECTED_CUSTOMER:
       return action.payload;
     case UPDATE_CUSTOMER_WAIVER_STATUS:
-      return state && state.id === action.payload.customerId
-        ? { ...state, hasSignedWaiver: action.payload.hasSignedWaiver }
-        : state;
+      if (state && state.id === action.payload.customerId) {
+        return { ...state, hasSignedWaiver: action.payload.hasSignedWaiver };
+      }
+      return state;
     case RESET_STATE:
       return initialState.selectedCustomer;
     default:

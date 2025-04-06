@@ -6,75 +6,53 @@ const API_BASE_URL = 'http://localhost:3000/api';
 export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 /**
- * Searches for customers by email, phone, or lot.
- * 
- * @param {('email' | 'phone' | 'lot')} type - The type of search
- * @param {string} query - The search query
- * @returns {Promise<APICustomer[]>} - A promise that resolves to an array of APICustomer objects.
- * @throws Will throw an error if the search fails.
+ * Search for customers by email, phone, or lot number
+ * @param {string} type - Search type (email, phone, lot)
+ * @param {string} query - Search query
+ * @returns {Promise<Array<any>>} Array of customer objects
  */
-export async function searchCustomers(type: 'email' | 'phone' | 'lot', value: string) {
+export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: string): Promise<any[]> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.search));
-    
-    // Mock search implementation
-    const normalizedValue = value.toLowerCase();
-    const results = mockCustomers.filter(customer => {
-      if (type === 'email') return customer.email_address.toLowerCase().includes(normalizedValue);
-      if (type === 'phone') return customer.phone_number.replace(/\D/g, '').includes(normalizedValue.replace(/\D/g, ''));
-      if (type === 'lot') return customer.reference_id.toLowerCase().includes(normalizedValue);
-      return false;
+    return mockCustomers;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/customers/search/${type}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ [type]: query }),
     });
 
-    return results;
-  }
-  
-  // Original implementation for real API
-  const endpoint = `${API_BASE_URL}/customers/search/${type}`;
-  const payload = type === 'email' 
-    ? { email: value } 
-    : type === 'phone' 
-      ? { phone: value }
-      : { lot: value };
-      
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+    if (!response.ok) {
+      throw new Error('Failed to search customers');
+    }
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to search customers');
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching customers:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
+/**
+ * Check if a customer has signed the waiver
+ * @param {string} customerId - Customer ID
+ * @returns {Promise<boolean>} True if waiver is signed
+ */
 export async function checkWaiverStatus(customerId: string): Promise<boolean> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.waiverCheck));
-    
-    // Return mock waiver status or default to false if not found
     return mockWaiverStatus[customerId] || false;
   }
-  
-  // Original implementation for real API
+
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/waivers/check-waiver/${customerId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      }
-    );
-    
+    const response = await fetch(`${API_BASE_URL}/waivers/check-waiver/${customerId}`);
+
     if (!response.ok) {
       throw new Error('Failed to check waiver status');
     }
@@ -82,89 +60,87 @@ export async function checkWaiverStatus(customerId: string): Promise<boolean> {
     const data = await response.json();
     return data.hasSignedWaiver;
   } catch (error) {
-    console.error('Waiver check error:', error);
-    throw error;
+    console.error('Error checking waiver status:', error);
+    return false;
   }
 }
 
-export const signWaiver = async (customerId: string): Promise<boolean> => {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
-    
-    // Update mock waiver status
-    mockWaiverStatus[customerId] = true;
-    console.log(`Mock waiver signed for customer ${customerId}`);
-    return true;
-  }
-  
-  // Original implementation for real API
-  const response = await fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to sign waiver');
-  }
-
-  return true;
-};
-
 /**
- * Log a customer check-in
- * @param {string} customerId - The ID of the customer checking in
- * @param {number} guestCount - The number of guests checking in
- * @param {string} firstName - The customer's first name
- * @param {string} lastName - The customer's last name
- * @param {string} lotNumber - The customer's lot number
- * @returns {Promise<boolean>} - A promise that resolves to true if the check-in was successful
- * @throws Will throw an error if the check-in fails
+ * Sign the waiver for a customer
+ * @param {string} customerId - Customer ID
+ * @returns {Promise<boolean>} True if successful
  */
-export const logCheckIn = async (
-  customerId: string, 
-  guestCount: number, 
-  firstName: string, 
-  lastName: string, 
-  lotNumber?: string
-): Promise<boolean> => {
-  console.log('logCheckIn called with:', { customerId, guestCount, firstName, lastName, lotNumber });
-  
+export async function signWaiver(customerId: string): Promise<boolean> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
-    
-    console.log(`Mock check-in logged for ${firstName} ${lastName} (${lotNumber || 'N/A'}) with ${guestCount} guests`);
+    mockWaiverStatus[customerId] = true;
     return true;
   }
-  
-  // Original implementation for real API
+
   try {
-    console.log('Sending check-in request to:', `${API_BASE_URL}/customers/checkin`);
-    const response = await fetch(`${API_BASE_URL}/customers/checkin`, {
+    const response = await fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        customerId, 
-        guestCount, 
-        firstName, 
-        lastName, 
-        lotNumber 
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to sign waiver');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error signing waiver:', error);
+    return false;
+  }
+}
+
+/**
+ * Log a customer check-in
+ * @param {string} customerId - Customer ID
+ * @param {number} guestCount - Number of guests
+ * @param {string} firstName - Customer first name
+ * @param {string} lastName - Customer last name
+ * @param {string} lotNumber - Lot number
+ * @returns {Promise<boolean>} True if successful
+ */
+export async function logCheckIn(
+  customerId: string,
+  guestCount: number,
+  firstName: string,
+  lastName: string,
+  lotNumber?: string
+): Promise<boolean> {
+  if (USE_MOCK_API) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return true;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/customers/check-in`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customerId,
+        guestCount,
+        firstName,
+        lastName,
+        lotNumber,
       }),
     });
 
-    console.log('Check-in response:', response);
     if (!response.ok) {
       throw new Error('Failed to log check-in');
     }
 
     return true;
   } catch (error) {
-    console.error('Check-in error:', error);
-    throw error;
+    console.error('Error logging check-in:', error);
+    return false;
   }
-};
+}

@@ -32,31 +32,37 @@ class WaiverController {
   }
 
   /**
-   * Set customer's waiver as signed
+   * Set waiver status for a customer
    * @param {Request} req - Express request object with params: { customerId: string }
    * @param {Response} res - Express response object
-   * @returns {Promise<void>} - JSON response with operation result
-   * @throws {Error} Returns 500 if operation fails
+   * @returns {Promise<void>} - JSON response with success status
+   * @throws {Error} Returns 500 if setting fails
    */
   async setStatus(req, res) {
     try {
       const { customerId } = req.params;
+      const { clear } = req.query;
+      const isAdminAction = req.headers['x-admin-action'] === 'true';
       
-      // Log waiver status update
-      console.log(`${new Date().toISOString()} [ SET WAIVER STATUS ] Customer ID: ${customerId}`);
+      // Log waiver status update with source
+      const source = isAdminAction ? 'ADMIN PANEL' : 'USER UI';
+      console.log(`${new Date().toISOString()} [ ${clear ? 'CLEAR' : 'SET' } WAIVER STATUS FROM ${source} ] Customer ID: ${customerId}`);
       
-      const result = await waiverService.setStatus(customerId);
+      if (clear === 'true') {
+        // Clear waiver status
+        await waiverService.clearStatus(customerId);
+        res.json({ success: true, message: 'Waiver status cleared' });
+      } else {
+        // Set waiver as signed
+        await waiverService.setStatus(customerId);
+        res.json({ success: true, message: 'Waiver status set to signed' });
+      }
       
-      // Log result
-      console.log(`${new Date().toISOString()} [ WAIVER STATUS UPDATED ] Customer ID: ${customerId}, Result: ${JSON.stringify(result)}`);
-      
-      res.json(result);
+      // Log result with source
+      console.log(`${new Date().toISOString()} [ WAIVER STATUS ${clear ? 'CLEARED' : 'SET' } FROM ${source} ] Customer ID: ${customerId}`);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ SET WAIVER STATUS ERROR ] ${error.message}`);
-      res.status(500).json({
-        error: "Failed to set waiver status",
-        detail: error.message
-      });
+      console.error(`${new Date().toISOString()} [ ${req.query.clear === 'true' ? 'CLEAR' : 'SET' } WAIVER STATUS ERROR ] ${error.message}`);
+      res.status(500).json({ error: error.message });
     }
   }
 }
