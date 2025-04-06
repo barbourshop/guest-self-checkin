@@ -1,7 +1,7 @@
 const { 
   SQUARE_API_CONFIG, 
   POOL_PASS_CATALOG_IDS, 
-  MEMBERSHIP_ATTRIBUTE_KEY 
+  MEMBERSHIP_SEGMENT_ID 
 } = require('../config/square');
 
 /**
@@ -85,25 +85,19 @@ class SquareService {
    * Check if a customer has an active membership
    * @param {string} customerId - Square customer ID
    * @returns {Promise<boolean>} True if customer has active membership
-   * @throws {Error} If API request fails (except 404)
+   * @throws {Error} If API request fails
    * @example
    * const hasMembership = await squareService.checkMembershipStatus('CUSTOMER_ID')
    */
   async checkMembershipStatus(customerId) {
     try {
-      console.log(`[checkMembershipStatus] Checking membership for customer ${customerId}`);
       const response = await fetch(
-        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`,
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`,
         {
           method: 'GET',
           headers: SQUARE_API_CONFIG.headers
         }
       );
-      
-      if (response.status === 404) {
-        console.log(`[checkMembershipStatus] No membership attribute found for customer ${customerId}`);
-        return false;
-      }
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -112,24 +106,17 @@ class SquareService {
       }
       
       const data = await response.json();
-      console.log(`[checkMembershipStatus] Raw membership data for ${customerId}:`, data);
       
-      const membershipDate = new Date(data.custom_attribute.value);
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      // Check if the customer has the membership segment
+      const hasMembership = data.customer.segment_ids?.includes(MEMBERSHIP_SEGMENT_ID);
       
-      console.log(`[checkMembershipStatus] Membership date: ${membershipDate.toISOString()}`);
-      console.log(`[checkMembershipStatus] One year ago: ${oneYearAgo.toISOString()}`);
-      console.log(`[checkMembershipStatus] Is membership active? ${membershipDate > oneYearAgo}`);
+      const timestamp = new Date().toISOString();
+      console.log(`${timestamp} [ CHECK MEMBERSHIP STATUS ] Customer ID: ${customerId}, Status: ${hasMembership ? 'Member' : 'Non-Member'}`);
       
-      return membershipDate > oneYearAgo;
+      return hasMembership;
       
     } catch (error) {
       console.error(`[checkMembershipStatus] Error checking membership for ${customerId}:`, error);
-      
-      if (error.response?.status === 404 || error.status === 404) {
-        return false;
-      }
       throw error;
     }
   }
