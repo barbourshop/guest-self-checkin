@@ -11,9 +11,7 @@ const POOL_PASS_CATALOG_IDS = [
   '5P3J4MLH7EFZKG6FGWBGZ46G'
 ];
 
-const MEMBERSHIP_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
-  ? 'square:a165388b-d8ce-4fc1-b8e0-6d1f2d8b8ada'
-  : '2025-membership';
+const MEMBERSHIP_SEGMENT_ID = 'gv2:VCB62KZ83D27SADBCX65FGJ5N0';
 
 const LOT_NUMBER_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
   ? 'reference_id'
@@ -22,6 +20,6 @@ const LOT_NUMBER_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
 module.exports = {
   SQUARE_API_CONFIG,
   POOL_PASS_CATALOG_IDS,
-  MEMBERSHIP_ATTRIBUTE_KEY,
+  MEMBERSHIP_SEGMENT_ID,
   LOT_NUMBER_ATTRIBUTE_KEY,
 };

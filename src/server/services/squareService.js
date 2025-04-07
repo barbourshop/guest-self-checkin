@@ -1,7 +1,7 @@
 const { 
   SQUARE_API_CONFIG, 
   POOL_PASS_CATALOG_IDS, 
-  MEMBERSHIP_ATTRIBUTE_KEY 
+  MEMBERSHIP_SEGMENT_ID 
 } = require('../config/square');
 
 /**
@@ -85,43 +85,38 @@ class SquareService {
    * Check if a customer has an active membership
    * @param {string} customerId - Square customer ID
    * @returns {Promise<boolean>} True if customer has active membership
-   * @throws {Error} If API request fails (except 404)
+   * @throws {Error} If API request fails
    * @example
    * const hasMembership = await squareService.checkMembershipStatus('CUSTOMER_ID')
    */
   async checkMembershipStatus(customerId) {
     try {
       const response = await fetch(
-        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/${MEMBERSHIP_ATTRIBUTE_KEY}`,
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`,
         {
           method: 'GET',
           headers: SQUARE_API_CONFIG.headers
         }
       );
       
-      if (response.status === 404) {
-        return false;
-      }
-      
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Error response:', errorData);
+        console.error('[checkMembershipStatus] Error response:', errorData);
         return false;
       }
       
       const data = await response.json();
-      const membershipDate = new Date(data.custom_attribute.value);
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
       
-      return membershipDate > oneYearAgo;
+      // Check if the customer has the membership segment
+      const hasMembership = data.customer.segment_ids?.includes(MEMBERSHIP_SEGMENT_ID);
+      
+      const timestamp = new Date().toISOString();
+      console.log(`${timestamp} [ CHECK MEMBERSHIP STATUS ] Customer ID: ${customerId}, Status: ${hasMembership ? 'Member' : 'Non-Member'}`);
+      
+      return hasMembership;
       
     } catch (error) {
-      console.error(`Error checking membership for ${customerId}:`, error);
-      
-      if (error.response?.status === 404 || error.status === 404) {
-        return false;
-      }
+      console.error(`[checkMembershipStatus] Error checking membership for ${customerId}:`, error);
       throw error;
     }
   }
