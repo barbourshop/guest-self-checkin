@@ -41,8 +41,8 @@ export function adaptCustomer(data: any): Customer {
     lastName: data.family_name,
     email: data.email_address,
     phone: data.phone_number,
-    membershipType: data.membershipStatus,
-    hasSignedWaiver: false, // Default value until checked
+    membershipType: data.membershipType,
+    hasSignedWaiver: false,
     lotNumber: data.reference_id
   };
 }

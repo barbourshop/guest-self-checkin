@@ -168,18 +168,9 @@ class CustomerController {
       }
       
       // Log the check-in to console
-      const checkInData = {
-        customerId,
-        guestCount,
-        firstName,
-        lastName,
-        lotNumber,
-        timestamp: new Date().toISOString()
-      };
+      console.log(`${new Date().toISOString()} [ CHECK-IN ] Customer ID: ${customerId}, Guest Count: ${guestCount}, First Name: ${firstName}, Last Name: ${lastName}${lotNumber ? `, Lot Number: ${lotNumber}` : ''}`);
       
-      console.log('CHECK-IN:', JSON.stringify(checkInData, null, 2));
-      
-      res.json({ success: true, checkIn: checkInData });
+      res.json({ success: true, checkIn: { customerId, guestCount, firstName, lastName, lotNumber } });
     } catch (error) {
       console.error('Error logging check-in:', error);
       res.status(500).json({ error: 'Failed to log check-in' });
