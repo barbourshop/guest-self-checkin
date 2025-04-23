@@ -56,6 +56,12 @@ test.describe('Customer Waiver Signing Flow', () => {
     console.log('Cant check in element found:', await cantCheckInElement.textContent());
     expect(cantCheckInElement).toBeTruthy();
 
+    // Verify QR code is displayed
+    await expect(page.locator('[data-testid="waiver-qr-code"]')).toBeVisible();
+    
+    // Verify "I've already signed" button is present
+    await expect(page.locator('[data-testid="accept-waiver-button"]')).toHaveText('I\'ve already signed');
+
     // Accept the waiver
     await page.click('[data-testid="accept-waiver-button"]');
     console.log('Accept waiver button clicked');
