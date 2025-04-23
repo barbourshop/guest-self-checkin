@@ -12,7 +12,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'A123',
-      membershipStatus: 'Member',
+      membershipType: 'Member',
       custom_attributes: {
         membership_status: {
           value: 'active'
@@ -31,7 +31,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'B456',
-      membershipStatus: 'Member',
+      membershipType: 'Member',
       custom_attributes: {
         membership_status: {
           value: 'active'
@@ -50,7 +50,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'C789',
-      membershipStatus: 'Member',
+      membershipType: 'Member',
       custom_attributes: {
         membership_status: {
           value: 'active'
@@ -69,7 +69,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'D012',
-      membershipStatus: 'Member',
+      membershipType: 'Member',
       custom_attributes: {
         membership_status: {
           value: 'active'
@@ -88,6 +88,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'E345',
+      membershipType: 'Non-Member',
       custom_attributes: {
         membership_status: {
           value: 'inactive'
@@ -106,6 +107,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'F678',
+      membershipType: 'Non-Member',
       custom_attributes: {
         membership_status: {
           value: 'inactive'
@@ -124,6 +126,7 @@ export const mockCustomers = [
       creation_source: 'THIRD_PARTY',
       version: 1,
       reference_id: 'G901',
+      membershipType: 'Non-Member',
       custom_attributes: {
         membership_status: {
           value: 'inactive'
