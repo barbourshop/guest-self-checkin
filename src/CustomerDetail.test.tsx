@@ -110,22 +110,17 @@ describe('CustomerDetail', () => {
       expect(checkInButton).toHaveTextContent('Please Sign Waiver First');
     });
 
-    it('displays waiver text and accept/decline buttons when waiver needs signing', () => {
+    it('displays QR code and "I\'ve already signed" button when waiver needs signing', () => {
       renderCustomerDetail(waiverNotSignedStore);
       expect(screen.getByText('Liability Waiver')).toBeInTheDocument();
-      expect(screen.getByText('Accept')).toBeInTheDocument();
-      expect(screen.getByText('Decline')).toBeInTheDocument();
+      expect(screen.getByTestId('waiver-qr-code')).toBeInTheDocument();
+      expect(screen.getByText('I\'ve already signed')).toBeInTheDocument();
     });
 
     it('calls appropriate functions when accepting waiver', () => {
       renderCustomerDetail(waiverNotSignedStore);
-      fireEvent.click(screen.getByText('Accept'));
+      fireEvent.click(screen.getByText('I\'ve already signed'));
       expect(signWaiver).toHaveBeenCalledWith(mockCustomer.id);
-    });
-
-    it('calls appropriate functions when declining waiver', () => {
-      renderCustomerDetail(waiverNotSignedStore);
-      fireEvent.click(screen.getByText('Decline'));
     });
   });
 

@@ -1,3 +1,5 @@
+// Remove the WAIVER_TEXT constant
+
 export const WAIVER_TEXT = `Swimming Pool Release of Liability
 
 No Lifeguard on Duty

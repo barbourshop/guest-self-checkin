@@ -57,7 +57,50 @@ class SquareService {
     }
 
     const data = await response.json();
-    return data.customers || [];
+    const customers = data.customers || [];
+
+    // Enrich each customer with membership status based on segment
+    const enrichedCustomers = await Promise.all(
+      customers.map(async (customer) => {
+        const hasMembership = await this.checkMembershipBySegment(customer.id);
+        return {
+          ...customer,
+          membershipType: hasMembership ? 'Member' : 'Non-Member'
+        };
+      })
+    );
+
+    return enrichedCustomers;
+  }
+
+  /**
+   * Check if a customer has an active membership based on segment ID
+   * @param {string} customerId - Square customer ID
+   * @returns {Promise<boolean>} True if customer has active membership
+   */
+  async checkMembershipBySegment(customerId) {
+    try {
+      const response = await fetch(
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`,
+        {
+          method: 'GET',
+          headers: SQUARE_API_CONFIG.headers
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Failed to get customer');
+      }
+
+      const data = await response.json();
+      const customer = data.customer;
+      
+      return customer.segment_ids?.includes('gv2:VCB62KZ83D27SADBCX65FGJ5N0') || false;
+    } catch (error) {
+      console.error(`Error checking membership for ${customerId}:`, error);
+      return false;
+    }
   }
 
   /**

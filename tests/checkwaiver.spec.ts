@@ -56,6 +56,12 @@ test.describe('Customer Waiver Signing Flow', () => {
     console.log('Cant check in element found:', await cantCheckInElement.textContent());
     expect(cantCheckInElement).toBeTruthy();
 
+    // Verify QR code is displayed
+    await expect(page.locator('[data-testid="waiver-qr-code"]')).toBeVisible();
+    
+    // Verify "I've already signed" button is present
+    await expect(page.locator('[data-testid="accept-waiver-button"]')).toHaveText('I\'ve already signed');
+
     // Accept the waiver
     await page.click('[data-testid="accept-waiver-button"]');
     console.log('Accept waiver button clicked');
@@ -81,38 +87,6 @@ test.describe('Customer Waiver Signing Flow', () => {
     expect(checkedInElement).toBeTruthy();
   });
 
-
-  test('User declines waiver', async ({ page }) => {
-    await page.click('[data-testid="phone-search"]');  
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-    await page.fill('[data-testid="search-input"]', nowaiversigned_nonmember_phoneNumber);
-    await page.click('[data-testid="search-button"]');
-    
-    // Wait for search results to load
-    await page.waitForSelector('.member-item', { state: 'visible', timeout: 10000 });
-    console.log('Member element found');
-    
-    // click on the member
-    await page.click('.member-item');
-    console.log('Member clicked');
-  
-    // Check that the user has been notified that they cant check in unless they sign the waiver
-    await page.waitForSelector('[data-testid="nowaiver-cant-checkin"]', { state: 'visible', timeout: 10000 });
-    const cantCheckInElement = await page.locator('[data-testid="nowaiver-cant-checkin"]');
-    console.log('Cant check in element found:', await cantCheckInElement.textContent());
-    expect(cantCheckInElement).toBeTruthy();
-  
-    // Decline the waiver, which takes the user back to the main screen
-    await page.click('[data-testid="decline-waiver-button"]');
-    console.log('Decline waiver button clicked');
-    
-    // Wait for the search input to be visible again
-    await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-    const homePage = await page.locator('[data-testid="search-input"]');
-    console.log('Home page search input found');
-    expect(homePage).toBeTruthy();
-  });
-  
 
   // TODO - add tests for
   // - user explicitly agreeing to the waiver

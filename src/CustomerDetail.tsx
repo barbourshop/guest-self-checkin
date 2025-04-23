@@ -213,8 +213,16 @@ export const CustomerDetail = ({
           {showWaiver ? (
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Liability Waiver</h3>
-              <div className="bg-white p-4 rounded-md mb-4 h-48 overflow-y-auto text-sm text-gray-600">
-                {WAIVER_TEXT}
+              <div className="flex flex-col items-center p-4">
+                <img 
+                  src="/assets/waiver-qr-code.png" 
+                  alt="Waiver QR Code" 
+                  className="w-48 h-48"
+                  data-testid="waiver-qr-code"
+                />
+                <p className="mt-4 text-sm text-gray-600">
+                  Scan this QR code to sign the waiver
+                </p>
               </div>
               <div className="flex gap-3">
                 <button
@@ -232,17 +240,7 @@ export const CustomerDetail = ({
                   }}
                   className="flex-1 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  Accept
-                </button>
-                <button
-                  data-testid="decline-waiver-button"
-                  onClick={() => {
-                    dispatch(resetState());
-                    onWaiverResponse(false);
-                  }}
-                  className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
-                  Decline
+                  I've already signed
                 </button>
               </div>
             </div>
@@ -257,14 +255,6 @@ export const CustomerDetail = ({
               <p className="text-sm text-gray-600 mb-4">
                 You have previously signed the liability waiver, Thank You!
               </p>
-              {/* <button
-                data-testid="signwaiver-button"
-                onClick={() => dispatch(setShowWaiver(true))}
-                className="w-full py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2"
-              >
-                <FileText className="h-5 w-5" />
-                <span>View Waiver</span>
-              </button> */}
             </div>
           )}
         </div>

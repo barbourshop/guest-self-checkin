@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { testmember_phoneNumber, noresults_phoneNumber, testmember_email, nonmember_email, noresults_email, nonmember_phoneNumber, noresults_lotNumber, testmember_lotNumber } from './test-constants';
+import { testmember_phoneNumber, noresults_phoneNumber, testmember_email, nonmember_email, noresults_email, nonmember_phoneNumber, noresults_lotNumber, testmember_lotNumber, waiversigned_member_phoneNumber } from './test-constants';
 
 test.describe.configure({ mode: 'parallel' });
 
@@ -97,8 +97,16 @@ test('search for user by lot number with no results', async ({ page }) => {
 test('member text shows up exactly correct', async ({ page }) => {
   await page.click('[data-testid="phone-search"]');  
   await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
-  await page.fill('[data-testid="search-input"]', testmember_phoneNumber);
+  await page.fill('[data-testid="search-input"]', waiversigned_member_phoneNumber);
   await page.click('[data-testid="search-button"]');
+  
+  // Wait for search results to load
+  await page.waitForSelector('.member-item', { state: 'visible', timeout: 10000 });
+  // Add a small delay to ensure the UI has updated
+  await page.waitForTimeout(500);
+  
+  // Wait for the membership type element to be visible
+  await page.waitForSelector('[data-testid="membership-type"]', { state: 'visible', timeout: 10000 });
   
   // Use first() to get only the first matching element
   await expect(page.locator('[data-testid="membership-type"]').first())

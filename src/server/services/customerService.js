@@ -16,8 +16,8 @@ class CustomerService {
       // Get the raw customer data from Square API
       const customer = await squareService.getCustomer(customerId);
       
-      // Check membership status
-      const hasMembership = await squareService.checkMembershipStatus(customerId);
+      // Check membership status based on segment
+      const hasMembership = await squareService.checkMembershipBySegment(customerId);
       
       // Check waiver status
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
@@ -25,7 +25,7 @@ class CustomerService {
       // Enrich the customer data with membership and waiver status
       return {
         ...customer,
-        membershipStatus: hasMembership ? 'Member' : 'Non-Member',
+        membershipType: hasMembership ? 'Member' : 'Non-Member',
         hasSignedWaiver
       };
     } catch (error) {
@@ -48,12 +48,12 @@ class CustomerService {
       // Enrich each customer with membership and waiver status
       const enrichedCustomers = await Promise.all(
         customers.map(async (customer) => {
-          const hasMembership = await squareService.checkMembershipStatus(customer.id);
+          const hasMembership = await squareService.checkMembershipBySegment(customer.id);
           const hasSignedWaiver = await waiverService.checkStatus(customer.id);
           
           return {
             ...customer,
-            membershipStatus: hasMembership ? 'Member' : 'Non-Member',
+            membershipType: hasMembership ? 'Member' : 'Non-Member',
             hasSignedWaiver
           };
         })
