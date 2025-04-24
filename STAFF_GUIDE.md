@@ -1,7 +1,6 @@
 # Self Check-In App Staff Guide
 
 ![Home Page](public/main-page.png)
-*Figure 0: Home page of the Self Check-In App*
 \newpage
 
 ## 1. UI Walkthrough
