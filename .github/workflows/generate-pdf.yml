@@ -1,0 +1,29 @@
+name: Generate PDF Guide
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'STAFF_GUIDE.md'
+
+jobs:
+  generate-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-latex-base texlive-fonts-recommended texlive-extra-utils texlive-latex-extra texlive-xetex
+          
+      - name: Generate PDF
+        run: |
+          pandoc STAFF_GUIDE.md -o STAFF_GUIDE.pdf --pdf-engine=xelatex -V geometry:"margin=1in" -V mainfont="Helvetica" -V monofont="Menlo"
+          
+      - name: Upload PDF
+        uses: actions/upload-artifact@v3
+        with:
+          name: staff-guide-pdf
+          path: STAFF_GUIDE.pdf 
