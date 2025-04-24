@@ -16,11 +16,11 @@ jobs:
       - name: Install Pandoc and LaTeX
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-latex-base texlive-fonts-recommended texlive-extra-utils texlive-latex-extra texlive-xetex
+          sudo apt-get install -y pandoc texlive-latex-base texlive-fonts-recommended texlive-extra-utils texlive-latex-extra texlive-xetex texlive-fonts-extra
           
       - name: Generate PDF
         run: |
-          pandoc STAFF_GUIDE.md -o STAFF_GUIDE.pdf --pdf-engine=xelatex -V geometry:"margin=1in" -V mainfont="Helvetica" -V monofont="Menlo"
+          pandoc STAFF_GUIDE.md -o STAFF_GUIDE.pdf --pdf-engine=xelatex -V geometry:"margin=1in" -V mainfont="DejaVu Sans" -V monofont="DejaVu Sans Mono"
           
       - name: Upload PDF
         uses: actions/upload-artifact@v4
