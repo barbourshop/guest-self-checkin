@@ -1,11 +1,12 @@
 name: Generate PDF Guide
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'STAFF_GUIDE.md'
+  workflow_dispatch:    # Allows you to run this workflow manually from the Actions tab
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'STAFF_GUIDE.md'
 
 jobs:
   generate-pdf:
