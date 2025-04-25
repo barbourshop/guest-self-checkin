@@ -1,6 +1,9 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 const fetch = require('node-fetch');
 const fs = require('fs');
 
@@ -17,34 +20,34 @@ function log(message) {
 
 let mainWindow = null;
 let expressProcess = null;
-let isServerStarting = false;
-let serverStartAttempts = 0;
-const MAX_SERVER_ATTEMPTS = 3;
+let serverPort = 3000;
 
-async function checkServerHealth() {
-  try {
-    const response = await fetch('http://localhost:3000/health');
-    return response.ok;
-  } catch (err) {
-    log(`Health check failed: ${err.message}`);
-    return false;
+async function findAvailablePort(startPort) {
+  let port = startPort;
+  while (port < startPort + 100) { // Try up to 100 ports
+    try {
+      // Try to kill any process using this port
+      if (process.platform === 'win32') {
+        await execAsync(`netstat -ano | findstr :${port}`);
+        const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
+        const pid = stdout.split('\n')[0].split(/\s+/)[5];
+        if (pid) await execAsync(`taskkill /F /PID ${pid}`);
+      } else {
+        await execAsync(`lsof -i :${port} -t`);
+        const { stdout } = await execAsync(`lsof -i :${port} -t`);
+        const pid = stdout.trim();
+        if (pid) await execAsync(`kill -9 ${pid}`);
+      }
+    } catch (err) {
+      // If we get here, the port is available
+      return port;
+    }
+    port++;
   }
+  throw new Error('No available ports found');
 }
 
-async function startServer() {
-  if (isServerStarting) {
-    log('Server is already starting, waiting...');
-    return;
-  }
-
-  if (serverStartAttempts >= MAX_SERVER_ATTEMPTS) {
-    log('Max server start attempts reached');
-    return false;
-  }
-
-  isServerStarting = true;
-  serverStartAttempts++;
-
+function startServer() {
   // Determine if we're in development or production
   const isDev = !app.isPackaged;
   
@@ -53,7 +56,7 @@ async function startServer() {
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
-  log(`Starting Express server from path: ${serverPath}`);
+  console.log('Starting Express server from path:', serverPath);
 
   // Start the Express server
   expressProcess = spawn(process.execPath, [serverPath], { 
@@ -66,31 +69,37 @@ async function startServer() {
 
   // Handle server process errors
   expressProcess.on('error', (err) => {
-    log(`Failed to start Express server: ${err.message}`);
-    isServerStarting = false;
+    console.error('Failed to start Express server:', err);
   });
 
   expressProcess.on('exit', (code) => {
-    log(`Express server exited with code ${code}`);
-    isServerStarting = false;
+    console.log(`Express server exited with code ${code}`);
   });
 
-  // Wait for server to be ready
-  for (let i = 0; i < 10; i++) {
-    if (await checkServerHealth()) {
-      log('Server is ready');
-      isServerStarting = false;
-      return true;
-    }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-
-  log('Server failed to start after timeout');
-  isServerStarting = false;
-  return false;
+  return expressProcess;
 }
 
-function createWindow() {
+function waitForPortFile() {
+  return new Promise((resolve) => {
+    const checkFile = () => {
+      try {
+        if (fs.existsSync('server-port.txt')) {
+          const port = parseInt(fs.readFileSync('server-port.txt', 'utf8'));
+          console.log(`Server port found: ${port}`);
+          resolve(port);
+        } else {
+          setTimeout(checkFile, 500);
+        }
+      } catch (err) {
+        console.error('Error reading port file:', err);
+        setTimeout(checkFile, 500);
+      }
+    };
+    checkFile();
+  });
+}
+
+async function createWindow() {
   log('createWindow called');
   
   // Prevent multiple windows
@@ -116,26 +125,33 @@ function createWindow() {
   const isDev = !app.isPackaged;
   log(`Running in ${isDev ? 'development' : 'production'} mode`);
   
-  // Start server and load app
-  startServer().then(serverReady => {
-    if (serverReady) {
-      log('Loading app from server...');
-      mainWindow.loadURL('http://localhost:3000')
+  try {
+    // Start server
+    startServer();
+
+    // Wait for the server to write its port
+    serverPort = await waitForPortFile();
+    console.log(`Using port ${serverPort} for server`);
+
+    // Wait a moment for the server to start, then load the app
+    setTimeout(() => {
+      console.log('Loading app...');
+      mainWindow.loadURL(`http://localhost:${serverPort}`)
         .then(() => {
-          log('App loaded successfully');
+          console.log('App loaded successfully');
           mainWindow.show();
         })
         .catch(err => {
-          log(`Failed to load from server: ${err.message}`);
+          console.error('Failed to load from server:', err);
           mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
             .then(() => mainWindow.show());
         });
-    } else {
-      log('Loading static files...');
-      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
-        .then(() => mainWindow.show());
-    }
-  });
+    }, 1000); // Wait 1 second for server to start
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+      .then(() => mainWindow.show());
+  }
   
   if (isDev) {
     mainWindow.webContents.openDevTools();
@@ -169,7 +185,6 @@ if (!gotTheLock) {
 
 app.on('window-all-closed', function () {
   log('All windows closed event received');
-  // Kill the Express process when the app is closed
   if (expressProcess) {
     expressProcess.kill();
     log('Express server stopped');
@@ -190,10 +205,17 @@ app.on('activate', function () {
 // Handle app quit
 app.on('quit', () => {
   log('App quit event received');
-  // Ensure Express process is terminated
   if (expressProcess) {
     expressProcess.kill();
     log('Express server stopped');
   }
   logStream.end();
+  // Clean up port file
+  try {
+    if (fs.existsSync('server-port.txt')) {
+      fs.unlinkSync('server-port.txt');
+    }
+  } catch (err) {
+    console.error('Error cleaning up port file:', err);
+  }
 });
