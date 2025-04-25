@@ -2,46 +2,48 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fetch = require('node-fetch');
+const fs = require('fs');
+
+// Set up logging
+const logPath = path.join(app.getPath('userData'), 'app.log');
+const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}\n`;
+  console.log(message);
+  logStream.write(logMessage);
+}
+
 let mainWindow = null;
 let expressProcess = null;
+let isServerStarting = false;
+let serverStartAttempts = 0;
+const MAX_SERVER_ATTEMPTS = 3;
 
 async function checkServerHealth() {
   try {
     const response = await fetch('http://localhost:3000/health');
     return response.ok;
   } catch (err) {
+    log(`Health check failed: ${err.message}`);
     return false;
   }
 }
 
-async function waitForServer(maxAttempts = 10) {
-  for (let i = 0; i < maxAttempts; i++) {
-    if (await checkServerHealth()) {
-      return true;
-    }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  return false;
-}
-
-function createWindow() {
-  // Prevent multiple windows
-  if (mainWindow) {
-    mainWindow.focus();
+async function startServer() {
+  if (isServerStarting) {
+    log('Server is already starting, waiting...');
     return;
   }
 
-  // Create the browser window
-  mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 768,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    },
-    // Set app icon (optional - you'll need to create this)
-    icon: path.join(__dirname, 'public/icon.ico')
-  });
+  if (serverStartAttempts >= MAX_SERVER_ATTEMPTS) {
+    log('Max server start attempts reached');
+    return false;
+  }
+
+  isServerStarting = true;
+  serverStartAttempts++;
 
   // Determine if we're in development or production
   const isDev = !app.isPackaged;
@@ -51,7 +53,7 @@ function createWindow() {
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
-  console.log('Starting Express server from path:', serverPath);
+  log(`Starting Express server from path: ${serverPath}`);
 
   // Start the Express server
   expressProcess = spawn(process.execPath, [serverPath], { 
@@ -64,31 +66,74 @@ function createWindow() {
 
   // Handle server process errors
   expressProcess.on('error', (err) => {
-    console.error('Failed to start Express server:', err);
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    log(`Failed to start Express server: ${err.message}`);
+    isServerStarting = false;
   });
 
   expressProcess.on('exit', (code) => {
-    if (code !== 0) {
-      console.error(`Express server exited with code ${code}`);
-      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
-    }
+    log(`Express server exited with code ${code}`);
+    isServerStarting = false;
   });
-  
-  console.log('Express server started with PID:', expressProcess.pid);
 
   // Wait for server to be ready
-  waitForServer().then(serverReady => {
+  for (let i = 0; i < 10; i++) {
+    if (await checkServerHealth()) {
+      log('Server is ready');
+      isServerStarting = false;
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  log('Server failed to start after timeout');
+  isServerStarting = false;
+  return false;
+}
+
+function createWindow() {
+  log('createWindow called');
+  
+  // Prevent multiple windows
+  if (mainWindow) {
+    log('Window already exists, focusing existing window');
+    mainWindow.focus();
+    return;
+  }
+
+  // Create the browser window
+  mainWindow = new BrowserWindow({
+    width: 1024,
+    height: 768,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    },
+    icon: path.join(__dirname, 'public/icon.ico'),
+    show: false // Don't show the window until it's ready
+  });
+
+  // Determine if we're in development or production
+  const isDev = !app.isPackaged;
+  log(`Running in ${isDev ? 'development' : 'production'} mode`);
+  
+  // Start server and load app
+  startServer().then(serverReady => {
     if (serverReady) {
-      console.log('Server is ready, loading app...');
+      log('Loading app from server...');
       mainWindow.loadURL('http://localhost:3000')
+        .then(() => {
+          log('App loaded successfully');
+          mainWindow.show();
+        })
         .catch(err => {
-          console.error('Failed to load from server:', err);
-          mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+          log(`Failed to load from server: ${err.message}`);
+          mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+            .then(() => mainWindow.show());
         });
     } else {
-      console.error('Server failed to start, loading static files');
-      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+      log('Loading static files...');
+      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+        .then(() => mainWindow.show());
     }
   });
   
@@ -97,17 +142,37 @@ function createWindow() {
   }
 
   mainWindow.on('closed', function () {
+    log('Main window closed');
     mainWindow = null;
   });
 }
 
-app.on('ready', createWindow);
+// Single instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  log('Another instance is running, quitting...');
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.on('ready', () => {
+    log('App ready event received');
+    createWindow();
+  });
+}
 
 app.on('window-all-closed', function () {
+  log('All windows closed event received');
   // Kill the Express process when the app is closed
   if (expressProcess) {
     expressProcess.kill();
-    console.log('Express server stopped');
+    log('Express server stopped');
   }
   
   if (process.platform !== 'darwin') {
@@ -116,6 +181,7 @@ app.on('window-all-closed', function () {
 });
 
 app.on('activate', function () {
+  log('App activate event received');
   if (mainWindow === null) {
     createWindow();
   }
@@ -123,9 +189,12 @@ app.on('activate', function () {
 
 // Handle app quit
 app.on('quit', () => {
+  log('App quit event received');
   // Ensure Express process is terminated
   if (expressProcess) {
     expressProcess.kill();
-    console.log('Express server stopped');
+    log('Express server stopped');
   }
+  logStream.end();
+});
 });
