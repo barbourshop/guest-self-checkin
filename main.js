@@ -50,33 +50,41 @@ async function findAvailablePort(startPort) {
 function startServer() {
   // Determine if we're in development or production
   const isDev = !app.isPackaged;
+  log(`Starting server in ${isDev ? 'development' : 'production'} mode`);
   
   // Get the correct path to the server file
   const serverPath = isDev 
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
-  console.log('Starting Express server from path:', serverPath);
+  log(`Server path: ${serverPath}`);
 
   // Start the Express server
-  expressProcess = spawn(process.execPath, [serverPath], { 
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      NODE_ENV: isDev ? 'development' : 'production'
-    }
-  });
+  try {
+    expressProcess = spawn(process.execPath, [serverPath], { 
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NODE_ENV: isDev ? 'development' : 'production'
+      }
+    });
 
-  // Handle server process errors
-  expressProcess.on('error', (err) => {
-    console.error('Failed to start Express server:', err);
-  });
+    log('Express server process started');
 
-  expressProcess.on('exit', (code) => {
-    console.log(`Express server exited with code ${code}`);
-  });
+    // Handle server process errors
+    expressProcess.on('error', (err) => {
+      log(`Failed to start Express server: ${err.message}`);
+    });
 
-  return expressProcess;
+    expressProcess.on('exit', (code) => {
+      log(`Express server exited with code ${code}`);
+    });
+
+    return expressProcess;
+  } catch (err) {
+    log(`Error starting server: ${err.message}`);
+    throw err;
+  }
 }
 
 function waitForPortFile() {
@@ -118,8 +126,13 @@ async function createWindow() {
       contextIsolation: false
     },
     icon: path.join(__dirname, 'public/icon.ico'),
-    show: false // Don't show the window until it's ready
+    show: true // Changed to true to show window immediately
   });
+
+  // Open DevTools by default in development
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Determine if we're in development or production
   const isDev = !app.isPackaged;
@@ -127,39 +140,65 @@ async function createWindow() {
   
   try {
     // Start server
+    log('Starting server...');
     startServer();
 
     // Wait for the server to write its port
+    log('Waiting for server port...');
     serverPort = await waitForPortFile();
-    console.log(`Using port ${serverPort} for server`);
+    log(`Using port ${serverPort} for server`);
 
     // Wait a moment for the server to start, then load the app
     setTimeout(() => {
-      console.log('Loading app...');
-      mainWindow.loadURL(`http://localhost:${serverPort}`)
+      log('Loading app...');
+      const url = `http://localhost:${serverPort}`;
+      log(`Attempting to load URL: ${url}`);
+      
+      mainWindow.loadURL(url)
         .then(() => {
-          console.log('App loaded successfully');
+          log('App loaded successfully');
           mainWindow.show();
         })
         .catch(err => {
-          console.error('Failed to load from server:', err);
-          mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
-            .then(() => mainWindow.show());
+          log(`Failed to load from server: ${err.message}`);
+          const fallbackPath = path.join(__dirname, 'dist', 'index.html');
+          log(`Attempting to load fallback file: ${fallbackPath}`);
+          mainWindow.loadFile(fallbackPath)
+            .then(() => {
+              log('Fallback file loaded successfully');
+              mainWindow.show();
+            })
+            .catch(fallbackErr => {
+              log(`Failed to load fallback file: ${fallbackErr.message}`);
+            });
         });
-    }, 1000); // Wait 1 second for server to start
+    }, 1000);
   } catch (err) {
-    console.error('Failed to start server:', err);
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
-      .then(() => mainWindow.show());
-  }
-  
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
+    log(`Failed to start server: ${err.message}`);
+    const fallbackPath = path.join(__dirname, 'dist', 'index.html');
+    log(`Attempting to load fallback file: ${fallbackPath}`);
+    mainWindow.loadFile(fallbackPath)
+      .then(() => {
+        log('Fallback file loaded successfully');
+        mainWindow.show();
+      })
+      .catch(fallbackErr => {
+        log(`Failed to load fallback file: ${fallbackErr.message}`);
+      });
   }
 
   mainWindow.on('closed', function () {
     log('Main window closed');
     mainWindow = null;
+  });
+
+  // Add error handling for the window
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    log(`Failed to load: ${errorCode} - ${errorDescription}`);
+  });
+
+  mainWindow.webContents.on('crashed', () => {
+    log('Window crashed');
   });
 }
 
