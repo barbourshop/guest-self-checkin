@@ -12,6 +12,9 @@ jobs:
     steps:
     - name: Check out Git repository
       uses: actions/checkout@v4
+      with:
+        lfs: false
+        fetch-depth: 0
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -19,12 +22,17 @@ jobs:
         node-version: 23
         cache: 'npm'
 
-    - name: Fix line endings
+    - name: Fix line endings and file encoding
       run: |
         git config --global core.autocrlf false
         git config --global core.eol lf
         git rm --cached -r .
         git reset --hard
+        # Ensure files are in UTF-8
+        Get-ChildItem -Recurse -Filter "*.js" | ForEach-Object {
+          $content = Get-Content $_.FullName -Encoding UTF8
+          Set-Content $_.FullName -Value $content -Encoding UTF8 -NoNewline
+        }
 
     - name: Create .env file
       run: |

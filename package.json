@@ -26,7 +26,14 @@
     "publish": null,
     "productName": "Rec Center Check-in",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "extraResources": [
+        {
+          "from": "src/server",
+          "to": "src/server",
+          "filter": ["**/*"]
+        }
+      ]
     },
     "directories": {
       "output": "dist-electron"
@@ -44,7 +51,8 @@
         "to": "src/server",
         "filter": ["**/*"]
       }
-    ]
+    ],
+    "asar": false
   },
   "dependencies": {
     "@redux-devtools/extension": "^3.3.0",
