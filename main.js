@@ -197,4 +197,3 @@ app.on('quit', () => {
   }
   logStream.end();
 });
-});
