@@ -1,10 +1,36 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-let mainWindow;
-let expressProcess;
+const fetch = require('node-fetch');
+let mainWindow = null;
+let expressProcess = null;
+
+async function checkServerHealth() {
+  try {
+    const response = await fetch('http://localhost:3000/health');
+    return response.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+async function waitForServer(maxAttempts = 10) {
+  for (let i = 0; i < maxAttempts; i++) {
+    if (await checkServerHealth()) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  return false;
+}
 
 function createWindow() {
+  // Prevent multiple windows
+  if (mainWindow) {
+    mainWindow.focus();
+    return;
+  }
+
   // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1024,
@@ -25,6 +51,8 @@ function createWindow() {
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
+  console.log('Starting Express server from path:', serverPath);
+
   // Start the Express server
   expressProcess = spawn(process.execPath, [serverPath], { 
     stdio: 'inherit',
@@ -33,19 +61,40 @@ function createWindow() {
       NODE_ENV: isDev ? 'development' : 'production'
     }
   });
-  
-  console.log('Express server started');
 
-  // Wait a moment for the server to start
-  setTimeout(() => {
-    // Load the app from localhost (your Express server)
-    mainWindow.loadURL('http://localhost:3000');
-    
-    // Open DevTools during development (remove in production)
-    if (isDev) {
-      mainWindow.webContents.openDevTools();
+  // Handle server process errors
+  expressProcess.on('error', (err) => {
+    console.error('Failed to start Express server:', err);
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+
+  expressProcess.on('exit', (code) => {
+    if (code !== 0) {
+      console.error(`Express server exited with code ${code}`);
+      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
     }
-  }, 2000);
+  });
+  
+  console.log('Express server started with PID:', expressProcess.pid);
+
+  // Wait for server to be ready
+  waitForServer().then(serverReady => {
+    if (serverReady) {
+      console.log('Server is ready, loading app...');
+      mainWindow.loadURL('http://localhost:3000')
+        .catch(err => {
+          console.error('Failed to load from server:', err);
+          mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+        });
+    } else {
+      console.error('Server failed to start, loading static files');
+      mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    }
+  });
+  
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.on('closed', function () {
     mainWindow = null;
