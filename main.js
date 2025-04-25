@@ -17,9 +17,21 @@ function createWindow() {
     icon: path.join(__dirname, 'public/icon.ico')
   });
 
+  // Determine if we're in development or production
+  const isDev = !app.isPackaged;
+  
+  // Get the correct path to the server file
+  const serverPath = isDev 
+    ? './src/server/server.js'
+    : path.join(process.resourcesPath, 'src/server/server.js');
+
   // Start the Express server
-  expressProcess = spawn('node', ['./src/server/server.js'], { 
-    stdio: 'inherit'
+  expressProcess = spawn(process.execPath, [serverPath], { 
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      NODE_ENV: isDev ? 'development' : 'production'
+    }
   });
   
   console.log('Express server started');
@@ -30,7 +42,9 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:3000');
     
     // Open DevTools during development (remove in production)
-    // mainWindow.webContents.openDevTools();
+    if (isDev) {
+      mainWindow.webContents.openDevTools();
+    }
   }, 2000);
 
   mainWindow.on('closed', function () {

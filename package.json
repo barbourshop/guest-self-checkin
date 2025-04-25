@@ -37,6 +37,13 @@
       "src/server/**/*",
       "main.js",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/server",
+        "to": "src/server",
+        "filter": ["**/*"]
+      }
     ]
   },
   "dependencies": {
