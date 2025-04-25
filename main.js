@@ -183,7 +183,8 @@ if (!gotTheLock) {
   });
 }
 
-app.on('window-all-closed', function () {
+// Event handlers
+app.on('window-all-closed', () => {
   log('All windows closed event received');
   if (expressProcess) {
     expressProcess.kill();
@@ -195,7 +196,7 @@ app.on('window-all-closed', function () {
   }
 });
 
-app.on('activate', function () {
+app.on('activate', () => {
   log('App activate event received');
   if (mainWindow === null) {
     createWindow();
@@ -210,6 +211,7 @@ app.on('quit', () => {
     log('Express server stopped');
   }
   logStream.end();
+  
   // Clean up port file
   try {
     if (fs.existsSync('server-port.txt')) {
