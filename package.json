@@ -26,8 +26,7 @@
     "publish": null,
     "productName": "Rec Center Check-in",
     "win": {
-      "target": "nsis",
-      "icon": "public/icon.ico"
+      "target": "nsis"
     },
     "directories": {
       "output": "dist-electron"
