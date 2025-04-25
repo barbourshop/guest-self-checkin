@@ -202,22 +202,56 @@ async function createWindow() {
   });
 }
 
+async function checkForStaleProcesses() {
+  try {
+    log('Checking for stale processes...');
+    const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq Rec Center Check-in.exe"');
+    const processes = stdout.split('\n')
+      .filter(line => line.includes('Rec Center Check-in.exe'))
+      .map(line => line.split(/\s+/)[1]);
+
+    if (processes.length > 1) {
+      log(`Found ${processes.length} instances of the application running`);
+      for (const pid of processes) {
+        if (pid !== process.pid.toString()) {
+          log(`Killing stale process with PID: ${pid}`);
+          await execAsync(`taskkill /F /PID ${pid}`);
+        }
+      }
+    }
+  } catch (err) {
+    log(`Error checking for stale processes: ${err.message}`);
+  }
+}
+
 // Single instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  log('Another instance is running, quitting...');
+  log('Another instance is running, attempting to focus existing window...');
+  // Try to focus the existing window instead of quitting
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  log('First instance, proceeding with initialization...');
+  
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    log('Second instance attempted, focusing existing window...');
     if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (mainWindow.isMinimized()) {
+        log('Restoring minimized window...');
+        mainWindow.restore();
+      }
+      log('Focusing window...');
       mainWindow.focus();
+    } else {
+      log('No main window found, creating new window...');
+      createWindow();
     }
   });
 
-  app.on('ready', () => {
+  app.on('ready', async () => {
     log('App ready event received');
+    await checkForStaleProcesses();
     createWindow();
   });
 }
