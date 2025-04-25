@@ -19,6 +19,13 @@ jobs:
         node-version: 23
         cache: 'npm'
 
+    - name: Fix line endings
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+        git rm --cached -r .
+        git reset --hard
+
     - name: Create .env file
       run: |
         echo SQUARE_ACCESS_TOKEN=${{ secrets.SQUARE_ACCESS_TOKEN }} >> .env
