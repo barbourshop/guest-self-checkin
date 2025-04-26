@@ -66,16 +66,26 @@ function startServer() {
     throw new Error(error);
   }
 
+  // Set up environment variables
+  const env = {
+    ...process.env,
+    NODE_ENV: isDev ? 'development' : 'production',
+    ELECTRON_RUN_AS_NODE: '1'
+  };
+
+  // In production, add the node_modules path
+  if (!isDev) {
+    const nodeModulesPath = path.join(process.resourcesPath, 'node_modules');
+    log(`Setting NODE_PATH to: ${nodeModulesPath}`);
+    env.NODE_PATH = nodeModulesPath;
+  }
+
   // Start the Express server
   try {
     log('Spawning server process...');
     expressProcess = spawn(process.execPath, [serverPath], { 
-      stdio: ['pipe', 'pipe', 'pipe'], // Capture all stdio
-      env: {
-        ...process.env,
-        NODE_ENV: isDev ? 'development' : 'production',
-        ELECTRON_RUN_AS_NODE: '1'
-      }
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: env
     });
 
     // Log server output

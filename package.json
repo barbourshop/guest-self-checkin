@@ -22,48 +22,37 @@
   "license": "ISC",
   "description": "Rec Center Self Check-in System",
   "build": {
-    "appId": "com.reccenter.checkin",
-    "publish": null,
+    "appId": "com.rec-center-checkin.app",
     "productName": "Rec Center Check-in",
-    "win": {
-      "target": "nsis",
-      "extraResources": [
-        {
-          "from": "src/server",
-          "to": "src/server",
-          "filter": ["**/*"]
-        }
-      ],
-      "requestedExecutionLevel": "asInvoker"
-    },
     "directories": {
-      "output": "dist-electron"
+      "output": "dist"
     },
     "files": [
       "dist/**/*",
+      "src/**/*",
       "node_modules/**/*",
-      "src/server/**/*",
-      "main.js",
       "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "src/server",
-        "to": "src/server",
-        "filter": ["**/*"]
-      }
     ],
     "asar": true,
     "asarUnpack": [
       "src/server/**/*",
-      "main.js"
+      "node_modules/**/*"
     ],
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    }
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "extraResources": [
+      {
+        "from": "src/server",
+        "to": "src/server"
+      },
+      {
+        "from": "node_modules",
+        "to": "node_modules"
+      }
+    ]
   },
   "dependencies": {
     "@redux-devtools/extension": "^3.3.0",
