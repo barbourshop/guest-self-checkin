@@ -31,7 +31,8 @@
       "dist/**/*",
       "src/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "main.js"
     ],
     "asar": true,
     "asarUnpack": [
@@ -52,7 +53,13 @@
         "from": "node_modules",
         "to": "node_modules"
       }
-    ]
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   },
   "dependencies": {
     "@redux-devtools/extension": "^3.3.0",
