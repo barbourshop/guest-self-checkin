@@ -1,5 +1,13 @@
 const app = require('./app');
 const net = require('net');
+const path = require('path');
+
+// Set up NODE_PATH for production
+if (process.env.NODE_ENV === 'production') {
+  const nodeModulesPath = path.join(process.resourcesPath, 'node_modules');
+  process.env.NODE_PATH = nodeModulesPath;
+  require('module').Module._initPaths();
+}
 
 function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
