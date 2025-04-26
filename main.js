@@ -78,15 +78,21 @@ function startServer() {
     const nodeModulesPath = path.join(process.resourcesPath, 'node_modules');
     log(`Setting NODE_PATH to: ${nodeModulesPath}`);
     env.NODE_PATH = nodeModulesPath;
+    // Also set the working directory to the resources path
+    env.PWD = process.resourcesPath;
   }
 
   // Start the Express server
   try {
     log('Spawning server process...');
-    expressProcess = spawn(process.execPath, [serverPath], { 
+    const options = {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: env
-    });
+      env: env,
+      cwd: isDev ? process.cwd() : process.resourcesPath
+    };
+    
+    log(`Starting server with options: ${JSON.stringify(options, null, 2)}`);
+    expressProcess = spawn(process.execPath, [serverPath], options);
 
     // Log server output
     expressProcess.stdout.on('data', (data) => {

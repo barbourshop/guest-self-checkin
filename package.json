@@ -41,7 +41,6 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/icon.ico",
       "requestedExecutionLevel": "asInvoker"
     },
     "extraResources": [
@@ -51,7 +50,8 @@
       },
       {
         "from": "node_modules",
-        "to": "node_modules"
+        "to": "node_modules",
+        "filter": ["**/*"]
       }
     ],
     "nsis": {
