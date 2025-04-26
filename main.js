@@ -59,14 +59,32 @@ function startServer() {
 
   log(`Server path: ${serverPath}`);
 
+  // Verify server file exists
+  if (!fs.existsSync(serverPath)) {
+    const error = `Server file not found at: ${serverPath}`;
+    log(error);
+    throw new Error(error);
+  }
+
   // Start the Express server
   try {
+    log('Spawning server process...');
     expressProcess = spawn(process.execPath, [serverPath], { 
-      stdio: 'inherit',
+      stdio: ['pipe', 'pipe', 'pipe'], // Capture all stdio
       env: {
         ...process.env,
-        NODE_ENV: isDev ? 'development' : 'production'
+        NODE_ENV: isDev ? 'development' : 'production',
+        ELECTRON_RUN_AS_NODE: '1'
       }
+    });
+
+    // Log server output
+    expressProcess.stdout.on('data', (data) => {
+      log(`Server stdout: ${data.toString()}`);
+    });
+
+    expressProcess.stderr.on('data', (data) => {
+      log(`Server stderr: ${data.toString()}`);
     });
 
     log('Express server process started');
@@ -76,8 +94,12 @@ function startServer() {
       log(`Failed to start Express server: ${err.message}`);
     });
 
-    expressProcess.on('exit', (code) => {
-      log(`Express server exited with code ${code}`);
+    expressProcess.on('exit', (code, signal) => {
+      log(`Express server exited with code ${code}${signal ? `, signal: ${signal}` : ''}`);
+      if (code !== 0) {
+        log('Server exited with error code, attempting to restart...');
+        setTimeout(() => startServer(), 1000);
+      }
     });
 
     return expressProcess;
@@ -249,10 +271,23 @@ if (!gotTheLock) {
     }
   });
 
+  // Handle app ready event
   app.on('ready', async () => {
     log('App ready event received');
-    await checkForStaleProcesses();
-    createWindow();
+    try {
+      await checkForStaleProcesses();
+      createWindow();
+    } catch (err) {
+      log(`Error during initialization: ${err.message}`);
+    }
+  });
+
+  // Handle app activation (macOS)
+  app.on('activate', () => {
+    log('App activate event received');
+    if (mainWindow === null) {
+      createWindow();
+    }
   });
 }
 
@@ -266,13 +301,6 @@ app.on('window-all-closed', () => {
   
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('activate', () => {
-  log('App activate event received');
-  if (mainWindow === null) {
-    createWindow();
   }
 });
 
