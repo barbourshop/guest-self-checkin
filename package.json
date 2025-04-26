@@ -34,11 +34,7 @@
       "package.json",
       "main.js"
     ],
-    "asar": true,
-    "asarUnpack": [
-      "src/server/**/*",
-      "node_modules/**/*"
-    ],
+    "asar": false,
     "win": {
       "target": "nsis",
       "requestedExecutionLevel": "asInvoker"
