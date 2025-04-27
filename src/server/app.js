@@ -39,7 +39,8 @@ if (isDev) {
   app.use(express.static(distPath));
   app.use(express.static(publicPath));
 } else {
-  const distPath = path.join(__dirname, '../../dist');
+  // In production, use the resources path
+  const distPath = path.join(process.resourcesPath, 'dist');
   log(`Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
 }

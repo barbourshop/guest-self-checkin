@@ -129,8 +129,12 @@ function waitForPortFile() {
   return new Promise((resolve) => {
     const checkFile = () => {
       try {
-        if (fs.existsSync('server-port.txt')) {
-          const port = parseInt(fs.readFileSync('server-port.txt', 'utf8'));
+        const portFilePath = process.env.NODE_ENV === 'production'
+          ? path.join(process.resourcesPath, 'server-port.txt')
+          : 'server-port.txt';
+          
+        if (fs.existsSync(portFilePath)) {
+          const port = parseInt(fs.readFileSync(portFilePath, 'utf8'));
           console.log(`Server port found: ${port}`);
           resolve(port);
         } else {
@@ -246,14 +250,22 @@ async function checkForStaleProcesses() {
     const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq Rec Center Check-in.exe"');
     const processes = stdout.split('\n')
       .filter(line => line.includes('Rec Center Check-in.exe'))
-      .map(line => line.split(/\s+/)[1]);
+      .map(line => {
+        const parts = line.trim().split(/\s+/);
+        return parts[1]; // PID is the second column
+      })
+      .filter(pid => pid && !isNaN(pid)); // Ensure we have a valid numeric PID
 
     if (processes.length > 1) {
       log(`Found ${processes.length} instances of the application running`);
       for (const pid of processes) {
         if (pid !== process.pid.toString()) {
           log(`Killing stale process with PID: ${pid}`);
-          await execAsync(`taskkill /F /PID ${pid}`);
+          try {
+            await execAsync(`taskkill /F /PID ${pid}`);
+          } catch (killErr) {
+            log(`Failed to kill process ${pid}: ${killErr.message}`);
+          }
         }
       }
     }

@@ -49,8 +49,11 @@ async function startServer() {
     
     app.listen(port, () => {
       console.log(`Server is running on http://localhost:${port}`);
-      // Write the port to a file so the main process can read it
-      require('fs').writeFileSync('server-port.txt', port.toString());
+      // Write the port to a file in the correct location based on environment
+      const portFilePath = process.env.NODE_ENV === 'production' 
+        ? path.join(process.resourcesPath, 'server-port.txt')
+        : 'server-port.txt';
+      require('fs').writeFileSync(portFilePath, port.toString());
     });
   } catch (err) {
     console.error('Failed to start server:', err);
