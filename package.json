@@ -15,7 +15,7 @@
     "electron:build": "npm run build && electron-builder",
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --win --x64"
+    "dist": "npm run build && npm prune --production && electron-builder --win --x64"
   },
   "keywords": [],
   "author": "Matt Barbour",
@@ -29,8 +29,7 @@
     },
     "files": [
       "dist/**/*",
-      "src/**/*",
-      "node_modules/**/*",
+      "src/server/**/*",
       "package.json",
       "main.js"
     ],
@@ -38,7 +37,10 @@
     "asarUnpack": [
       "dist/**/*",
       "src/server/**/*",
-      "node_modules/**/*"
+      "node_modules/express/**/*",
+      "node_modules/cors/**/*",
+      "node_modules/body-parser/**/*",
+      "node_modules/dotenv/**/*"
     ],
     "win": {
       "target": "nsis",
@@ -52,7 +54,12 @@
       {
         "from": "node_modules",
         "to": "node_modules",
-        "filter": ["**/*"]
+        "filter": [
+          "express/**/*",
+          "cors/**/*",
+          "body-parser/**/*",
+          "dotenv/**/*"
+        ]
       }
     ],
     "nsis": {
