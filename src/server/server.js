@@ -2,9 +2,16 @@ const path = require('path');
 
 // Set up module resolution for production
 if (process.env.NODE_ENV === 'production') {
-  const nodeModulesPath = path.join(process.resourcesPath, 'node_modules');
-  require('module').Module._initPaths();
+  const appPath = process.resourcesPath;
+  const nodeModulesPath = path.join(appPath, 'node_modules');
+  
+  // Add node_modules to the module paths
   require('module').Module._nodeModulePaths = [nodeModulesPath];
+  
+  // Log the paths for debugging
+  console.log('App path:', appPath);
+  console.log('Node modules path:', nodeModulesPath);
+  console.log('Module paths:', require('module')._nodeModulePaths);
 }
 
 const app = require('./app');
