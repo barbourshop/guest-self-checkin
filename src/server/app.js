@@ -39,8 +39,7 @@ if (isDev) {
   app.use(express.static(distPath));
   app.use(express.static(publicPath));
 } else {
-  // In production, use the resources path
-  const distPath = path.join(process.resourcesPath, 'dist');
+  const distPath = path.join(__dirname, '../../dist');
   log(`Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
 }
@@ -73,12 +72,6 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   log(`Unhandled Rejection at: ${promise}\nreason: ${reason}`);
-});
-
-// Log server startup
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  log(`Server is running on http://localhost:${port}`);
 });
 
 module.exports = app;
