@@ -41,7 +41,18 @@
       "node_modules/cors/**/*",
       "node_modules/body-parser/**/*",
       "node_modules/dotenv/**/*",
-      "node_modules/depd/**/*"
+      "node_modules/depd/**/*",
+      "node_modules/merge-descriptors/**/*",
+      "node_modules/methods/**/*",
+      "node_modules/path-to-regexp/**/*",
+      "node_modules/proxy-addr/**/*",
+      "node_modules/range-parser/**/*",
+      "node_modules/safe-buffer/**/*",
+      "node_modules/setprototypeof/**/*",
+      "node_modules/statuses/**/*",
+      "node_modules/type-is/**/*",
+      "node_modules/utils-merge/**/*",
+      "node_modules/vary/**/*"
     ],
     "win": {
       "target": "nsis",
@@ -60,7 +71,18 @@
           "cors/**/*",
           "body-parser/**/*",
           "dotenv/**/*",
-          "depd/**/*"
+          "depd/**/*",
+          "merge-descriptors/**/*",
+          "methods/**/*",
+          "path-to-regexp/**/*",
+          "proxy-addr/**/*",
+          "range-parser/**/*",
+          "safe-buffer/**/*",
+          "setprototypeof/**/*",
+          "statuses/**/*",
+          "type-is/**/*",
+          "utils-merge/**/*",
+          "vary/**/*"
         ]
       }
     ],
@@ -81,13 +103,24 @@
     "express": "^4.21.2",
     "jest-environment-jsdom": "^29.7.0",
     "lucide-react": "^0.344.0",
+    "merge-descriptors": "^1.0.1",
+    "methods": "^1.1.2",
+    "path-to-regexp": "^6.2.1",
+    "proxy-addr": "^2.0.7",
+    "range-parser": "^1.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-redux": "^9.2.0",
     "redux": "^5.0.1",
     "redux-mock-store": "^1.5.5",
     "redux-thunk": "^3.1.0",
-    "square": "^40.0.0"
+    "safe-buffer": "^5.2.1",
+    "setprototypeof": "^1.2.0",
+    "statuses": "^2.0.1",
+    "square": "^40.0.0",
+    "type-is": "^1.6.18",
+    "utils-merge": "^1.0.1",
+    "vary": "^1.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
