@@ -54,8 +54,14 @@ jobs:
         CSC_IDENTITY_AUTO_DISCOVERY: false
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-    - name: Upload artifacts
+    - name: Upload installer artifact
       uses: actions/upload-artifact@v4
       with:
         name: windows-installer
-        path: dist-electron/*.exe
+        path: dist/*.exe
+
+    - name: Upload unpacked app artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: unpacked-app
+        path: dist/win-unpacked/**
