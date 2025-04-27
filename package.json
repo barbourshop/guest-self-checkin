@@ -14,8 +14,8 @@
     "preview": "vite preview",
     "electron:build": "npm run build && electron-builder",
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "dist": "npm run build && npm prune --production && electron-builder --win --x64"
+    "pack": "npx electron-builder --dir",
+    "dist": "npm run build && npm prune --omit=dev && npx electron-builder --win --x64"
   },
   "keywords": [],
   "author": "Matt Barbour",
