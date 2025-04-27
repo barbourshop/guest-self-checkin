@@ -40,7 +40,8 @@
       "node_modules/express/**/*",
       "node_modules/cors/**/*",
       "node_modules/body-parser/**/*",
-      "node_modules/dotenv/**/*"
+      "node_modules/dotenv/**/*",
+      "node_modules/depd/**/*"
     ],
     "win": {
       "target": "nsis",
@@ -58,7 +59,8 @@
           "express/**/*",
           "cors/**/*",
           "body-parser/**/*",
-          "dotenv/**/*"
+          "dotenv/**/*",
+          "depd/**/*"
         ]
       }
     ],
@@ -74,6 +76,7 @@
     "@reduxjs/toolkit": "^2.6.1",
     "@types/redux-thunk": "^2.1.32",
     "cors": "^2.8.5",
+    "depd": "^2.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jest-environment-jsdom": "^29.7.0",
