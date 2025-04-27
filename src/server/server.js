@@ -1,64 +1,73 @@
+const express = require('express');
 const path = require('path');
+const fs = require('fs');
+
+// Set up logging
+const logFile = process.env.LOG_FILE || path.join(process.cwd(), 'server.log');
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+function log(message) {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] [Server] ${message}\n`;
+  console.log(message);
+  logStream.write(logMessage);
+}
+
+console.log('Server process starting...');
+log(`Log file: ${logFile}`);
 
 // Set up module resolution for production
 if (process.env.NODE_ENV === 'production') {
   const appPath = process.resourcesPath;
   const nodeModulesPath = path.join(appPath, 'node_modules');
   
+  console.log('Production mode detected');
+  console.log('App path:', appPath);
+  console.log('Node modules path:', nodeModulesPath);
+  
   // Add node_modules to the module paths
   require('module')._nodeModulePaths = function(from) {
     return [nodeModulesPath];
   };
-  
-  // Log the paths for debugging
-  console.log('App path:', appPath);
-  console.log('Node modules path:', nodeModulesPath);
 }
 
-const app = require('./app');
-const net = require('net');
+const app = express();
+const port = process.env.PORT || 3000;
 
-function findAvailablePort(startPort) {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    
-    server.once('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        // Port is in use, try the next one
-        server.close();
-        resolve(findAvailablePort(startPort + 1));
-      } else {
-        reject(err);
-      }
-    });
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../../public')));
 
-    server.once('listening', () => {
-      const port = server.address().port;
-      server.close();
-      resolve(port);
-    });
+// API routes
+app.get('/api/status', (req, res) => {
+  log('Status check received');
+  res.json({ status: 'ok' });
+});
 
-    server.listen(startPort);
-  });
-}
+// Start server
+app.listen(port, () => {
+  log(`Server is running on http://localhost:${port}`);
+  // Write the port to a file in the correct location based on environment
+  const portFilePath = process.env.NODE_ENV === 'production' 
+    ? path.join(process.resourcesPath, 'server-port.txt')
+    : 'server-port.txt';
+  require('fs').writeFileSync(portFilePath, port.toString());
+});
 
-async function startServer() {
-  try {
-    const port = await findAvailablePort(3000);
-    console.log(`Found available port: ${port}`);
-    
-    app.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
-      // Write the port to a file in the correct location based on environment
-      const portFilePath = process.env.NODE_ENV === 'production' 
-        ? path.join(process.resourcesPath, 'server-port.txt')
-        : 'server-port.txt';
-      require('fs').writeFileSync(portFilePath, port.toString());
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-}
+// Handle process termination
+process.on('SIGTERM', () => {
+  log('Received SIGTERM signal');
+  logStream.end();
+  process.exit(0);
+});
 
-startServer();
+process.on('SIGINT', () => {
+  log('Received SIGINT signal');
+  logStream.end();
+  process.exit(0);
+});
+
+process.on('uncaughtException', (err) => {
+  log(`Uncaught exception: ${err.message}`);
+  logStream.end();
+  process.exit(1);
+});
