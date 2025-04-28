@@ -40,6 +40,9 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Parse JSON request bodies
+app.use(express.json());
+
 // Log all requests
 app.use((req, res, next) => {
   log(`Request: ${req.method} ${req.url}`);
