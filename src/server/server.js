@@ -46,8 +46,9 @@ app.use((req, res, next) => {
 let staticPath;
 if (process.env.NODE_ENV === 'production') {
   // In production, we need to go up from the resources directory to the app root
+  // The app root is already the dist directory, so we don't need to append 'dist'
   const appRoot = path.resolve(process.resourcesPath, '..', '..');
-  staticPath = path.join(appRoot, 'dist');
+  staticPath = appRoot;  // Don't append 'dist' since appRoot is already the dist directory
   
   // Log all relevant paths for verification
   log('Production Paths:');
