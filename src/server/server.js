@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
 
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
