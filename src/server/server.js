@@ -25,17 +25,44 @@ log(`__dirname: ${__dirname}`);
 
 // Set up module resolution for production
 if (process.env.NODE_ENV === 'production') {
-  const appPath = process.resourcesPath;
-  const nodeModulesPath = path.join(appPath, 'node_modules');
+  const appRoot = path.resolve(process.resourcesPath, '..');
+  const appAsarPath = path.join(process.resourcesPath, 'app.asar');
   
-  log('Production mode detected');
-  log(`App path: ${appPath}`);
-  log(`Node modules path: ${nodeModulesPath}`);
+  // Check if we're in an asar archive
+  if (fs.existsSync(appAsarPath)) {
+    // We're in the installed version, static files are in app.asar/dist
+    staticPath = path.join(appAsarPath, 'dist');
+  } else {
+    // We're in the unpacked version, static files are in the app root
+    staticPath = appRoot;
+  }
   
-  // Add node_modules to the module paths
-  require('module')._nodeModulePaths = function(from) {
-    return [nodeModulesPath];
-  };
+  // Log all relevant paths for verification
+  log('Production Paths:');
+  log(`- Resources Path: ${process.resourcesPath}`);
+  log(`- App Root: ${appRoot}`);
+  log(`- App Asar Path: ${appAsarPath}`);
+  log(`- Static Path: ${staticPath}`);
+  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
+  
+  // Verify the paths exist
+  log('Path Verification:');
+  log(`- Resources directory exists: ${fs.existsSync(process.resourcesPath)}`);
+  log(`- App root exists: ${fs.existsSync(appRoot)}`);
+  log(`- App asar exists: ${fs.existsSync(appAsarPath)}`);
+  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
+  if (fs.existsSync(staticPath)) {
+    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
+  }
+} else {
+  staticPath = path.join(__dirname, '../../dist');
+  log('Development Paths:');
+  log(`- Static Path: ${staticPath}`);
+  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
+  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
+  if (fs.existsSync(staticPath)) {
+    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
+  }
 }
 
 const app = express();
@@ -66,40 +93,6 @@ app.get('/api/status', (req, res) => {
   log('Status check received');
   res.json({ status: 'ok' });
 });
-
-// Determine the correct path for static files
-let staticPath;
-if (process.env.NODE_ENV === 'production') {
-  // In production, we need to go up from the resources directory to the app root
-  // The app root is already the dist directory, so we don't need to append 'dist'
-  const appRoot = path.resolve(process.resourcesPath, '..', '..');
-  staticPath = appRoot;  // Don't append 'dist' since appRoot is already the dist directory
-  
-  // Log all relevant paths for verification
-  log('Production Paths:');
-  log(`- Resources Path: ${process.resourcesPath}`);
-  log(`- App Root: ${appRoot}`);
-  log(`- Static Path: ${staticPath}`);
-  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
-  
-  // Verify the paths exist
-  log('Path Verification:');
-  log(`- Resources directory exists: ${fs.existsSync(process.resourcesPath)}`);
-  log(`- App root exists: ${fs.existsSync(appRoot)}`);
-  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
-  if (fs.existsSync(staticPath)) {
-    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
-  }
-} else {
-  staticPath = path.join(__dirname, '../../dist');
-  log('Development Paths:');
-  log(`- Static Path: ${staticPath}`);
-  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
-  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
-  if (fs.existsSync(staticPath)) {
-    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
-  }
-}
 
 // Serve static files
 app.use(express.static(staticPath));
