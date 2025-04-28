@@ -43,13 +43,37 @@ app.use((req, res, next) => {
 });
 
 // Determine the correct path for static files
-const staticPath = process.env.NODE_ENV === 'production'
-  ? path.join(process.cwd(), 'dist')  // Use the app's root dist directory
-  : path.join(__dirname, '../../dist');
-
-log(`Serving static files from: ${staticPath}`);
-log(`Process cwd: ${process.cwd()}`);
-log(`Process resources path: ${process.resourcesPath}`);
+let staticPath;
+if (process.env.NODE_ENV === 'production') {
+  // In production, we need to go up from the resources directory to the app root
+  const appRoot = path.resolve(process.resourcesPath, '..', '..');
+  staticPath = path.join(appRoot, 'dist');
+  
+  // Log all relevant paths for verification
+  log('Production Paths:');
+  log(`- Resources Path: ${process.resourcesPath}`);
+  log(`- App Root: ${appRoot}`);
+  log(`- Static Path: ${staticPath}`);
+  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
+  
+  // Verify the paths exist
+  log('Path Verification:');
+  log(`- Resources directory exists: ${fs.existsSync(process.resourcesPath)}`);
+  log(`- App root exists: ${fs.existsSync(appRoot)}`);
+  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
+  if (fs.existsSync(staticPath)) {
+    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
+  }
+} else {
+  staticPath = path.join(__dirname, '../../dist');
+  log('Development Paths:');
+  log(`- Static Path: ${staticPath}`);
+  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
+  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
+  if (fs.existsSync(staticPath)) {
+    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
+  }
+}
 
 // Serve static files
 app.use(express.static(staticPath));
@@ -59,6 +83,7 @@ app.use((err, req, res, next) => {
   if (err) {
     log(`Static file error: ${err.message}`);
     log(`Requested path: ${req.path}`);
+    log(`Full requested path: ${path.join(staticPath, req.path)}`);
   }
   next(err);
 });
@@ -71,8 +96,11 @@ app.get('/api/status', (req, res) => {
 
 // Catch-all route for SPA
 app.get('*', (req, res) => {
+  const indexPath = path.join(staticPath, 'index.html');
   log(`Serving index.html for path: ${req.path}`);
-  res.sendFile(path.join(staticPath, 'index.html'));
+  log(`Attempting to serve from: ${indexPath}`);
+  log(`Index.html exists: ${fs.existsSync(indexPath)}`);
+  res.sendFile(indexPath);
 });
 
 // Start server
