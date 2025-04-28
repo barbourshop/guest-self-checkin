@@ -62,27 +62,36 @@ class WaiverService {
     const timestamp = new Date().toLocaleString();
     const idempotencyKey = crypto.randomUUID();
 
-    const response = await fetch(
-      `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
-      {
-        method: 'POST',
-        headers: SQUARE_API_CONFIG.headers,
-        body: JSON.stringify({
-          idempotency_key: idempotencyKey,
-          custom_attribute: {
-            key: "waiver-signed",
-            value: timestamp
-          }
-        })
+    try {
+      console.log(`[SET WAIVER STATUS] Attempting to set waiver for customer ${customerId}`);
+      const response = await fetch(
+        `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
+        {
+          method: 'POST',
+          headers: SQUARE_API_CONFIG.headers,
+          body: JSON.stringify({
+            idempotency_key: idempotencyKey,
+            custom_attribute: {
+              key: "waiver-signed",
+              value: timestamp
+            }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error(`[SET WAIVER STATUS ERROR] Response status: ${response.status}`, errorData);
+        throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
       }
-    );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.errors?.[0]?.detail || 'Failed to set waiver status');
+      const result = await response.json();
+      console.log(`[SET WAIVER STATUS SUCCESS] Customer ${customerId}`, result);
+      return result;
+    } catch (error) {
+      console.error(`[SET WAIVER STATUS ERROR] Customer ${customerId}:`, error);
+      throw error;
     }
-
-    return response.json();
   }
 
   /**
@@ -95,6 +104,7 @@ class WaiverService {
    */
   async clearStatus(customerId) {
     try {
+      console.log(`[CLEAR WAIVER STATUS] Attempting to clear waiver for customer ${customerId}`);
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}/custom-attributes/waiver-signed`,
         {
@@ -103,20 +113,22 @@ class WaiverService {
         }
       );
       
-      // 404 means the attribute doesn't exist, which is fine for clearing
       if (response.status === 404) {
+        console.log(`[CLEAR WAIVER STATUS] No waiver found for customer ${customerId}`);
         return true;
       }
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error(`[CLEAR WAIVER STATUS ERROR] Response status: ${response.status}`, errorData);
         throw new Error(errorData.errors?.[0]?.detail || 'Failed to clear waiver status');
       }
       
+      console.log(`[CLEAR WAIVER STATUS SUCCESS] Customer ${customerId}`);
       return true;
     } catch (error) {
-      console.error('Error clearing waiver status:', error);
-      return false;
+      console.error(`[CLEAR WAIVER STATUS ERROR] Customer ${customerId}:`, error);
+      throw error;
     }
   }
 }
