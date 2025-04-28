@@ -99,7 +99,7 @@ app.use((err, req, res, next) => {
 
 // API routes
 app.use('/api/customers', customerRoutes);
-app.use('/api/waiver', waiverRoutes);
+app.use('/api/waivers', waiverRoutes);
 
 app.get('/api/status', (req, res) => {
   log('Status check received');
