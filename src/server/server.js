@@ -41,6 +41,14 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Log environment variables (without sensitive data)
+log('Environment Configuration:');
+log(`- NODE_ENV: ${process.env.NODE_ENV}`);
+log(`- SQUARE_API_URL: ${process.env.SQUARE_API_URL ? 'Set' : 'Not Set'}`);
+log(`- SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION ? 'Set' : 'Not Set'}`);
+log(`- SQUARE_ENVIRONMENT: ${process.env.SQUARE_ENVIRONMENT ? 'Set' : 'Not Set'}`);
+log(`- SQUARE_ACCESS_TOKEN: ${process.env.SQUARE_ACCESS_TOKEN ? 'Set' : 'Not Set'}`);
+
 // Parse JSON request bodies
 app.use(express.json());
 
@@ -48,6 +56,15 @@ app.use(express.json());
 app.use((req, res, next) => {
   log(`Request: ${req.method} ${req.url}`);
   next();
+});
+
+// API routes - register these BEFORE static file serving
+app.use('/api/customers', customerRoutes);
+app.use('/api/waivers', waiverRoutes);
+
+app.get('/api/status', (req, res) => {
+  log('Status check received');
+  res.json({ status: 'ok' });
 });
 
 // Determine the correct path for static files
@@ -95,15 +112,6 @@ app.use((err, req, res, next) => {
     log(`Full requested path: ${path.join(staticPath, req.path)}`);
   }
   next(err);
-});
-
-// API routes
-app.use('/api/customers', customerRoutes);
-app.use('/api/waivers', waiverRoutes);
-
-app.get('/api/status', (req, res) => {
-  log('Status check received');
-  res.json({ status: 'ok' });
 });
 
 // Catch-all route for SPA
