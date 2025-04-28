@@ -91,7 +91,12 @@ function startServer() {
     ...process.env,
     NODE_ENV: isDev ? 'development' : 'production',
     ELECTRON_RUN_AS_NODE: '1',
-    LOG_FILE: logFile
+    LOG_FILE: logFile,
+    // Square API configuration from build config
+    SQUARE_API_URL: process.env.SQUARE_API_URL || 'https://connect.squareup.com/v2',
+    SQUARE_API_VERSION: process.env.SQUARE_API_VERSION || '2024-01-18',
+    SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT || 'production',
+    SQUARE_ACCESS_TOKEN: process.env.SQUARE_ACCESS_TOKEN
   };
 
   if (!isDev) {
