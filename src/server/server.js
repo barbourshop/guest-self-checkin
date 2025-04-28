@@ -2,6 +2,10 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
+// Import routes
+const customerRoutes = require('./routes/customerRoutes');
+const waiverRoutes = require('./routes/waiverRoutes');
+
 // Set up logging
 const logFile = process.env.LOG_FILE || path.join(process.cwd(), 'server.log');
 const logStream = fs.createWriteStream(logFile, { flags: 'a' });
@@ -90,6 +94,9 @@ app.use((err, req, res, next) => {
 });
 
 // API routes
+app.use('/api/customers', customerRoutes);
+app.use('/api/waiver', waiverRoutes);
+
 app.get('/api/status', (req, res) => {
   log('Status check received');
   res.json({ status: 'ok' });
