@@ -44,10 +44,12 @@ app.use((req, res, next) => {
 
 // Determine the correct path for static files
 const staticPath = process.env.NODE_ENV === 'production'
-  ? path.join(process.resourcesPath, 'dist')
+  ? path.join(process.cwd(), 'dist')  // Use the app's root dist directory
   : path.join(__dirname, '../../dist');
 
 log(`Serving static files from: ${staticPath}`);
+log(`Process cwd: ${process.cwd()}`);
+log(`Process resources path: ${process.resourcesPath}`);
 
 // Serve static files
 app.use(express.static(staticPath));
