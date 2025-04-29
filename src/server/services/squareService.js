@@ -2,7 +2,7 @@ const {
   SQUARE_API_CONFIG, 
   POOL_PASS_CATALOG_IDS, 
   MEMBERSHIP_SEGMENT_ID 
-} = require('../config/square');
+} = require('../../config/squareConfig');
 
 /**
  * Service for interacting with Square API customer and order endpoints
