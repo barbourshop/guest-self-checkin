@@ -22,26 +22,6 @@ jobs:
         node-version: 23
         cache: 'npm'
 
-    - name: Fix line endings and file encoding
-      run: |
-        git config --global core.autocrlf false
-        git config --global core.eol lf
-        git rm --cached -r .
-        git reset --hard
-        # Ensure files are in UTF-8
-        Get-ChildItem -Recurse -Filter "*.js" | ForEach-Object {
-          $content = Get-Content $_.FullName -Encoding UTF8
-          Set-Content $_.FullName -Value $content -Encoding UTF8 -NoNewline
-        }
-
-    - name: Create .env file
-      run: |
-        echo SQUARE_ACCESS_TOKEN=${{ secrets.SQUARE_ACCESS_TOKEN }} >> .env
-        echo SQUARE_API_URL=${{ secrets.SQUARE_API_URL }} >> .env
-        echo SQUARE_API_VERSION=${{ secrets.SQUARE_API_VERSION }} >> .env
-        echo SQUARE_ENVIRONMENT=${{ secrets.SQUARE_ENVIRONMENT }} >> .env
-        echo VITE_USE_MOCK_API=false >> .env
-    
     - name: Install dependencies
       run: npm install
       
@@ -51,6 +31,11 @@ jobs:
     - name: Build Electron app
       run: npm run dist
       env:
+        SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
+        SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
+        SQUARE_API_VERSION: ${{ secrets.SQUARE_API_VERSION }}
+        SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
+        VITE_USE_MOCK_API: false
         CSC_IDENTITY_AUTO_DISCOVERY: false
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -60,8 +45,8 @@ jobs:
         name: windows-installer
         path: dist/*.exe
 
-    - name: Upload unpacked app artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: unpacked-app
-        path: dist/win-unpacked/**
+    # - name: Upload unpacked app artifact
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: unpacked-app
+    #     path: dist/win-unpacked/**
