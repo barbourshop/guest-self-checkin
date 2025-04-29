@@ -31,7 +31,6 @@
     "files": [
       "dist/**/*",
       "src/server/**/*",
-      "src/config/**/*",
       "package.json",
       "main.js"
     ],
@@ -39,7 +38,6 @@
     "asarUnpack": [
       "dist/**/*",
       "src/server/**/*",
-      "src/config/**/*",
       "node_modules/**/*"
     ],
     "win": {
@@ -50,10 +48,6 @@
       {
         "from": "src/server",
         "to": "src/server"
-      },
-      {
-        "from": "src/config",
-        "to": "src/config"
       },
       {
         "from": "node_modules",
