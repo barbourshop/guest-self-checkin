@@ -6,31 +6,17 @@ require('dotenv').config();
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
 const waiverRoutes = require('./routes/waiverRoutes');
+const logger = require('./logger');
 
 // Set up logging
-const logFile = process.env.LOG_FILE || path.join(process.cwd(), 'server.log');
-const logStream = fs.createWriteStream(logFile, { flags: 'a' });
-
-function log(message) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] [Server] ${message}\n`;
-  console.log(message);
-  logStream.write(logMessage);
-}
-
-log('Server process starting...');
-log(`Log file: ${logFile}`);
-log(`Current working directory: ${process.cwd()}`);
-log(`__dirname: ${__dirname}`);
+logger.info('Server process starting...');
 
 // Set up module resolution for production
 if (process.env.NODE_ENV === 'production') {
   const appPath = process.resourcesPath;
   const nodeModulesPath = path.join(appPath, 'node_modules');
   
-  log('Production mode detected');
-  log(`App path: ${appPath}`);
-  log(`Node modules path: ${nodeModulesPath}`);
+  logger.info('Production mode detected');
   
   // Add node_modules to the module paths
   require('module')._nodeModulePaths = function(from) {
@@ -41,28 +27,20 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Log environment variables (without sensitive data)
-log('Environment Configuration:');
-log(`- NODE_ENV: ${process.env.NODE_ENV}`);
-log(`- SQUARE_API_URL: ${process.env.SQUARE_API_URL ? 'Set' : 'Not Set'}`);
-log(`- SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION ? 'Set' : 'Not Set'}`);
-log(`- SQUARE_ENVIRONMENT: ${process.env.SQUARE_ENVIRONMENT ? 'Set' : 'Not Set'}`);
-log(`- SQUARE_ACCESS_TOKEN: ${process.env.SQUARE_ACCESS_TOKEN ? 'Set' : 'Not Set'}`);
-
-// Log all non-sensitive environment variables for debugging
-log('All Environment Variables:');
-Object.keys(process.env).forEach(key => {
-  if (!key.toLowerCase().includes('token') && !key.toLowerCase().includes('secret') && !key.toLowerCase().includes('key')) {
-    log(`- ${key}: ${process.env[key]}`);
-  }
-});
+// Log essential environment configuration
+logger.info('Environment Configuration:');
+logger.info(`- NODE_ENV: ${process.env.NODE_ENV}`);
+logger.info(`- SQUARE_API_URL: ${process.env.SQUARE_API_URL ? 'Set' : 'Not Set'}`);
+logger.info(`- SQUARE_ENVIRONMENT: ${process.env.SQUARE_ENVIRONMENT ? 'Set' : 'Not Set'}`);
 
 // Parse JSON request bodies
 app.use(express.json());
 
-// Log all requests
+// Log only non-static requests
 app.use((req, res, next) => {
-  log(`Request: ${req.method} ${req.url}`);
+  if (!req.path.startsWith('/static/')) {
+    logger.request(`${req.method} ${req.url}`);
+  }
   next();
 });
 
@@ -71,7 +49,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/waivers', waiverRoutes);
 
 app.get('/api/status', (req, res) => {
-  log('Status check received');
+  logger.debug('Status check received');
   res.json({ status: 'ok' });
 });
 
@@ -90,33 +68,8 @@ if (process.env.NODE_ENV === 'production') {
     // We're in the unpacked version, static files are in the app root
     staticPath = appRoot;
   }
-  
-  // Log all relevant paths for verification
-  log('Production Paths:');
-  log(`- Resources Path: ${process.resourcesPath}`);
-  log(`- App Root: ${appRoot}`);
-  log(`- App Asar Path: ${appAsarPath}`);
-  log(`- Static Path: ${staticPath}`);
-  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
-  
-  // Verify the paths exist
-  log('Path Verification:');
-  log(`- Resources directory exists: ${fs.existsSync(process.resourcesPath)}`);
-  log(`- App root exists: ${fs.existsSync(appRoot)}`);
-  log(`- App asar exists: ${fs.existsSync(appAsarPath)}`);
-  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
-  if (fs.existsSync(staticPath)) {
-    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
-  }
 } else {
   staticPath = path.join(__dirname, '../../dist');
-  log('Development Paths:');
-  log(`- Static Path: ${staticPath}`);
-  log(`- Expected index.html: ${path.join(staticPath, 'index.html')}`);
-  log(`- Static directory exists: ${fs.existsSync(staticPath)}`);
-  if (fs.existsSync(staticPath)) {
-    log(`- Static directory contents: ${fs.readdirSync(staticPath).join(', ')}`);
-  }
 }
 
 // Serve static files
@@ -125,9 +78,7 @@ app.use(express.static(staticPath));
 // Log static file serving errors
 app.use((err, req, res, next) => {
   if (err) {
-    log(`Static file error: ${err.message}`);
-    log(`Requested path: ${req.path}`);
-    log(`Full requested path: ${path.join(staticPath, req.path)}`);
+    logger.error(`Static file error: ${err.message}`);
   }
   next(err);
 });
@@ -135,36 +86,29 @@ app.use((err, req, res, next) => {
 // Catch-all route for SPA
 app.get('*', (req, res) => {
   const indexPath = path.join(staticPath, 'index.html');
-  log(`Serving index.html for path: ${req.path}`);
-  log(`Attempting to serve from: ${indexPath}`);
-  log(`Index.html exists: ${fs.existsSync(indexPath)}`);
   res.sendFile(indexPath);
 });
 
 // Start server
 app.listen(port, () => {
-  log(`Server is running on http://localhost:${port}`);
-  log(`Static files directory exists: ${fs.existsSync(staticPath)}`);
-  if (fs.existsSync(staticPath)) {
-    log(`Contents of static directory: ${fs.readdirSync(staticPath).join(', ')}`);
-  }
+  logger.info(`Server is running on http://localhost:${port}`);
 });
 
 // Handle process termination
 process.on('SIGTERM', () => {
-  log('Received SIGTERM signal');
-  logStream.end();
+  logger.info('Received SIGTERM signal');
+  logger.end();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  log('Received SIGINT signal');
-  logStream.end();
+  logger.info('Received SIGINT signal');
+  logger.end();
   process.exit(0);
 });
 
 process.on('uncaughtException', (err) => {
-  log(`Uncaught exception: ${err.message}`);
-  logStream.end();
+  logger.error(`Uncaught exception: ${err.message}`);
+  logger.end();
   process.exit(1);
 });

@@ -1,7 +1,6 @@
 const squareService = require('../services/squareService');
 const customerService = require('../services/customerService');
-const fs = require('fs');
-const path = require('path');
+const logger = require('../logger');
 
 /**
  * Controller handling customer-related operations
@@ -26,7 +25,7 @@ class CustomerController {
       
       res.json(customers);
     } catch (error) {
-      console.error('Error searching by phone:', error);
+      logger.error(`Error searching by phone: ${error.message}`);
       res.status(500).json({ error: 'Failed to search customers' });
     }
   }
@@ -49,7 +48,7 @@ class CustomerController {
       
       res.json(customers);
     } catch (error) {
-      console.error('Error searching by email:', error);
+      logger.error(`Error searching by email: ${error.message}`);
       res.status(500).json({ error: 'Failed to search customers' });
     }
   }
@@ -72,7 +71,7 @@ class CustomerController {
       
       res.json(customers);
     } catch (error) {
-      console.error('Error searching by lot:', error);
+      logger.error(`Error searching by lot: ${error.message}`);
       res.status(500).json({ error: 'Failed to search customers' });
     }
   }
@@ -93,7 +92,7 @@ class CustomerController {
       
       res.json(result);
     } catch (error) {
-      console.error('Error listing customers:', error);
+      logger.error(`Error listing customers: ${error.message}`);
       res.status(500).json({ error: 'Failed to list customers' });
     }
   }
@@ -114,7 +113,7 @@ class CustomerController {
 
       res.json(customer);
     } catch (error) {
-      console.error('Error getting customer details:', error);
+      logger.error(`Error getting customer details: ${error.message}`);
       res.status(500).json({ error: 'Failed to get customer details' });
     }
   }
@@ -141,7 +140,7 @@ class CustomerController {
 
       res.json({ success: true, hasSignedWaiver });
     } catch (error) {
-      console.error('Error updating waiver status:', error);
+      logger.error(`Error updating waiver status: ${error.message}`);
       res.status(500).json({ error: 'Failed to update waiver status' });
     }
   }
@@ -167,12 +166,12 @@ class CustomerController {
         return res.status(400).json({ error: 'Guest count must be a positive number' });
       }
       
-      // Log the check-in to console
-      console.log(`${new Date().toISOString()} [ CHECK-IN ] Customer ID: ${customerId}, Guest Count: ${guestCount}, First Name: ${firstName}, Last Name: ${lastName}${lotNumber ? `, Lot Number: ${lotNumber}` : ''}`);
+      // Log the check-in using the metric logger
+      logger.metric(`Customer ID: ${customerId}, Guest Count: ${guestCount}, First Name: ${firstName}, Last Name: ${lastName}${lotNumber ? `, Lot Number: ${lotNumber}` : ''}`);
       
       res.json({ success: true, checkIn: { customerId, guestCount, firstName, lastName, lotNumber } });
     } catch (error) {
-      console.error('Error logging check-in:', error);
+      logger.error(`Error logging check-in: ${error.message}`);
       res.status(500).json({ error: 'Failed to log check-in' });
     }
   }

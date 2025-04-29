@@ -1,4 +1,5 @@
 const waiverService = require('../services/waiverService');
+const logger = require('../logger');
 
 /**
  * Controller handling waiver-related operations
@@ -17,16 +18,16 @@ class WaiverController {
       const { customerId } = req.params;
       
       // Log waiver status check
-      console.log(`${new Date().toISOString()} [ CHECK WAIVER STATUS ] Customer ID: ${customerId}`);
+      logger.metric(`Waiver Status Check - Customer ID: ${customerId}`);
       
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
       
       // Log result
-      console.log(`${new Date().toISOString()} [ WAIVER STATUS RESULT ] Customer ID: ${customerId}, Has Signed: ${hasSignedWaiver}`);
+      logger.metric(`Waiver Status Result - Customer ID: ${customerId}, Has Signed: ${hasSignedWaiver}`);
       
       res.json({ hasSignedWaiver });
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ CHECK WAIVER STATUS ERROR ] ${error.message}`);
+      logger.error(`Check Waiver Status Error - ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   }
@@ -46,7 +47,7 @@ class WaiverController {
       
       // Log waiver status update with source
       const source = isAdminAction ? 'ADMIN PANEL' : 'USER UI';
-      console.log(`${new Date().toISOString()} [ ${clear ? 'CLEAR' : 'SET' } WAIVER STATUS FROM ${source} ] Customer ID: ${customerId}`);
+      logger.metric(`${clear ? 'Clear' : 'Set'} Waiver Status from ${source} - Customer ID: ${customerId}`);
       
       if (clear === 'true') {
         // Clear waiver status
@@ -59,9 +60,9 @@ class WaiverController {
       }
       
       // Log result with source
-      console.log(`${new Date().toISOString()} [ WAIVER STATUS ${clear ? 'CLEARED' : 'SET' } FROM ${source} ] Customer ID: ${customerId}`);
+      logger.metric(`Waiver Status ${clear ? 'Cleared' : 'Set'} from ${source} - Customer ID: ${customerId}`);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ ${req.query.clear === 'true' ? 'CLEAR' : 'SET' } WAIVER STATUS ERROR ] ${error.message}`);
+      logger.error(`${req.query.clear === 'true' ? 'Clear' : 'Set'} Waiver Status Error - ${error.message}`);
       res.status(500).json({ error: error.message });
     }
   }
