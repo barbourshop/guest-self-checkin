@@ -84,8 +84,16 @@ function startServer() {
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
+  // Verify server file exists
+  if (!fs.existsSync(serverPath)) {
+    log(`ERROR: Server file not found at ${serverPath}`);
+    return Promise.reject(new Error(`Server file not found at ${serverPath}`));
+  }
+
   log(`Server path: ${serverPath}`);
   log(`Is development mode: ${isDev}`);
+  log(`Current working directory: ${process.cwd()}`);
+  log(`Resource path: ${process.resourcesPath}`);
 
   // Create a copy of process.env to ensure we don't modify the original
   const env = { ...process.env };
@@ -113,6 +121,12 @@ function startServer() {
   if (!isDev) {
     serverEnv.NODE_PATH = path.join(process.resourcesPath, 'node_modules');
     log('Setting NODE_PATH:', serverEnv.NODE_PATH);
+    
+    // Verify node_modules exists
+    if (!fs.existsSync(serverEnv.NODE_PATH)) {
+      log(`ERROR: node_modules not found at ${serverEnv.NODE_PATH}`);
+      return Promise.reject(new Error(`node_modules not found at ${serverEnv.NODE_PATH}`));
+    }
   }
 
   log('Spawning server process...');
@@ -123,34 +137,49 @@ function startServer() {
     detached: true
   });
 
-  expressProcess.stdout.on('data', (data) => {
-    const message = data.toString();
-    log(`Server stdout: ${message}`);
-  });
-
-  expressProcess.stderr.on('data', (data) => {
-    const message = data.toString();
-    log(`Server stderr: ${message}`);
-  });
-
-  expressProcess.on('error', (err) => {
-    log(`Failed to start server: ${err.message}`);
-  });
-
-  expressProcess.on('exit', (code) => {
-    log(`Server exited with code: ${code}`);
-  });
-
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    let serverOutput = '';
+    
     expressProcess.stdout.on('data', (data) => {
-      const output = data.toString();
-      log(`Server output: ${output}`);
-      if (output.includes('Server is running on')) {
-        const port = parseInt(output.match(/localhost:(\d+)/)[1]);
+      const message = data.toString();
+      serverOutput += message;
+      log(`Server stdout: ${message}`);
+      if (message.includes('Server is running on')) {
+        const port = parseInt(message.match(/localhost:(\d+)/)[1]);
         log(`Server started on port: ${port}`);
         resolve(port);
       }
     });
+
+    expressProcess.stderr.on('data', (data) => {
+      const message = data.toString();
+      serverOutput += message;
+      log(`Server stderr: ${message}`);
+    });
+
+    expressProcess.on('error', (err) => {
+      const errorMessage = `Failed to start server: ${err.message}`;
+      log(errorMessage);
+      reject(new Error(errorMessage));
+    });
+
+    expressProcess.on('exit', (code) => {
+      const exitMessage = `Server exited with code: ${code}`;
+      log(exitMessage);
+      if (code !== 0) {
+        log(`Full server output:\n${serverOutput}`);
+        reject(new Error(`Server process exited with code ${code}`));
+      }
+    });
+
+    // Add timeout to prevent hanging
+    setTimeout(() => {
+      if (expressProcess) {
+        log('Server startup timed out after 30 seconds');
+        expressProcess.kill();
+        reject(new Error('Server startup timed out after 30 seconds'));
+      }
+    }, 30000);
   });
 }
 
