@@ -58,6 +58,10 @@
         "from": "node_modules",
         "to": "node_modules",
         "filter": ["**/*"]
+      },
+      {
+        "from": ".env",
+        "to": "."
       }
     ],
     "nsis": {

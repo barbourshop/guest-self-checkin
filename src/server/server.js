@@ -148,12 +148,6 @@ app.listen(port, () => {
   if (fs.existsSync(staticPath)) {
     log(`Contents of static directory: ${fs.readdirSync(staticPath).join(', ')}`);
   }
-  
-  // Write the port to a file in the correct location based on environment
-  const portFilePath = process.env.NODE_ENV === 'production' 
-    ? path.join(process.resourcesPath, 'server-port.txt')
-    : 'server-port.txt';
-  require('fs').writeFileSync(portFilePath, port.toString());
 });
 
 // Handle process termination
