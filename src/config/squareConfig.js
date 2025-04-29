@@ -1,7 +1,7 @@
 const SQUARE_API_CONFIG = {
   baseUrl: 'https://connect.squareup.com/v2',
   headers: {
-    'Square-Version': '2024-01-18',
+    'Square-Version': '2025-01-23',
     'Authorization': `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
     'Content-Type': 'application/json'
   }
