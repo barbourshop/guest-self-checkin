@@ -76,6 +76,14 @@ log(`- SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION ? 'Set' : 'Not Set'}
 log(`- SQUARE_ENVIRONMENT: ${process.env.SQUARE_ENVIRONMENT ? 'Set' : 'Not Set'}`);
 log(`- SQUARE_ACCESS_TOKEN: ${process.env.SQUARE_ACCESS_TOKEN ? 'Set' : 'Not Set'}`);
 
+// Log all non-sensitive environment variables for debugging
+log('All Environment Variables:');
+Object.keys(process.env).forEach(key => {
+  if (!key.toLowerCase().includes('token') && !key.toLowerCase().includes('secret') && !key.toLowerCase().includes('key')) {
+    log(`- ${key}: ${process.env[key]}`);
+  }
+});
+
 // Parse JSON request bodies
 app.use(express.json());
 

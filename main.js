@@ -87,27 +87,38 @@ function startServer() {
   log(`Server path: ${serverPath}`);
   log(`Is development mode: ${isDev}`);
 
-  const env = {
-    ...process.env,
+  // Create a copy of process.env to ensure we don't modify the original
+  const env = { ...process.env };
+  
+  // Log environment variables for debugging
+  log('Environment variables being passed to server:');
+  Object.keys(env).forEach(key => {
+    if (!key.toLowerCase().includes('token') && !key.toLowerCase().includes('secret') && !key.toLowerCase().includes('key')) {
+      log(`- ${key}: ${env[key] ? 'Set' : 'Not Set'}`);
+    }
+  });
+
+  // Ensure required environment variables are set
+  if (!env.SQUARE_ACCESS_TOKEN) {
+    log('WARNING: SQUARE_ACCESS_TOKEN is not set in environment');
+  }
+
+  const serverEnv = {
+    ...env,
     NODE_ENV: isDev ? 'development' : 'production',
     ELECTRON_RUN_AS_NODE: '1',
-    LOG_FILE: logFile,
-    // Square API configuration from build config
-    SQUARE_API_URL: process.env.SQUARE_API_URL || 'https://connect.squareup.com/v2',
-    SQUARE_API_VERSION: process.env.SQUARE_API_VERSION || '2024-01-18',
-    SQUARE_ENVIRONMENT: process.env.SQUARE_ENVIRONMENT || 'production',
-    SQUARE_ACCESS_TOKEN: process.env.SQUARE_ACCESS_TOKEN
+    LOG_FILE: logFile
   };
 
   if (!isDev) {
-    env.NODE_PATH = path.join(process.resourcesPath, 'node_modules');
-    log('Setting NODE_PATH:', env.NODE_PATH);
+    serverEnv.NODE_PATH = path.join(process.resourcesPath, 'node_modules');
+    log('Setting NODE_PATH:', serverEnv.NODE_PATH);
   }
 
   log('Spawning server process...');
   expressProcess = spawn(process.execPath, [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: env,
+    env: serverEnv,
     cwd: isDev ? process.cwd() : process.resourcesPath,
     detached: true
   });
