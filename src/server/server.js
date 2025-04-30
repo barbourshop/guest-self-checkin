@@ -11,11 +11,12 @@ const logger = require('./logger');
 // Set up logging
 logger.info('Server process starting...');
 
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('process.resourcesPath:', process.resourcesPath);
 // Set up module resolution for production
 if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
-  console.log('DEBUG: process.resourcesPath:', process.resourcesPath);
   const appPath = process.resourcesPath;
-  console.log('DEBUG: appPath:', appPath);
+  console.log('appPath:', appPath);
   const nodeModulesPath = path.join(appPath, 'node_modules');
   
   logger.info('Production mode detected');
@@ -61,7 +62,8 @@ if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'u
   // In production, we need to handle both unpacked and installed versions
   const appRoot = path.resolve(process.resourcesPath, '..');
   const appAsarPath = path.join(process.resourcesPath, 'app.asar');
-  
+  console.log('appRoot:', appRoot);
+  console.log('appAsarPath:', appAsarPath);
   // Check if we're in an asar archive
   if (fs.existsSync(appAsarPath)) {
     // We're in the installed version, static files are in app.asar/dist
@@ -70,8 +72,14 @@ if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'u
     // We're in the unpacked version, static files are in the app root
     staticPath = appRoot;
   }
+  console.log('staticPath:', staticPath);
+  console.log('Does staticPath exist?', fs.existsSync(staticPath));
+  console.log('Does index.html exist?', fs.existsSync(path.join(staticPath, 'index.html')));
 } else {
   staticPath = path.join(__dirname, '../../dist');
+  console.log('staticPath (dev):', staticPath);
+  console.log('Does staticPath exist?', fs.existsSync(staticPath));
+  console.log('Does index.html exist?', fs.existsSync(path.join(staticPath, 'index.html')));
 }
 
 // Serve static files
