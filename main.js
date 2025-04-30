@@ -94,6 +94,7 @@ function startServer() {
   log(`Is development mode: ${isDev}`);
   log(`Current working directory: ${process.cwd()}`);
   log(`Resource path: ${process.resourcesPath}`);
+  log(`Node execPath: ${process.execPath}`);
 
   // Create a copy of process.env to ensure we don't modify the original
   const env = { ...process.env };
@@ -130,7 +131,7 @@ function startServer() {
   }
 
   log('Spawning server process...');
-  expressProcess = spawn(process.execPath, [serverPath], {
+  expressProcess = spawn('node', [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: serverEnv,
     cwd: isDev ? process.cwd() : process.resourcesPath,
