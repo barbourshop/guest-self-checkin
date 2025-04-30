@@ -12,8 +12,10 @@ const logger = require('./logger');
 logger.info('Server process starting...');
 
 // Set up module resolution for production
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
+  console.log('DEBUG: process.resourcesPath:', process.resourcesPath);
   const appPath = process.resourcesPath;
+  console.log('DEBUG: appPath:', appPath);
   const nodeModulesPath = path.join(appPath, 'node_modules');
   
   logger.info('Production mode detected');
@@ -55,7 +57,7 @@ app.get('/api/status', (req, res) => {
 
 // Determine the correct path for static files
 let staticPath;
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
   // In production, we need to handle both unpacked and installed versions
   const appRoot = path.resolve(process.resourcesPath, '..');
   const appAsarPath = path.join(process.resourcesPath, 'app.asar');
