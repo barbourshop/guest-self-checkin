@@ -46,6 +46,10 @@
     },
     "extraResources": [
       {
+        "from": "dist",
+        "to": "dist"
+      },
+      {
         "from": "src/server",
         "to": "src/server"
       },
