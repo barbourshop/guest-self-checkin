@@ -30,6 +30,7 @@
     },
     "files": [
       "dist/**/*",
+      "!dist/win-unpacked{,/**}",
       "src/server/**/*",
       "package.json",
       "main.js"
@@ -47,7 +48,11 @@
     "extraResources": [
       {
         "from": "dist",
-        "to": "dist"
+        "to": "dist",
+        "filter": [
+          "**/*",
+          "!win-unpacked{,/**}"
+        ]
       },
       {
         "from": "src/server",
