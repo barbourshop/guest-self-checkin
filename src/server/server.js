@@ -37,7 +37,11 @@ logger.info(`- SQUARE_API_URL: ${process.env.SQUARE_API_URL ? 'Set' : 'Not Set'}
 logger.info(`- SQUARE_ENVIRONMENT: ${process.env.SQUARE_ENVIRONMENT ? 'Set' : 'Not Set'}`);
 
 // Parse JSON request bodies
+logger.info('Setting up middleware...');
 app.use(express.json());
+
+// Log routes setup
+logger.info('Setting up routes...');
 
 // Log only non-static requests
 app.use((req, res, next) => {
@@ -57,6 +61,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // Determine the correct path for static files
+logger.info('Configuring static file serving...');
 let staticPath;
 if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
   // In production, we need to handle both unpacked and installed versions
@@ -83,9 +88,11 @@ if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'u
 }
 
 // Serve static files
+logger.info(`Setting up static file serving from: ${staticPath}`);
 app.use(express.static(staticPath));
 
 // Log static file serving errors
+logger.info('Setting up error handlers...');
 app.use((err, req, res, next) => {
   if (err) {
     logger.error(`Static file error: ${err.message}`);
@@ -94,14 +101,31 @@ app.use((err, req, res, next) => {
 });
 
 // Catch-all route for SPA
+logger.info('Setting up catch-all route...');
 app.get('*', (req, res) => {
   const indexPath = path.join(staticPath, 'index.html');
+  logger.info(`Serving index.html from: ${indexPath}`);
   res.sendFile(indexPath);
 });
 
 // Start server
-app.listen(port, () => {
+logger.info('Attempting to start server...');
+const server = app.listen(port, () => {
   logger.info(`Server is running on http://localhost:${port}`);
+}).on('error', (err) => {
+  logger.error(`Failed to start server: ${err.message}`);
+  process.exit(1);
+});
+
+// Set timeout for server startup
+const startupTimeout = setTimeout(() => {
+  logger.error('Server startup timed out');
+  process.exit(1);
+}, 30000);
+
+server.once('listening', () => {
+  clearTimeout(startupTimeout);
+  logger.info('Server startup completed successfully');
 });
 
 // Handle process termination
