@@ -66,48 +66,43 @@ app.get('/api/status', (req, res) => {
 logger.info('Configuring static file serving...');
 let staticPath;
 if (process.env.NODE_ENV === 'production' && typeof resourcesPath !== 'undefined') {
-  // In production, we need to handle both unpacked and installed versions
-  const appRoot = path.resolve(resourcesPath, '..');
-  const appAsarPath = path.join(resourcesPath, 'app.asar');
-  console.log('appRoot:', appRoot);
-  console.log('appAsarPath:', appAsarPath);
-  // Check if we're in an asar archive
-  if (fs.existsSync(appAsarPath)) {
-    // We're in the installed version, static files are in app.asar/dist
-    staticPath = path.join(appAsarPath, 'dist');
+  // In production, static files are in resources/dist
+  staticPath = path.join(resourcesPath, 'dist');
+  
+  logger.info('Production mode detected');
+  logger.info(`Static path set to: ${staticPath}`);
+  
+  // Log the contents of the static directory
+  if (fs.existsSync(staticPath)) {
+    logger.info('Static directory exists');
+    try {
+      const files = fs.readdirSync(staticPath);
+      logger.info(`Files in static directory: ${files.join(', ')}`);
+    } catch (err) {
+      logger.error(`Error reading static directory: ${err.message}`);
+    }
   } else {
-    // We're in the unpacked version, static files are in the app root
-    staticPath = appRoot;
+    logger.error(`Static directory does not exist: ${staticPath}`);
   }
-  console.log('staticPath:', staticPath);
-  console.log('Does staticPath exist?', fs.existsSync(staticPath));
-  console.log('Does index.html exist?', fs.existsSync(path.join(staticPath, 'index.html')));
 } else {
   staticPath = path.join(__dirname, '../../dist');
-  console.log('staticPath (dev):', staticPath);
-  console.log('Does staticPath exist?', fs.existsSync(staticPath));
-  console.log('Does index.html exist?', fs.existsSync(path.join(staticPath, 'index.html')));
+  logger.info(`Development mode, static path set to: ${staticPath}`);
 }
 
 // Serve static files
 logger.info(`Setting up static file serving from: ${staticPath}`);
 app.use(express.static(staticPath));
 
-// Log static file serving errors
-logger.info('Setting up error handlers...');
-app.use((err, req, res, next) => {
-  if (err) {
-    logger.error(`Static file error: ${err.message}`);
-  }
-  next(err);
-});
-
 // Catch-all route for SPA
-logger.info('Setting up catch-all route...');
 app.get('*', (req, res) => {
   const indexPath = path.join(staticPath, 'index.html');
   logger.info(`Serving index.html from: ${indexPath}`);
-  res.sendFile(indexPath);
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    logger.error(`index.html not found at: ${indexPath}`);
+    res.status(404).send('index.html not found');
+  }
 });
 
 // Start server

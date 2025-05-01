@@ -117,17 +117,25 @@ function startServer() {
     NODE_ENV: isDev ? 'development' : 'production',
     ELECTRON_RUN_AS_NODE: '1',
     LOG_FILE: logFile,
-    RESOURCES_PATH: process.resourcesPath
+    RESOURCES_PATH: process.resourcesPath,
+    APP_PATH: app.getAppPath()  // Add this to help with path resolution
   };
 
   if (!isDev) {
-    serverEnv.NODE_PATH = path.join(process.resourcesPath, 'node_modules');
+    // Set NODE_PATH to include both the resources path and the app path
+    const nodePaths = [
+      path.join(process.resourcesPath, 'node_modules'),
+      path.join(app.getAppPath(), 'node_modules')
+    ].join(path.delimiter);
+    
+    serverEnv.NODE_PATH = nodePaths;
     log('Setting NODE_PATH:', serverEnv.NODE_PATH);
     
-    // Verify node_modules exists
-    if (!fs.existsSync(serverEnv.NODE_PATH)) {
-      log(`ERROR: node_modules not found at ${serverEnv.NODE_PATH}`);
-      return Promise.reject(new Error(`node_modules not found at ${serverEnv.NODE_PATH}`));
+    // Verify node_modules exists in at least one location
+    const hasNodeModules = nodePaths.split(path.delimiter).some(p => fs.existsSync(p));
+    if (!hasNodeModules) {
+      log(`ERROR: node_modules not found in any of: ${nodePaths}`);
+      return Promise.reject(new Error(`node_modules not found in: ${nodePaths}`));
     }
   }
 
