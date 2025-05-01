@@ -13,9 +13,11 @@ logger.info('Server process starting...');
 
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('process.resourcesPath:', process.resourcesPath);
+// Use RESOURCES_PATH env var as a fallback for process.resourcesPath
+const resourcesPath = process.env.RESOURCES_PATH || process.resourcesPath;
 // Set up module resolution for production
-if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
-  const appPath = process.resourcesPath;
+if (process.env.NODE_ENV === 'production' && typeof resourcesPath !== 'undefined') {
+  const appPath = resourcesPath;
   console.log('appPath:', appPath);
   const nodeModulesPath = path.join(appPath, 'node_modules');
   
@@ -63,10 +65,10 @@ app.get('/api/status', (req, res) => {
 // Determine the correct path for static files
 logger.info('Configuring static file serving...');
 let staticPath;
-if (process.env.NODE_ENV === 'production' && typeof process.resourcesPath !== 'undefined') {
+if (process.env.NODE_ENV === 'production' && typeof resourcesPath !== 'undefined') {
   // In production, we need to handle both unpacked and installed versions
-  const appRoot = path.resolve(process.resourcesPath, '..');
-  const appAsarPath = path.join(process.resourcesPath, 'app.asar');
+  const appRoot = path.resolve(resourcesPath, '..');
+  const appAsarPath = path.join(resourcesPath, 'app.asar');
   console.log('appRoot:', appRoot);
   console.log('appAsarPath:', appAsarPath);
   // Check if we're in an asar archive

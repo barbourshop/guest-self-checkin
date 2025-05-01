@@ -116,7 +116,8 @@ function startServer() {
     ...env,
     NODE_ENV: isDev ? 'development' : 'production',
     ELECTRON_RUN_AS_NODE: '1',
-    LOG_FILE: logFile
+    LOG_FILE: logFile,
+    RESOURCES_PATH: process.resourcesPath
   };
 
   if (!isDev) {
