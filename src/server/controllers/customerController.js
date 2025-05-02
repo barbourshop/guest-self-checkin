@@ -12,7 +12,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async searchByPhone(req, res) {
+  async searchByPhone(req, res, next) {
     try {
       const { phone } = req.body;
       
@@ -26,7 +26,7 @@ class CustomerController {
       res.json(customers);
     } catch (error) {
       logger.error(`Error searching by phone: ${error.message}`);
-      res.status(500).json({ error: 'Failed to search customers' });
+      next(error);
     }
   }
 
@@ -35,7 +35,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async searchByEmail(req, res) {
+  async searchByEmail(req, res, next) {
     try {
       const { email } = req.body;
       
@@ -49,7 +49,7 @@ class CustomerController {
       res.json(customers);
     } catch (error) {
       logger.error(`Error searching by email: ${error.message}`);
-      res.status(500).json({ error: 'Failed to search customers' });
+      next(error);
     }
   }
 
@@ -58,7 +58,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async searchByLot(req, res) {
+  async searchByLot(req, res, next) {
     try {
       const { lot } = req.body;
       
@@ -72,7 +72,7 @@ class CustomerController {
       res.json(customers);
     } catch (error) {
       logger.error(`Error searching by lot: ${error.message}`);
-      res.status(500).json({ error: 'Failed to search customers' });
+      next(error);
     }
   }
 
@@ -81,7 +81,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async listCustomers(req, res) {
+  async listCustomers(req, res, next) {
     try {
       const { limit, cursor } = req.query;
       
@@ -93,7 +93,7 @@ class CustomerController {
       res.json(result);
     } catch (error) {
       logger.error(`Error listing customers: ${error.message}`);
-      res.status(500).json({ error: 'Failed to list customers' });
+      next(error);
     }
   }
 
@@ -102,7 +102,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async getCustomerDetails(req, res) {
+  async getCustomerDetails(req, res, next) {
     try {
       const { customerId } = req.params;
       const customer = await customerService.getCustomerById(customerId);
@@ -114,7 +114,7 @@ class CustomerController {
       res.json(customer);
     } catch (error) {
       logger.error(`Error getting customer details: ${error.message}`);
-      res.status(500).json({ error: 'Failed to get customer details' });
+      next(error);
     }
   }
 
@@ -123,7 +123,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async updateWaiverStatus(req, res) {
+  async updateWaiverStatus(req, res, next) {
     try {
       const { customerId } = req.params;
       const { hasSignedWaiver } = req.body;
@@ -141,7 +141,7 @@ class CustomerController {
       res.json({ success: true, hasSignedWaiver });
     } catch (error) {
       logger.error(`Error updating waiver status: ${error.message}`);
-      res.status(500).json({ error: 'Failed to update waiver status' });
+      next(error);
     }
   }
 
@@ -150,7 +150,7 @@ class CustomerController {
    * @param {Request} req - Express request object
    * @param {Response} res - Express response object
    */
-  async logCheckIn(req, res) {
+  async logCheckIn(req, res, next) {
     try {
       const { customerId, guestCount, firstName, lastName, lotNumber } = req.body;
       
@@ -172,7 +172,7 @@ class CustomerController {
       res.json({ success: true, checkIn: { customerId, guestCount, firstName, lastName, lotNumber } });
     } catch (error) {
       logger.error(`Error logging check-in: ${error.message}`);
-      res.status(500).json({ error: 'Failed to log check-in' });
+      next(error);
     }
   }
 }

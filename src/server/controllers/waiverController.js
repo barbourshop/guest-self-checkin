@@ -10,10 +10,11 @@ class WaiverController {
    * Check if customer has signed waiver
    * @param {Request} req - Express request object with params: { customerId: string }
    * @param {Response} res - Express response object
+   * @param {Function} next - Express next middleware function
    * @returns {Promise<void>} - JSON response with { hasSignedWaiver: boolean }
    * @throws {Error} Returns 500 if check fails
    */
-  async checkStatus(req, res) {
+  async checkStatus(req, res, next) {
     try {
       const { customerId } = req.params;
       
@@ -28,7 +29,7 @@ class WaiverController {
       res.json({ hasSignedWaiver });
     } catch (error) {
       logger.error(`Check Waiver Status Error - ${error.message}`);
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 
@@ -36,10 +37,11 @@ class WaiverController {
    * Set waiver status for a customer
    * @param {Request} req - Express request object with params: { customerId: string }
    * @param {Response} res - Express response object
+   * @param {Function} next - Express next middleware function
    * @returns {Promise<void>} - JSON response with success status
    * @throws {Error} Returns 500 if setting fails
    */
-  async setStatus(req, res) {
+  async setStatus(req, res, next) {
     try {
       const { customerId } = req.params;
       const { clear } = req.query;
@@ -63,7 +65,7 @@ class WaiverController {
       logger.metric(`Waiver Status ${clear ? 'Cleared' : 'Set'} from ${source} - Customer ID: ${customerId}`);
     } catch (error) {
       logger.error(`${req.query.clear === 'true' ? 'Clear' : 'Set'} Waiver Status Error - ${error.message}`);
-      res.status(500).json({ error: error.message });
+      next(error);
     }
   }
 }

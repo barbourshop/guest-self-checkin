@@ -1,19 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customerController');
+const { asyncHandler } = require('../app');
 
 // Customer search endpoints
-router.post('/search/phone', customerController.searchByPhone);
-router.post('/search/email', customerController.searchByEmail);
-router.post('/search/lot', customerController.searchByLot);
+router.post('/search/phone', asyncHandler(customerController.searchByPhone));
+router.post('/search/email', asyncHandler(customerController.searchByEmail));
+router.post('/search/lot', asyncHandler(customerController.searchByLot));
 
 // Admin endpoints
-router.get('/admin/:customerId', customerController.getCustomerDetails);
-router.post('/admin/:customerId/waiver', customerController.updateWaiverStatus);
+router.get('/admin/:customerId', asyncHandler(customerController.getCustomerDetails));
+router.post('/admin/:customerId/waiver', asyncHandler(customerController.updateWaiverStatus));
 
-router.get('/list', customerController.listCustomers);
+router.get('/list', asyncHandler(customerController.listCustomers));
 
 // Check-in endpoint
-router.post('/check-in', customerController.logCheckIn);
+router.post('/check-in', asyncHandler(customerController.logCheckIn));
 
 module.exports = router;
