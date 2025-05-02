@@ -1,12 +1,15 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
 require('dotenv').config();
 
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
 const waiverRoutes = require('./routes/waiverRoutes');
 const logger = require('./logger');
+const errorHandler = require('./middleware/errorHandler');
+const { SQUARE_API_CONFIG } = require('./config/square');
 
 function log(message) {
   console.log(`[Server] ${message}`);
@@ -16,7 +19,7 @@ function log(message) {
 log('Starting server...');
 
 // Get the resources path
-const resourcesPath = process.env.RESOURCES_PATH;
+const resourcesPath = process.env.RESOURCES_PATH || './';
 if (!resourcesPath) {
   log('ERROR: RESOURCES_PATH environment variable is not set');
   process.exit(1);
@@ -25,6 +28,19 @@ if (!resourcesPath) {
 try {
   const app = express();
   const port = process.env.PORT || 3000;
+
+  // Enable CORS for all routes
+  app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-action'],
+    credentials: true
+  }));
+
+  // Handle OPTIONS requests explicitly
+  app.options('*', cors());
 
   // Middleware
   app.use(express.json());
@@ -68,6 +84,9 @@ try {
     });
   });
 
+  // Add error handling middleware last
+  app.use(errorHandler);
+
   // Error handler
   function handleError(err) {
     log(`Fatal error: ${err.message}`);
@@ -89,8 +108,17 @@ try {
     });
   });
 
-  process.on('uncaughtException', handleError);
-  process.on('unhandledRejection', handleError);
+  process.on('uncaughtException', (err) => {
+    log(`Uncaught Exception: ${err.message}`);
+    logger.error(err.stack);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    log(`Unhandled Promise Rejection: ${reason}`);
+    logger.error(reason);
+    process.exit(1);
+  });
 
 } catch (err) {
   log(`Fatal error during startup: ${err.message}`);
