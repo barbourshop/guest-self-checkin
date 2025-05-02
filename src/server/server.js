@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 require('dotenv').config();
 
 // Import routes
@@ -42,6 +43,12 @@ try {
   // Parse JSON request bodies
   logStartupInfo('middleware', 'Setting up middleware...');
   app.use(express.json());
+
+  // Add request logging middleware
+  app.use((req, res, next) => {
+    logStartupInfo('request', `${req.method} ${req.url}`);
+    next();
+  });
   
   // Log routes setup
   logStartupInfo('routes', 'Setting up routes...');
@@ -64,6 +71,13 @@ try {
     const indexPath = path.join(staticPath, 'index.html');
     if (fs.existsSync(indexPath)) {
       logStartupInfo('static', 'index.html found');
+      // Log the first few lines of index.html to verify its contents
+      try {
+        const indexContent = fs.readFileSync(indexPath, 'utf8').split('\n').slice(0, 5).join('\n');
+        logStartupInfo('static', `First few lines of index.html:\n${indexContent}`);
+      } catch (err) {
+        logStartupInfo('static', `Error reading index.html: ${err.message}`);
+      }
     } else {
       logStartupInfo('static', 'ERROR: index.html not found');
     }
@@ -72,46 +86,64 @@ try {
     process.exit(1);
   }
 
-  // Serve static files
+  // Serve static files with detailed error logging
   logStartupInfo('static', `Setting up static file serving from: ${staticPath}`);
-  app.use(express.static(staticPath));
+  app.use(express.static(staticPath, {
+    index: 'index.html',
+    fallthrough: true,
+    redirect: false
+  }));
 
-  // Catch-all route for SPA
+  // Catch-all route for SPA with detailed error handling
   logStartupInfo('routes', 'Setting up catch-all route...');
   app.get('*', (req, res) => {
     const indexPath = path.join(staticPath, 'index.html');
-    logStartupInfo('routes', `Serving index.html from: ${indexPath}`);
-    res.sendFile(indexPath);
+    logStartupInfo('routes', `Serving index.html from: ${indexPath} for path: ${req.path}`);
+    res.sendFile(indexPath, err => {
+      if (err) {
+        logStartupInfo('error', `Error serving index.html: ${err.message}`);
+        res.status(500).send(`Error serving application: ${err.message}`);
+      }
+    });
   });
 
   // Start server
   logStartupInfo('startup', 'Starting server...');
-  const server = app.listen(port, () => {
-    logStartupInfo('startup', `Server is running on http://localhost:${port}`);
-  }).on('error', (err) => {
-    logStartupInfo('startup', `ERROR starting server: ${err.message}`);
+
+  // Error handler for uncaught errors
+  function handleError(err) {
+    logStartupInfo('error', `Fatal error: ${err.message}`);
+    logStartupInfo('error', err.stack || 'No stack trace available');
     process.exit(1);
-  });
+  }
+
+  try {
+    const server = app.listen(port, () => {
+      logStartupInfo('startup', `Server is running on http://localhost:${port}`);
+    }).on('error', (err) => {
+      handleError(err);
+    });
+
+    // Handle various termination signals
+    ['SIGTERM', 'SIGINT'].forEach(signal => {
+      process.on(signal, () => {
+        logStartupInfo('shutdown', `Received ${signal} signal`);
+        server.close(() => {
+          logStartupInfo('shutdown', 'Server closed gracefully');
+          process.exit(0);
+        });
+      });
+    });
+
+    process.on('uncaughtException', handleError);
+    process.on('unhandledRejection', handleError);
+
+  } catch (err) {
+    handleError(err);
+  }
 
 } catch (err) {
   logStartupInfo('error', `Fatal error during startup: ${err.message}`);
   logStartupInfo('error', err.stack);
   process.exit(1);
 }
-
-// Handle process termination
-process.on('SIGTERM', () => {
-  logStartupInfo('shutdown', 'Received SIGTERM signal');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  logStartupInfo('shutdown', 'Received SIGINT signal');
-  process.exit(0);
-});
-
-process.on('uncaughtException', (err) => {
-  logStartupInfo('error', `Uncaught exception: ${err.message}`);
-  logStartupInfo('error', err.stack);
-  process.exit(1);
-});

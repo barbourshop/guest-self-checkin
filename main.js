@@ -65,6 +65,19 @@ function createWindow() {
     }
   });
 
+  // Add loading and error event handlers
+  mainWindow.webContents.on('did-start-loading', () => {
+    log('Window started loading content');
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    log('Window finished loading content');
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    log(`Window failed to load: ${errorDescription} (${errorCode})`);
+  });
+
   if (process.env.NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools();
   }
@@ -99,13 +112,13 @@ function startServer() {
 
   // Set up server environment
   const serverEnv = {
-    ...process.env,  // Start with current environment
+    ...process.env,
     NODE_ENV: isDev ? 'development' : 'production',
-    ELECTRON_RUN_AS_NODE: '1',  // Tell Electron to behave like Node
+    ELECTRON_RUN_AS_NODE: '1',
     LOG_FILE: logFile,
     RESOURCES_PATH: process.resourcesPath,
     APP_PATH: app.getAppPath(),
-    DEBUG: '*'  // Enable all debug logging
+    DEBUG: '*'
   };
 
   // Log non-sensitive environment variables
@@ -125,22 +138,14 @@ function startServer() {
 
   return new Promise((resolve, reject) => {
     let serverOutput = '';
-    let startupPhase = 'initializing';
-    
+
     expressProcess.stdout.on('data', (data) => {
       const message = data.toString();
       serverOutput += message;
-      log(`Server stdout [${startupPhase}]: ${message.trim()}`);
+      log(`Server stdout: ${message.trim()}`);
       
-      // Track startup phases
-      if (message.includes('[INFO] Setting up middleware')) {
-        startupPhase = 'middleware';
-      } else if (message.includes('[INFO] Setting up routes')) {
-        startupPhase = 'routes';
-      } else if (message.includes('[INFO] Configuring static file serving')) {
-        startupPhase = 'static-files';
-      } else if (message.includes('[INFO] Server is running on')) {
-        startupPhase = 'running';
+      // Look for the server running message
+      if (message.includes('Server is running on http://localhost:')) {
         const port = parseInt(message.match(/localhost:(\d+)/)[1]);
         log(`Server started successfully on port: ${port}`);
         resolve(port);
@@ -150,31 +155,31 @@ function startServer() {
     expressProcess.stderr.on('data', (data) => {
       const message = data.toString();
       serverOutput += message;
-      log(`Server stderr [${startupPhase}]: ${message.trim()}`);
+      log(`Server stderr: ${message.trim()}`);
     });
 
     expressProcess.on('error', (err) => {
       const errorMessage = `Failed to start server: ${err.message}`;
-      log(`Server error [${startupPhase}]: ${errorMessage}`);
+      log(`Server error: ${errorMessage}`);
       reject(new Error(errorMessage));
     });
 
     expressProcess.on('exit', (code) => {
       const exitMessage = `Server exited with code: ${code}`;
-      log(`Server exit [${startupPhase}]: ${exitMessage}`);
+      log(`Server exit: ${exitMessage}`);
       if (code !== 0) {
         log(`Full server output:\n${serverOutput}`);
         reject(new Error(`Server process exited with code ${code}`));
       }
     });
 
-    // Add timeout to prevent hanging
+    // Keep timeout as a safety measure
     setTimeout(() => {
       if (expressProcess) {
-        log(`Server startup timed out in phase: ${startupPhase}`);
+        log('Server startup timed out after 30 seconds');
         log(`Last known output:\n${serverOutput}`);
         expressProcess.kill();
-        reject(new Error(`Server startup timed out in phase: ${startupPhase}`));
+        reject(new Error('Server startup timed out after 30 seconds'));
       }
     }, 30000);
   });
@@ -184,15 +189,27 @@ function startServer() {
 app.on('ready', () => {
   log('App ready event received');
   const window = createWindow();
-  window.loadURL('about:blank'); // Show blank page immediately
+  log('Loading blank page while server starts...');
+  window.loadURL('about:blank').catch(err => {
+    log(`Error loading blank page: ${err.message}`);
+  });
   
   // Start server in background
   startServer().then(port => {
-    log(`Loading app at http://localhost:${port}`);
-    window.loadURL(`http://localhost:${port}`);
+    const url = `http://localhost:${port}`;
+    log(`Loading app at ${url}`);
+    window.loadURL(url).catch(err => {
+      log(`Error loading app URL: ${err.message}`);
+      // If we can't load the app, show an error page
+      window.loadURL(`data:text/html,Failed to load app: ${err.message}`).catch(err2 => {
+        log(`Error showing error page: ${err2.message}`);
+      });
+    });
   }).catch(err => {
     log(`Failed to start server: ${err.message}`);
-    window.loadURL('about:blank');
+    window.loadURL(`data:text/html,Server failed to start: ${err.message}`).catch(err2 => {
+      log(`Error showing error page: ${err2.message}`);
+    });
   });
 });
 
