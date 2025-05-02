@@ -84,11 +84,12 @@ function startServer() {
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
-  // Verify server file exists
+  log('Checking server file existence...');
   if (!fs.existsSync(serverPath)) {
     log(`ERROR: Server file not found at ${serverPath}`);
     return Promise.reject(new Error(`Server file not found at ${serverPath}`));
   }
+  log('Server file exists');
 
   log(`Server path: ${serverPath}`);
   log(`Is development mode: ${isDev}`);
@@ -96,67 +97,52 @@ function startServer() {
   log(`Resource path: ${process.resourcesPath}`);
   log(`Node execPath: ${process.execPath}`);
 
-  // Create a copy of process.env to ensure we don't modify the original
-  const env = { ...process.env };
-  
-  // Log environment variables for debugging
+  // Set up server environment
+  const serverEnv = {
+    ...process.env,  // Start with current environment
+    NODE_ENV: isDev ? 'development' : 'production',
+    ELECTRON_RUN_AS_NODE: '1',  // Tell Electron to behave like Node
+    LOG_FILE: logFile,
+    RESOURCES_PATH: process.resourcesPath,
+    APP_PATH: app.getAppPath(),
+    DEBUG: '*'  // Enable all debug logging
+  };
+
+  // Log non-sensitive environment variables
   log('Environment variables being passed to server:');
-  Object.keys(env).forEach(key => {
+  Object.keys(serverEnv).forEach(key => {
     if (!key.toLowerCase().includes('token') && !key.toLowerCase().includes('secret') && !key.toLowerCase().includes('key')) {
-      log(`- ${key}: ${env[key] ? 'Set' : 'Not Set'}`);
+      log(`- ${key}: ${serverEnv[key] ? 'Set' : 'Not Set'}`);
     }
   });
 
-  // Ensure required environment variables are set
-  if (!env.SQUARE_ACCESS_TOKEN) {
-    log('WARNING: SQUARE_ACCESS_TOKEN is not set in environment');
-  }
-
-  const serverEnv = {
-    ...env,
-    NODE_ENV: isDev ? 'development' : 'production',
-    ELECTRON_RUN_AS_NODE: '1',
-    LOG_FILE: logFile,
-    RESOURCES_PATH: process.resourcesPath,
-    APP_PATH: app.getAppPath()  // Add this to help with path resolution
-  };
-
-  if (!isDev) {
-    // Set NODE_PATH to include both the resources path and the app path
-    const nodePaths = [
-      path.join(process.resourcesPath, 'node_modules'),
-      path.join(app.getAppPath(), 'node_modules')
-    ].join(path.delimiter);
-    
-    serverEnv.NODE_PATH = nodePaths;
-    log('Setting NODE_PATH:', serverEnv.NODE_PATH);
-    
-    // Verify node_modules exists in at least one location
-    const hasNodeModules = nodePaths.split(path.delimiter).some(p => fs.existsSync(p));
-    if (!hasNodeModules) {
-      log(`ERROR: node_modules not found in any of: ${nodePaths}`);
-      return Promise.reject(new Error(`node_modules not found in: ${nodePaths}`));
-    }
-  }
-
-  log('Spawning server process...');
-  expressProcess = spawn('node', [serverPath], {
+  log('Attempting to spawn server process...');
+  expressProcess = spawn(process.execPath, [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: serverEnv,
-    cwd: isDev ? process.cwd() : process.resourcesPath,
-    detached: true
+    cwd: isDev ? process.cwd() : process.resourcesPath
   });
 
   return new Promise((resolve, reject) => {
     let serverOutput = '';
+    let startupPhase = 'initializing';
     
     expressProcess.stdout.on('data', (data) => {
       const message = data.toString();
       serverOutput += message;
-      log(`Server stdout: ${message}`);
-      if (message.includes('Server is running on')) {
+      log(`Server stdout [${startupPhase}]: ${message.trim()}`);
+      
+      // Track startup phases
+      if (message.includes('[INFO] Setting up middleware')) {
+        startupPhase = 'middleware';
+      } else if (message.includes('[INFO] Setting up routes')) {
+        startupPhase = 'routes';
+      } else if (message.includes('[INFO] Configuring static file serving')) {
+        startupPhase = 'static-files';
+      } else if (message.includes('[INFO] Server is running on')) {
+        startupPhase = 'running';
         const port = parseInt(message.match(/localhost:(\d+)/)[1]);
-        log(`Server started on port: ${port}`);
+        log(`Server started successfully on port: ${port}`);
         resolve(port);
       }
     });
@@ -164,18 +150,18 @@ function startServer() {
     expressProcess.stderr.on('data', (data) => {
       const message = data.toString();
       serverOutput += message;
-      log(`Server stderr: ${message}`);
+      log(`Server stderr [${startupPhase}]: ${message.trim()}`);
     });
 
     expressProcess.on('error', (err) => {
       const errorMessage = `Failed to start server: ${err.message}`;
-      log(errorMessage);
+      log(`Server error [${startupPhase}]: ${errorMessage}`);
       reject(new Error(errorMessage));
     });
 
     expressProcess.on('exit', (code) => {
       const exitMessage = `Server exited with code: ${code}`;
-      log(exitMessage);
+      log(`Server exit [${startupPhase}]: ${exitMessage}`);
       if (code !== 0) {
         log(`Full server output:\n${serverOutput}`);
         reject(new Error(`Server process exited with code ${code}`));
@@ -185,9 +171,10 @@ function startServer() {
     // Add timeout to prevent hanging
     setTimeout(() => {
       if (expressProcess) {
-        log('Server startup timed out after 30 seconds');
+        log(`Server startup timed out in phase: ${startupPhase}`);
+        log(`Last known output:\n${serverOutput}`);
         expressProcess.kill();
-        reject(new Error('Server startup timed out after 30 seconds'));
+        reject(new Error(`Server startup timed out in phase: ${startupPhase}`));
       }
     }, 30000);
   });
