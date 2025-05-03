@@ -118,54 +118,14 @@ function startServer() {
     cwd: isDev ? process.cwd() : process.resourcesPath
   });
 
-  return new Promise((resolve, reject) => {
-    let serverOutput = '';
-
-    expressProcess.stdout.on('data', (data) => {
-      const message = data.toString();
-      serverOutput += message;
-      
-      // Look for the server running message
-      if (message.includes('Server is running on http://localhost:')) {
-        const port = parseInt(message.match(/localhost:(\d+)/)[1]);
-        log(`Server started on port: ${port}`);
-        resolve(port);
-      }
-    });
-
-    expressProcess.stderr.on('data', (data) => {
-      const message = data.toString();
-      serverOutput += message;
-      log(`Server error: ${message.trim()}`);
-    });
-
-    expressProcess.on('error', (err) => {
-      log(`Failed to start server: ${err.message}`);
-      reject(new Error(`Failed to start server: ${err.message}`));
-    });
-
-    expressProcess.on('exit', (code) => {
-      if (code !== 0) {
-        log(`Server exited with code: ${code}`);
-        reject(new Error(`Server process exited with code ${code}`));
-      }
-    });
-
-    setTimeout(() => {
-      if (expressProcess) {
-        log('Server startup timed out');
-        expressProcess.kill();
-        reject(new Error('Server startup timed out'));
-      }
-    }, 30000);
-  });
+  // No need to wait for a log message or timeout
+  return Promise.resolve(3000); // Assume port 3000
 }
 
 // Create window immediately when app is ready
 app.on('ready', () => {
   log('Starting application...');
   const window = createWindow();
-  
   startServer().then(port => {
     const url = `http://localhost:${port}`;
     log(`Loading application at ${url}`);
