@@ -1,51 +1,11 @@
-name: Build, Smoke Test, and Release Electron App
+name: Smoke Test Electron App
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-latest
-
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build React app
-        run: npm run build
-
-      - name: Build Electron app
-        run: npm run dist
-        env:
-          SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
-          SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
-          SQUARE_API_VERSION: ${{ secrets.SQUARE_API_VERSION }}
-          SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
-          VITE_USE_MOCK_API: false
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-
-      - name: Upload installer artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          path: dist/*.exe
-
   smoke-test:
-    needs: build
     runs-on: windows-latest
-
     steps:
       - name: Download installer artifact
         uses: actions/download-artifact@v4
@@ -75,12 +35,20 @@ jobs:
 
       - name: List Program Files directory
         run: |
-          Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse | Select-Object FullName
+          if (Test-Path "C:\Program Files\Rec Center Check-in") {
+            Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse -File | Select-Object FullName
+          } else {
+            Write-Host "Directory not found: C:\Program Files\Rec Center Check-in"
+          }
         shell: pwsh
 
       - name: List Program Files (x86) directory
         run: |
-          Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Recurse | Select-Object FullName
+          if (Test-Path "C:\Program Files (x86)\Rec Center Check-in") {
+            Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Recurse -File | Select-Object FullName
+          } else {
+            Write-Host "Directory not found: C:\Program Files (x86)\Rec Center Check-in"
+          }
         shell: pwsh
 
       - name: Find installed app executable
@@ -107,28 +75,4 @@ jobs:
         run: |
           $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
           Stop-Process -Name $processName -Force
-        shell: pwsh
-
-  release:
-    needs: smoke-test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npx semantic-release 
+        shell: pwsh 
