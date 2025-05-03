@@ -85,4 +85,3 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 module.exports = app;
-module.exports.asyncHandler = asyncHandler;

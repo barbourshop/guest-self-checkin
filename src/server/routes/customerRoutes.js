@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const customerController = require('../controllers/customerController');
-const { asyncHandler } = require('../app');
+const asyncHandler = require('../utils/asyncHandler');
 
 // Customer search endpoints
 router.post('/search/phone', asyncHandler(customerController.searchByPhone));
