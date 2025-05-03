@@ -87,6 +87,9 @@ function createWindow() {
     mainWindow = null;
   });
 
+  mainWindow.setMenuBarVisibility(false); // Hides the menu bar
+  mainWindow.maximize(); // Opens the window maximized
+
   return mainWindow;
 }
 
