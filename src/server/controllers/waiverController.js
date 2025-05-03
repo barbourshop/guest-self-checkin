@@ -1,4 +1,5 @@
 const waiverService = require('../services/waiverService');
+const logger = require('../logger');
 
 /**
  * Controller handling waiver-related operations
@@ -9,25 +10,18 @@ class WaiverController {
    * Check if customer has signed waiver
    * @param {Request} req - Express request object with params: { customerId: string }
    * @param {Response} res - Express response object
+   * @param {Function} next - Express next middleware function
    * @returns {Promise<void>} - JSON response with { hasSignedWaiver: boolean }
    * @throws {Error} Returns 500 if check fails
    */
-  async checkStatus(req, res) {
+  async checkStatus(req, res, next) {
     try {
       const { customerId } = req.params;
-      
-      // Log waiver status check
-      console.log(`${new Date().toISOString()} [ CHECK WAIVER STATUS ] Customer ID: ${customerId}`);
-      
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
-      
-      // Log result
-      console.log(`${new Date().toISOString()} [ WAIVER STATUS RESULT ] Customer ID: ${customerId}, Has Signed: ${hasSignedWaiver}`);
-      
       res.json({ hasSignedWaiver });
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ CHECK WAIVER STATUS ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      logger.error(`Check Waiver Status Error - ${error.message}`);
+      next(error);
     }
   }
 
@@ -35,10 +29,11 @@ class WaiverController {
    * Set waiver status for a customer
    * @param {Request} req - Express request object with params: { customerId: string }
    * @param {Response} res - Express response object
+   * @param {Function} next - Express next middleware function
    * @returns {Promise<void>} - JSON response with success status
    * @throws {Error} Returns 500 if setting fails
    */
-  async setStatus(req, res) {
+  async setStatus(req, res, next) {
     try {
       const { customerId } = req.params;
       const { clear } = req.query;
@@ -46,7 +41,7 @@ class WaiverController {
       
       // Log waiver status update with source
       const source = isAdminAction ? 'ADMIN PANEL' : 'USER UI';
-      console.log(`${new Date().toISOString()} [ ${clear ? 'CLEAR' : 'SET' } WAIVER STATUS FROM ${source} ] Customer ID: ${customerId}`);
+      logger.metric(`${clear ? 'Clear' : 'Set'} Waiver Status from ${source} - Customer ID: ${customerId}`);
       
       if (clear === 'true') {
         // Clear waiver status
@@ -59,10 +54,10 @@ class WaiverController {
       }
       
       // Log result with source
-      console.log(`${new Date().toISOString()} [ WAIVER STATUS ${clear ? 'CLEARED' : 'SET' } FROM ${source} ] Customer ID: ${customerId}`);
+      logger.metric(`Waiver Status ${clear ? 'Cleared' : 'Set'} from ${source} - Customer ID: ${customerId}`);
     } catch (error) {
-      console.error(`${new Date().toISOString()} [ ${req.query.clear === 'true' ? 'CLEAR' : 'SET' } WAIVER STATUS ERROR ] ${error.message}`);
-      res.status(500).json({ error: error.message });
+      logger.error(`${req.query.clear === 'true' ? 'Clear' : 'Set'} Waiver Status Error - ${error.message}`);
+      next(error);
     }
   }
 }

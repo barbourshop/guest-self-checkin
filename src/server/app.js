@@ -5,6 +5,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 require('dotenv').config();
+const logger = require('./logger');
 
 // Set up logging
 const logPath = path.join(process.env.APPDATA || process.env.HOME, 'app-server.log');
@@ -44,6 +45,15 @@ if (isDev) {
   app.use(express.static(distPath));
 }
 
+// Utility to wrap async route handlers
+const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+// Log all incoming requests
+app.use((req, res, next) => {
+  logger.request(`${req.method} ${req.url}`);
+  next();
+});
+
 // API routes
 app.use('/api/customers', customerRoutes);
 app.use('/api/waivers', waiverRoutes);
@@ -72,12 +82,6 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   log(`Unhandled Rejection at: ${promise}\nreason: ${reason}`);
-});
-
-// Log server startup
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  log(`Server is running on http://localhost:${port}`);
 });
 
 module.exports = app;
