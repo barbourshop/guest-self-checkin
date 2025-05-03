@@ -73,16 +73,41 @@ jobs:
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
           Start-Process -FilePath $installer -ArgumentList "/S" -Wait
 
+      - name: List Program Files directory
+        run: |
+          Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse | Select-Object FullName
+        shell: pwsh
+
+      - name: List Program Files (x86) directory
+        run: |
+          Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Recurse | Select-Object FullName
+        shell: pwsh
+
+      - name: Find installed app executable
+        id: find_exe
+        run: |
+          $exe = Get-ChildItem "C:\Program Files\Rec Center Check-in" -Filter *.exe -Recurse | Select-Object -First 1
+          if ($null -eq $exe) {
+            $exe = Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Filter *.exe -Recurse | Select-Object -First 1
+          }
+          if ($null -eq $exe) { throw "App executable not found" }
+          echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
       - name: Run app and check it starts
         run: |
-          Start-Process -FilePath "C:\Program Files\Rec Center Check-in\Rec Center Check-in.exe"
+          Start-Process -FilePath "${{ steps.find_exe.outputs.exe_path }}"
           Start-Sleep -Seconds 10
-          $process = Get-Process "Rec Center Check-in" -ErrorAction SilentlyContinue
+          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
+          $process = Get-Process $processName -ErrorAction SilentlyContinue
           if ($null -eq $process) { throw "App did not start" }
+        shell: pwsh
 
       - name: Kill app
         run: |
-          Stop-Process -Name "Rec Center Check-in" -Force
+          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
+          Stop-Process -Name $processName -Force
+        shell: pwsh
 
   release:
     needs: smoke-test
