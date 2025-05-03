@@ -17,15 +17,7 @@ class WaiverController {
   async checkStatus(req, res, next) {
     try {
       const { customerId } = req.params;
-      
-      // Log waiver status check
-      logger.metric(`Waiver Status Check - Customer ID: ${customerId}`);
-      
       const hasSignedWaiver = await waiverService.checkStatus(customerId);
-      
-      // Log result
-      logger.metric(`Waiver Status Result - Customer ID: ${customerId}, Has Signed: ${hasSignedWaiver}`);
-      
       res.json({ hasSignedWaiver });
     } catch (error) {
       logger.error(`Check Waiver Status Error - ${error.message}`);
