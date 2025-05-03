@@ -1,0 +1,109 @@
+name: Build, Smoke Test, and Release Electron App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Build Electron app
+        run: npm run dist
+        env:
+          SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
+          SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
+          SQUARE_API_VERSION: ${{ secrets.SQUARE_API_VERSION }}
+          SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
+          VITE_USE_MOCK_API: false
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+
+  smoke-test:
+    needs: build
+    runs-on: windows-latest
+
+    steps:
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: ./installer
+
+      - name: Set required environment variables
+        run: |
+          [System.Environment]::SetEnvironmentVariable('SQUARE_ACCESS_TOKEN', '${{ secrets.SQUARE_ACCESS_TOKEN }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_API_URL', '${{ secrets.SQUARE_API_URL }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_API_VERSION', '${{ secrets.SQUARE_API_VERSION }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_ENVIRONMENT', '${{ secrets.SQUARE_ENVIRONMENT }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('VITE_USE_MOCK_API', 'false', 'User')
+        shell: pwsh
+
+      - name: Find installer
+        id: find_installer
+        run: |
+          $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
+          echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Install app silently
+        run: |
+          $installer = "${{ steps.find_installer.outputs.installer_path }}"
+          Start-Process -FilePath $installer -ArgumentList "/S" -Wait
+
+      - name: Run app and check it starts
+        run: |
+          Start-Process -FilePath "C:\Program Files\Rec Center Check-in\Rec Center Check-in.exe"
+          Start-Sleep -Seconds 10
+          $process = Get-Process "Rec Center Check-in" -ErrorAction SilentlyContinue
+          if ($null -eq $process) { throw "App did not start" }
+
+      - name: Kill app
+        run: |
+          Stop-Process -Name "Rec Center Check-in" -Force
+
+  release:
+    needs: smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release 
