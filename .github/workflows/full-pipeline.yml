@@ -1,0 +1,163 @@
+name: Full Pipeline: Test, E2E, Electron, Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm install
+      - run: npm run type-check
+      - run: npx jest --coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  build-app:
+    needs: ci-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm install
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: dist/
+
+  e2e-tests:
+    needs: build-app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm install
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-build
+          path: dist/
+      - run: npx playwright install --with-deps
+      - run: npx playwright --version
+      - name: Create .env file for demo data
+        run: |
+          echo SQUARE_ACCESS_TOKEN=fake >> .env
+          echo SQUARE_API_URL=fake >> .env
+          echo SQUARE_API_VERSION=fake >> .env
+          echo SQUARE_ENVIRONMENT=fake >> .env
+          echo VITE_USE_MOCK_API=true >> .env
+      - run: xvfb-run --auto-servernum npx playwright test --headed
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results
+
+  build-windows-app:
+    needs: e2e-tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-build
+          path: dist/
+      - run: npm prune --omit=dev
+      - run: npm run dist
+        env:
+          SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
+          SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
+          SQUARE_API_VERSION: ${{ secrets.SQUARE_API_VERSION }}
+          SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
+          VITE_USE_MOCK_API: false
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+
+  smoke-test-windows-app:
+    needs: build-windows-app
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: ./installer
+      - name: Set required environment variables
+        run: |
+          [System.Environment]::SetEnvironmentVariable('SQUARE_ACCESS_TOKEN', '${{ secrets.SQUARE_ACCESS_TOKEN }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_API_URL', '${{ secrets.SQUARE_API_URL }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_API_VERSION', '${{ secrets.SQUARE_API_VERSION }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('SQUARE_ENVIRONMENT', '${{ secrets.SQUARE_ENVIRONMENT }}', 'User')
+          [System.Environment]::SetEnvironmentVariable('VITE_USE_MOCK_API', 'false', 'User')
+        shell: pwsh
+      - name: Find installer
+        id: find_installer
+        run: |
+          $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
+          echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+      - name: Install app silently
+        run: |
+          $installer = "${{ steps.find_installer.outputs.installer_path }}"
+          Start-Process -FilePath $installer -ArgumentList "/S" -Wait
+      - name: Find installed app executable
+        id: find_exe
+        run: |
+          $exe = Get-ChildItem "C:\Program Files\Rec Center Check-in" -Filter *.exe -Recurse | Select-Object -First 1
+          if ($null -eq $exe) { throw "App executable not found" }
+          echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+      - name: Run app and check it starts
+        run: |
+          Start-Process -FilePath "${{ steps.find_exe.outputs.exe_path }}"
+          Start-Sleep -Seconds 10
+          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
+          $process = Get-Process $processName -ErrorAction SilentlyContinue
+          if ($null -eq $process) { throw "App did not start" }
+        shell: pwsh
+      - name: Kill app
+        run: |
+          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
+          Stop-Process -Name $processName -Force
+        shell: pwsh
+
+  release:
+    needs: smoke-test-windows-app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm ci
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: npx semantic-release 
