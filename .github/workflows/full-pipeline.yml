@@ -130,10 +130,28 @@ jobs:
         run: |
           $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
           echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
-      - name: Install app silently
+      - name: Install app silently with log
         run: |
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
-          Start-Process -FilePath $installer -ArgumentList "/S" -Wait
+          Start-Process -FilePath $installer -ArgumentList "/S /LOG=install.log" -Wait
+          if (Test-Path "install.log") { Get-Content "install.log" }
+        shell: pwsh
+      - name: List .exe files in Program Files directory (max 20)
+        run: |
+          if (Test-Path "C:\Program Files\Rec Center Check-in") {
+            Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
+          } else {
+            Write-Host "Directory not found: C:\Program Files\Rec Center Check-in"
+          }
+        shell: pwsh
+      - name: List .exe files in Program Files (x86) directory (max 20)
+        run: |
+          if (Test-Path "C:\Program Files (x86)\Rec Center Check-in") {
+            Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
+          } else {
+            Write-Host "Directory not found: C:\Program Files (x86)\Rec Center Check-in"
+          }
+        shell: pwsh
       - name: Find installed app executable
         id: find_exe
         run: |
