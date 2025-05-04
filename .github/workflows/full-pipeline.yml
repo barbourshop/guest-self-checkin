@@ -85,6 +85,7 @@ jobs:
           name: app-build
           path: dist/
       - run: npm prune --omit=dev
+      - run: npm install -g vite
       - run: npm run dist
         env:
           SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
