@@ -178,6 +178,21 @@ jobs:
           $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
           Stop-Process -Name $processName -Force
         shell: pwsh
+      - name: List .exe files in user AppData directories (max 20)
+        run: |
+          $userDirs = @(
+            "$env:LOCALAPPDATA\Programs\Rec Center Check-in",
+            "$env:LOCALAPPDATA\Rec Center Check-in"
+          )
+          foreach ($dir in $userDirs) {
+            if (Test-Path $dir) {
+              Write-Host "Found: $dir"
+              Get-ChildItem $dir -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
+            } else {
+              Write-Host "Directory not found: $dir"
+            }
+          }
+        shell: pwsh
 
   release:
     needs: smoke-test-windows-app
