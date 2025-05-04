@@ -81,11 +81,6 @@ jobs:
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
           Start-Process -FilePath $installer -ArgumentList "/S" -Wait
 
-      - name: List Program Files directory
-        run: |
-          Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse | Select-Object FullName
-        shell: pwsh
-
       - name: Find installed app executable
         id: find_exe
         run: |
