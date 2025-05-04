@@ -2,10 +2,10 @@ name: Full Pipeline: Test, E2E, Electron, Release
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   ci-tests:
