@@ -1,4 +1,4 @@
-name: Full Pipeline: Test, E2E, Electron, Release
+name: Full pipeline (Test, E2E, Electron, Release)
 
 on:
   workflow_dispatch:
