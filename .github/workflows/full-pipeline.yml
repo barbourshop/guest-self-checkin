@@ -152,12 +152,12 @@ jobs:
         run: |
           Get-ChildItem -Path $env:TEMP -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
         shell: pwsh
-      - name: Search for any .exe files in workspace and user profile (max 20)
+      - name: Search for any .exe files in workspace and user profile (max 100)
         run: |
           Write-Host "Searching workspace..."
-          Get-ChildItem -Path . -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
+          Get-ChildItem -Path . -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 100 FullName
           Write-Host "Searching user profile..."
-          Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
+          Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 100 FullName
         shell: pwsh
       - name: Find installed app executable
         id: find_exe
