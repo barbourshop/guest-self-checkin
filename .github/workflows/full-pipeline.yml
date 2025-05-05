@@ -183,19 +183,22 @@ jobs:
           $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
           Stop-Process -Name $processName -Force
         shell: pwsh
-      - name: List .exe files in user AppData directories (max 20)
+      - name: Check for 'server started' log line
         run: |
-          $userDirs = @(
-            "$env:LOCALAPPDATA\Programs\Rec Center Check-in",
-            "$env:LOCALAPPDATA\Rec Center Check-in"
-          )
-          foreach ($dir in $userDirs) {
-            if (Test-Path $dir) {
-              Write-Host "Found: $dir"
-              Get-ChildItem $dir -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
-            } else {
-              Write-Host "Directory not found: $dir"
-            }
+          $userDir = "$env:LOCALAPPDATA\Programs\Rec Center Check-in"
+          $logFile = Get-ChildItem $userDir -Filter *.log -Recurse | Select-Object -First 1
+          if (-not $logFile) {
+            Write-Host "No log file found in $userDir"
+            exit 1
+          }
+          $logContent = Get-Content $logFile.FullName
+          $serverStarted = $logContent | Select-String -Pattern "Server is running on http://localhost:"
+          if ($serverStarted) {
+            Write-Host "Found server started log line:"
+            $serverStarted | ForEach-Object { Write-Host $_ }
+          } else {
+            Write-Host "'Server is running on http://localhost:' log line not found in $($logFile.FullName)"
+            exit 1
           }
         shell: pwsh
 
