@@ -1,6 +1,7 @@
 const squareService = require('../services/squareService');
 const customerService = require('../services/customerService');
 const logger = require('../logger');
+const { logCheckInCSV } = require('../utils/checkinMetricsLogger');
 
 /**
  * Controller handling customer-related operations
@@ -166,8 +167,8 @@ class CustomerController {
         return res.status(400).json({ error: 'Guest count must be a positive number' });
       }
       
-      // Log the check-in using the metric logger
-      logger.metric(`Customer ID: ${customerId}, Guest Count: ${guestCount}, First Name: ${firstName}, Last Name: ${lastName}${lotNumber ? `, Lot Number: ${lotNumber}` : ''}`);
+      // Log the check-in as a CSV row
+      logCheckInCSV({ customerId, guestCount, firstName, lastName, lotNumber });
       
       res.json({ success: true, checkIn: { customerId, guestCount, firstName, lastName, lotNumber } });
     } catch (error) {
