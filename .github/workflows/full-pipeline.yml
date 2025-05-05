@@ -2,10 +2,10 @@ name: Full pipeline (Test, E2E, Windows App, Release)
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [ main ]
-  # pull_request:
-  #   branches: [ main ]
+
+  pull_request:
+      branches:
+        - main
 
 jobs:
   ci-tests:
