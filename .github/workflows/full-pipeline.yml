@@ -130,7 +130,7 @@ jobs:
         run: |
           $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
           echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
-      - name: Debug: Print installer path, user, and working directory
+      - name: (Debug) Print installer path, user, and working directory
         run: |
           Write-Host "Installer path: ${{ steps.find_installer.outputs.installer_path }}"
           Write-Host "Current user: $env:USERNAME"
@@ -144,11 +144,11 @@ jobs:
           Write-Host "Installer process finished."
           if (Test-Path "install.log") { Get-Content "install.log" }
         shell: pwsh
-      - name: Debug: List all files in workspace (max 40)
+      - name: (Debug) List all files in workspace (max 40)
         run: |
           Get-ChildItem -Path . -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
         shell: pwsh
-      - name: Debug: List all files in temp directory (max 40)
+      - name: (Debug) List all files in temp directory (max 40)
         run: |
           Get-ChildItem -Path $env:TEMP -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
         shell: pwsh
