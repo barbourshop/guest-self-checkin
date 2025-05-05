@@ -130,27 +130,34 @@ jobs:
         run: |
           $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
           echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
+      - name: Debug: Print installer path, user, and working directory
+        run: |
+          Write-Host "Installer path: ${{ steps.find_installer.outputs.installer_path }}"
+          Write-Host "Current user: $env:USERNAME"
+          Write-Host "Current directory: $(Get-Location)"
+        shell: pwsh
       - name: Install app silently with log
         run: |
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
-          Start-Process -FilePath $installer -ArgumentList "/S /LOG=install.log" -Wait
+          Write-Host "About to run installer: $installer"
+          Start-Process -FilePath $installer -ArgumentList "/S /LOG=install.log" -Wait -PassThru | Format-List *
+          Write-Host "Installer process finished."
           if (Test-Path "install.log") { Get-Content "install.log" }
         shell: pwsh
-      - name: List .exe files in Program Files directory (max 20)
+      - name: Debug: List all files in workspace (max 40)
         run: |
-          if (Test-Path "C:\Program Files\Rec Center Check-in") {
-            Get-ChildItem "C:\Program Files\Rec Center Check-in" -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
-          } else {
-            Write-Host "Directory not found: C:\Program Files\Rec Center Check-in"
-          }
+          Get-ChildItem -Path . -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
         shell: pwsh
-      - name: List .exe files in Program Files (x86) directory (max 20)
+      - name: Debug: List all files in temp directory (max 40)
         run: |
-          if (Test-Path "C:\Program Files (x86)\Rec Center Check-in") {
-            Get-ChildItem "C:\Program Files (x86)\Rec Center Check-in" -Recurse -Filter *.exe -File | Select-Object -First 20 FullName
-          } else {
-            Write-Host "Directory not found: C:\Program Files (x86)\Rec Center Check-in"
-          }
+          Get-ChildItem -Path $env:TEMP -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
+        shell: pwsh
+      - name: Search for any .exe files in workspace and user profile (max 20)
+        run: |
+          Write-Host "Searching workspace..."
+          Get-ChildItem -Path . -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
+          Write-Host "Searching user profile..."
+          Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter *.exe -File -ErrorAction SilentlyContinue | Select-Object -First 20 FullName
         shell: pwsh
       - name: Find installed app executable
         id: find_exe
