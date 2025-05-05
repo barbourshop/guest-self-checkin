@@ -75,7 +75,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "installDirectory": "${LOCALAPPDATA}\\Programs\\Rec Center Check-in"
+      "include": "installer.nsh"
     }
   },
   "dependencies": {
