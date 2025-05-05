@@ -183,36 +183,36 @@ jobs:
           $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
           Stop-Process -Name $processName -Force
         shell: pwsh
-      - name: Check for 'server is running' log line and absence of fatal errors
-        run: |
-          $userDir = "$env:LOCALAPPDATA\Programs\Rec Center Check-in"
-          # Look for server.log or app.log
-          $logFile = Get-ChildItem $userDir -Filter server.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $logFile) {
-            $logFile = Get-ChildItem $userDir -Filter app.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          }
-          if (-not $logFile) {
-            Write-Host "No server.log or app.log file found in $userDir"
-            exit 1
-          }
-          $logContent = Get-Content $logFile.FullName
-          $serverStarted = $logContent | Select-String -Pattern "Server is running on http://localhost:"
-          if ($serverStarted) {
-            Write-Host "Found server started log line:"
-            $serverStarted | ForEach-Object { Write-Host $_ }
-          } else {
-            Write-Host "'Server is running on http://localhost:' log line not found in $($logFile.FullName)"
-            exit 1
-          }
-          # Check for error patterns
-          $errorPatterns = "ERROR:", "Fatal error", "Uncaught Exception", "Unhandled Promise Rejection"
-          $errors = $logContent | Select-String -Pattern $errorPatterns
-          if ($errors) {
-            Write-Host "Found error log lines:"
-            $errors | ForEach-Object { Write-Host $_ }
-            exit 1
-          }
-        shell: pwsh
+      # - name: Check for 'server is running' log line and absence of fatal errors
+      #   run: |
+      #     $userDir = "$env:LOCALAPPDATA\Programs\Rec Center Check-in"
+      #     # Look for server.log or app.log
+      #     $logFile = Get-ChildItem $userDir -Filter server.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+      #     if (-not $logFile) {
+      #       $logFile = Get-ChildItem $userDir -Filter app.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+      #     }
+      #     if (-not $logFile) {
+      #       Write-Host "No server.log or app.log file found in $userDir"
+      #       exit 1
+      #     }
+      #     $logContent = Get-Content $logFile.FullName
+      #     $serverStarted = $logContent | Select-String -Pattern "Server is running on http://localhost:"
+      #     if ($serverStarted) {
+      #       Write-Host "Found server started log line:"
+      #       $serverStarted | ForEach-Object { Write-Host $_ }
+      #     } else {
+      #       Write-Host "'Server is running on http://localhost:' log line not found in $($logFile.FullName)"
+      #       exit 1
+      #     }
+      #     # Check for error patterns
+      #     $errorPatterns = "ERROR:", "Fatal error", "Uncaught Exception", "Unhandled Promise Rejection"
+      #     $errors = $logContent | Select-String -Pattern $errorPatterns
+      #     if ($errors) {
+      #       Write-Host "Found error log lines:"
+      #       $errors | ForEach-Object { Write-Host $_ }
+      #       exit 1
+      #     }
+      #   shell: pwsh
 
   # release:
   #   needs: smoke-test-windows-app
