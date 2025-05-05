@@ -71,6 +71,11 @@ Logs can be accessed in several ways depending on the environment:
    - Filter for events from "Rec Center Check-in" application
    - Logs are also visible in the application's console window if running in windowed mode
 
+2. **Check-In Metrics CSV Log**
+   - A dedicated CSV file is created for each day in `logs/checkins/` (on the server or app data directory).
+   - The file is named as `MM-DD-YY-check-ins.csv` (e.g., `06-07-24-check-ins.csv`).
+   - This file contains only check-in metrics, one row per check-in, in CSV format.
+
 ### Log Types
 The application logs the following types of events:
 - Search events
@@ -78,6 +83,7 @@ The application logs the following types of events:
 - Waiver status changes
 - Error messages and exceptions
 - Square API interactions
+- **Dedicated daily CSV file for check-in metrics (see below)**
 
 ### Example Log Lines
 
@@ -91,6 +97,18 @@ The application logs the following types of events:
 ```
 2024-03-15T14:35:00.456Z [ CHECK-IN ] Customer ID: ABC123, Guest Count: 2, First Name: John, Last Name: Doe, Lot Number: 123
 ```
+
+#### Check-In Metrics CSV Log
+- Each check-in is recorded as a row in a CSV file for the current day.
+- The file is located at:  
+  `logs/checkins/MM-DD-YY-check-ins.csv`
+- The CSV columns are:  
+  `timestamp,customerId,guestCount,firstName,lastName,lotNumber`
+- Example:
+  ```
+  timestamp,customerId,guestCount,firstName,lastName,lotNumber
+  2024-06-07T14:35:00.456Z,ABC123,2,"John","Doe","123"
+  ```
 
 #### Error Messages
 ```
@@ -108,3 +126,4 @@ The application logs the following types of events:
 - For application errors, check Windows Event Viewer first
 - For Square API issues, look for logs containing "[ ERROR ]" or "Square API"
 - For check-in issues, search for logs containing "[ CHECK-IN ]"
+- **For auditing or analyzing check-in activity, refer to the daily CSV files in `logs/checkins/`.**
