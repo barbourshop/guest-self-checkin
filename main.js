@@ -112,7 +112,8 @@ function startServer() {
     ELECTRON_RUN_AS_NODE: '1',
     LOG_FILE: logFile,
     RESOURCES_PATH: process.resourcesPath,
-    APP_PATH: app.getAppPath()
+    APP_PATH: app.getAppPath(),
+    CHECKIN_LOG_DIR: path.join(app.getPath('userData'), 'logs')
   };
 
   log('Spawning server process...');
