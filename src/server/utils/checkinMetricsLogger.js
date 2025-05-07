@@ -1,11 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOG_DIR = path.join(process.cwd(), 'logs', 'checkins');
+// Use a writable log directory, defaulting to process.cwd() if not set
+const LOG_DIR = process.env.CHECKIN_LOG_DIR
+  ? path.join(process.env.CHECKIN_LOG_DIR, 'checkins')
+  : path.join(process.cwd(), 'logs', 'checkins');
 
 // Ensure log directory exists
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+} catch (err) {
+  // Log error, but don't crash the server
+  console.error('Failed to create log directory:', err);
 }
 
 function getTodayFilename() {

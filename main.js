@@ -2,6 +2,7 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 
 // Enhanced console logging
 console.log('Starting main process...');
@@ -111,7 +112,8 @@ function startServer() {
     ELECTRON_RUN_AS_NODE: '1',
     LOG_FILE: logFile,
     RESOURCES_PATH: process.resourcesPath,
-    APP_PATH: app.getAppPath()
+    APP_PATH: app.getAppPath(),
+    CHECKIN_LOG_DIR: path.join(app.getPath('userData'), 'logs')
   };
 
   log('Spawning server process...');
@@ -121,8 +123,42 @@ function startServer() {
     cwd: isDev ? process.cwd() : process.resourcesPath
   });
 
+  // Log server stdout and stderr
+  if (expressProcess.stdout) {
+    expressProcess.stdout.on('data', (data) => {
+      log(`[server stdout] ${data}`);
+    });
+  }
+  if (expressProcess.stderr) {
+    expressProcess.stderr.on('data', (data) => {
+      log(`[server stderr] ${data}`);
+    });
+  }
+  expressProcess.on('exit', (code, signal) => {
+    log(`[server exit] code=${code} signal=${signal}`);
+  });
+
   // No need to wait for a log message or timeout
   return Promise.resolve(3000); // Assume port 3000
+}
+
+// Wait for the server to be ready before loading the URL
+function waitForServer(port, timeout = 10000) {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    function check() {
+      http.get({ host: 'localhost', port, path: '/' }, (res) => {
+        resolve();
+      }).on('error', (err) => {
+        if (Date.now() - start > timeout) {
+          reject(new Error('Server did not start in time'));
+        } else {
+          setTimeout(check, 200);
+        }
+      });
+    }
+    check();
+  });
 }
 
 // Create window immediately when app is ready
@@ -130,10 +166,14 @@ app.on('ready', () => {
   log('Starting application...');
   const window = createWindow();
   startServer().then(port => {
-    const url = `http://localhost:${port}`;
-    log(`Loading application at ${url}`);
-    window.loadURL(url).catch(err => {
-      log(`Error loading application: ${err.message}`);
+    waitForServer(port).then(() => {
+      const url = `http://localhost:${port}`;
+      log(`Loading application at ${url}`);
+      window.loadURL(url).catch(err => {
+        log(`Error loading application: ${err.message}`);
+      });
+    }).catch(err => {
+      log(`Server failed to start in time: ${err.message}`);
     });
   }).catch(err => {
     log(`Server failed to start: ${err.message}`);
