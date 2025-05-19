@@ -28,7 +28,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
           data-testid="lot-search"
           onClick={() => dispatch(setSearchType('lot'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
-            searchType === 'lot' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            searchType === 'lot' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
           }`}
         >
           <Home size={18} />
@@ -38,7 +38,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
           data-testid="phone-search"
           onClick={() => dispatch(setSearchType('phone'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
-            searchType === 'phone' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            searchType === 'phone' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
           }`}
         >
           <Phone size={18} />
@@ -48,7 +48,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
           data-testid="email-search"
           onClick={() => dispatch(setSearchType('email'))}
           className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
-            searchType === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+            searchType === 'email' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
           }`}
         >
           <Mail size={18} />
@@ -71,7 +71,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
                   ? 'Enter phone number' 
                   : 'Enter lot number'
             }
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             value={searchQuery}
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -81,7 +81,7 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
           data-testid="search-button"
           onClick={handleSearch}
           disabled={isLoading}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isLoading ? (
             <>
