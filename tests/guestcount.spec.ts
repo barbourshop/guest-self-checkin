@@ -25,7 +25,7 @@ test.describe('Guest Count Selection', () => {
     await page.waitForSelector('[data-testid="guest-count-select"]', { state: 'visible', timeout: 10000 });
     
     // Check that the large display shows a dash
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('-');
     
     // Check that the check-in button is disabled
@@ -54,7 +54,7 @@ test.describe('Guest Count Selection', () => {
     await page.selectOption('[data-testid="guest-count-select"]', '3');
     
     // Check that the large display shows 3
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('3');
     
     // Check that the check-in button is enabled
@@ -87,7 +87,7 @@ test.describe('Guest Count Selection', () => {
     await expect(customInput).toBeVisible();
     
     // Check that the large display still shows a dash
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('-');
     
     // Check that the check-in button is still disabled
@@ -116,7 +116,7 @@ test.describe('Guest Count Selection', () => {
     await page.fill('[data-testid="checkin-input"]', '7');
     
     // Check that the large display shows 7
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('7');
     
     // Check that the check-in button is enabled
@@ -148,7 +148,7 @@ test.describe('Guest Count Selection', () => {
     await page.fill('[data-testid="checkin-input"]', '0');
     
     // Check that the large display still shows a dash
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('-');
     
     // Check that the check-in button is still disabled
@@ -177,7 +177,7 @@ test.describe('Guest Count Selection', () => {
     await page.fill('[data-testid="checkin-input"]', '15');
     
     // Check that the large display shows 15
-    const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+    const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
     await expect(largeDisplay).toHaveText('15');
     
     // Check that the check-in button is enabled

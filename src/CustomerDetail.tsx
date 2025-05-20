@@ -94,7 +94,7 @@ export const CustomerDetail = ({
               Number of guests (including you)
             </label>
             <div className="flex flex-col items-center mb-6">
-              <div className="text-7xl font-bold text-blue-600 mb-2">
+              <div className="text-7xl font-bold text-primary-600 mb-2">
                 {hasSelected ? guestCount : '-'}
               </div>
               <div className="text-sm text-gray-500 mb-4">Total Guests</div>
@@ -105,7 +105,7 @@ export const CustomerDetail = ({
               disabled={showWaiver || !hasSelected}
               className={`w-full py-3 rounded-lg flex items-center justify-center gap-2 mb-6 ${
                 !showWaiver && hasSelected
-                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  ? 'bg-primary-600 text-white hover:bg-primary-700' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

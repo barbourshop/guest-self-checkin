@@ -50,8 +50,8 @@ export const CustomerList = ({
           onClick={() => onSelectCustomer(customer)}
         >
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <User className="h-6 w-6 text-blue-600" />
+            <div className="bg-primary-100 p-3 rounded-full">
+              <User className="h-6 w-6 text-primary-600" />
             </div>
             <div className="flex-1">
               <h3 className="font-medium text-gray-900">

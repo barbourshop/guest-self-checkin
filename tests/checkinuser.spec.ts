@@ -194,7 +194,7 @@ test('Check in 10 guests, member sees a confirmation', async ({ page }) => {
   await page.selectOption('[data-testid="guest-count-select"]', '10');
   
   // Check that the large display shows 10
-  const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+  const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
   await expect(largeDisplay).toHaveText('10');
 
   // Check that the check-in button is enabled
@@ -230,7 +230,7 @@ test('Check in with custom number of guests', async ({ page }) => {
   await page.fill('[data-testid="checkin-input"]', '15');
   
   // Check that the large display shows 15
-  const largeDisplay = await page.locator('.text-7xl.font-bold.text-blue-600');
+  const largeDisplay = await page.locator('.text-7xl.font-bold.text-primary-600');
   await expect(largeDisplay).toHaveText('15');
 
   // Check that the check-in button is enabled
