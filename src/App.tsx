@@ -138,10 +138,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-primary text-white py-6 px-4 shadow-lg">
+      <header className="bg-primary-600 text-white py-6 px-4 shadow-lg">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
-          <p className="mt-2 text-primary/20">Please check in using your phone number, email, or lot number</p>
+          <p className="mt-2 text-primary-100">Please check in using your phone number, email, or lot number</p>
           {USE_MOCK_API && (
             <div className="mt-1 px-2 py-1 bg-yellow-500 text-white text-xs inline-block rounded">
               Demo Mode: Using Mock Data
