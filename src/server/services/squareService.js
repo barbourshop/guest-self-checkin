@@ -3,6 +3,7 @@ const {
   POOL_PASS_CATALOG_IDS, 
   MEMBERSHIP_SEGMENT_ID 
 } = require('../config/square');
+const logger = require('../logger');
 
 /**
  * Service for interacting with Square API customer and order endpoints
@@ -95,8 +96,10 @@ class SquareService {
 
       const data = await response.json();
       const customer = data.customer;
-      
-      return customer.segment_ids?.includes('gv2:VCB62KZ83D27SADBCX65FGJ5N0') || false;
+      logger.info(`[MEMBERSHIP CHECK] Customer ID: ${customerId}, Segment IDs: ${JSON.stringify(customer.segment_ids)}, Config Segment: ${MEMBERSHIP_SEGMENT_ID}`);
+      const isMember = customer.segment_ids?.includes(MEMBERSHIP_SEGMENT_ID) || false;
+      logger.info(`[MEMBERSHIP CHECK RESULT] Customer ID: ${customerId}, Is Member: ${isMember}`);
+      return isMember;
     } catch (error) {
       console.error(`Error checking membership for ${customerId}:`, error);
       return false;
