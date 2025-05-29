@@ -13,7 +13,16 @@ const initialState = {
   showWaiver: false,
   showConfirmation: false,
   searchQuery: '',
-  searchType: 'email' as 'email' | 'phone' | 'lot',
+  searchType: 'name' as 'email' | 'phone' | 'lot' | 'name',
+  customerNames: [] as Array<{
+    id: string,
+    given_name: string,
+    family_name: string,
+    email_address: string,
+    phone_number: string,
+    reference_id: string,
+    segment_ids: string[]
+  }>,
 };
 
 // Action types
@@ -28,6 +37,7 @@ const SET_SEARCH_QUERY = 'SET_SEARCH_QUERY';
 const SET_SEARCH_TYPE = 'SET_SEARCH_TYPE';
 const RESET_STATE = 'RESET_STATE';
 const UPDATE_CUSTOMER_WAIVER_STATUS = 'UPDATE_CUSTOMER_WAIVER_STATUS';
+const SET_CUSTOMER_NAMES = 'SET_CUSTOMER_NAMES';
 
 // Action creators
 export const setCustomers = (customers: Customer[]) => ({
@@ -70,7 +80,7 @@ export const setSearchQuery = (searchQuery: string) => ({
   payload: searchQuery,
 });
 
-export const setSearchType = (searchType: 'email' | 'phone' | 'lot') => ({
+export const setSearchType = (searchType: 'email' | 'phone' | 'lot' | 'name') => ({
   type: SET_SEARCH_TYPE,
   payload: searchType,
 });
@@ -78,6 +88,19 @@ export const setSearchType = (searchType: 'email' | 'phone' | 'lot') => ({
 export const updateCustomerWaiverStatus = (customerId: string, hasSignedWaiver: boolean) => ({
   type: UPDATE_CUSTOMER_WAIVER_STATUS,
   payload: { customerId, hasSignedWaiver },
+});
+
+export const setCustomerNames = (customerNames: Array<{
+  id: string,
+  given_name: string,
+  family_name: string,
+  email_address: string,
+  phone_number: string,
+  reference_id: string,
+  segment_ids: string[]
+}>) => ({
+  type: SET_CUSTOMER_NAMES,
+  payload: customerNames,
 });
 
 // Reducers
@@ -191,6 +214,17 @@ const searchTypeReducer = (state = initialState.searchType, action: AnyAction) =
   }
 };
 
+const customerNamesReducer = (state = initialState.customerNames, action: AnyAction) => {
+  switch (action.type) {
+    case SET_CUSTOMER_NAMES:
+      return action.payload;
+    case RESET_STATE:
+      return initialState.customerNames;
+    default:
+      return state;
+  }
+};
+
 // Combine reducers
 const rootReducer = combineReducers({
   customers: customersReducer,
@@ -202,6 +236,7 @@ const rootReducer = combineReducers({
   showConfirmation: showConfirmationReducer,
   searchQuery: searchQueryReducer,
   searchType: searchTypeReducer,
+  customerNames: customerNamesReducer,
 });
 
 // Create store using configureStore

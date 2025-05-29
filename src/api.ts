@@ -158,3 +158,33 @@ export async function logCheckIn(
     return false;
   }
 }
+
+/**
+ * Fetch all customer data for local search
+ * @returns {Promise<Array<{id: string, given_name: string, family_name: string, email_address: string, phone_number: string, reference_id: string, segment_ids: string[] }>>}
+ */
+export async function fetchCustomerNames(): Promise<Array<{id: string, given_name: string, family_name: string, email_address: string, phone_number: string, reference_id: string, segment_ids: string[]}>> {
+  if (USE_MOCK_API) {
+    // Map mockCustomers to the expected structure
+    const MEMBERSHIP_SEGMENT_ID = 'gv2:TVR6JXEM4N5XQ2XV51GBKFDN74';
+    return mockCustomers.map(c => ({
+      id: c.id,
+      given_name: c.given_name,
+      family_name: c.family_name,
+      email_address: c.email_address,
+      phone_number: c.phone_number,
+      reference_id: c.reference_id,
+      segment_ids: c.membershipType === 'Member' ? [MEMBERSHIP_SEGMENT_ID] : []
+    }));
+  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/customers/names`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch customer names');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching customer names:', error);
+    throw error;
+  }
+}

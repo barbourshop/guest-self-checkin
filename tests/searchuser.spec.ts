@@ -128,4 +128,11 @@ test('non-member text shows up exactly correct', async ({ page }) => {
   await expect(page.locator('[data-testid="membership-type"]').first())
     .toHaveText('Non-Member', { timeout: 10000 });
 });
+
+test('default search type is Name', async ({ page }) => {
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+  // The Name button should have the selected class
+  const nameButton = await page.locator('[data-testid="name-search"]');
+  await expect(nameButton).toHaveClass(/bg-primary-600/);
+});
 });

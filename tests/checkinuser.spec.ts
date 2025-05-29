@@ -266,4 +266,11 @@ test('Clicking close button returns to search page', async ({ page }) => {
   expect(searchInput).toBeTruthy();
 });
 
+test('default search type is Name', async ({ page }) => {
+  await page.waitForSelector('[data-testid="search-input"]', { state: 'visible', timeout: 10000 });
+  // The Name button should have the selected class
+  const nameButton = await page.locator('[data-testid="name-search"]');
+  await expect(nameButton).toHaveClass(/bg-primary-600/);
+});
+
 });

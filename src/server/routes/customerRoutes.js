@@ -17,4 +17,7 @@ router.get('/list', asyncHandler(customerController.listCustomers));
 // Check-in endpoint
 router.post('/check-in', asyncHandler(customerController.logCheckIn));
 
+// Returns all customer data for local search
+router.get('/names', asyncHandler(customerController.getCustomerNames));
+
 module.exports = router;

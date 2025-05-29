@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Mail, Phone, Home, Loader2 } from 'lucide-react';
+import { Search, Mail, Phone, Home, Loader2, User } from 'lucide-react';
 import { RootState } from './App'; // Assuming RootState is exported from App.tsx
 
 type SearchBarProps = {
-  onSearch: (query: string, type: 'email' | 'phone' | 'lot') => void;
+  onSearch: (query: string, type: 'email' | 'phone' | 'lot' | 'name') => void;
   isLoading: boolean;
 };
 
 // Action creators
 const setSearchQuery = (query: string) => ({ type: 'SET_SEARCH_QUERY', payload: query });
-const setSearchType = (type: 'email' | 'phone' | 'lot') => ({ type: 'SET_SEARCH_TYPE', payload: type });
+const setSearchType = (type: 'email' | 'phone' | 'lot' | 'name') => ({ type: 'SET_SEARCH_TYPE', payload: type });
 
 export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
   const dispatch = useDispatch();
@@ -24,6 +24,16 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex gap-2 mb-4">
+        <button
+          data-testid="name-search"
+          onClick={() => dispatch(setSearchType('name'))}
+          className={`flex-1 py-3 px-2 rounded-lg flex items-center justify-center gap-1 ${
+            searchType === 'name' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          <User size={18} />
+          <span>Name</span>
+        </button>
         <button
           data-testid="lot-search"
           onClick={() => dispatch(setSearchType('lot'))}
@@ -69,7 +79,9 @@ export const SearchBar = ({ onSearch, isLoading }: SearchBarProps) => {
                 ? 'Enter email address' 
                 : searchType === 'phone' 
                   ? 'Enter phone number' 
-                  : 'Enter lot number'
+                  : searchType === 'lot'
+                    ? 'Enter lot number'
+                    : 'Enter customer name'
             }
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             value={searchQuery}
