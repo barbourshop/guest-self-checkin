@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Check } from 'lucide-react';
 import { Customer, adaptCustomer } from './types';
-import { checkWaiverStatus, searchCustomers, logCheckIn } from './api';
+import { checkWaiverStatus, searchCustomers, logCheckIn, fetchCustomerNames } from './api';
+import { setCustomerNames } from './store';
 
 import { SearchBar } from './SearchBar';
 import { CustomerList } from './CustomerList';
@@ -18,7 +19,8 @@ export interface RootState {
   showWaiver: boolean;
   showConfirmation: boolean;
   searchQuery: string;
-  searchType: 'email' | 'phone' | 'lot';
+  searchType: 'email' | 'phone' | 'lot' | 'name';
+  customerNames: { id: string; name: string }[];
 }
 
 // Action creators
@@ -41,8 +43,17 @@ function App() {
   const guestCount = useSelector((state: RootState) => state.guestCount);
   const showConfirmation = useSelector((state: RootState) => state.showConfirmation);
   const searchQuery = useSelector((state: RootState) => state.searchQuery);
+  const searchType = useSelector((state: RootState) => state.searchType);
+  const customerNames = useSelector((state: RootState) => state.customerNames);
 
   const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
+
+  // Fetch all customer names at launch
+  useEffect(() => {
+    fetchCustomerNames()
+      .then((names) => dispatch(setCustomerNames(names)))
+      .catch((err) => console.error('Failed to fetch customer names', err));
+  }, [dispatch]);
 
   // Add useEffect to handle auto-dismiss of confirmation banner
   useEffect(() => {
@@ -57,32 +68,49 @@ function App() {
     };
   }, [showConfirmation, dispatch]);
 
-  const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot') => {
+  const handleSearch = async (query: string, type: 'email' | 'phone' | 'lot' | 'name') => {
     if (!query.trim()) {
       dispatch(setCustomers([]));
       return;
     }
-  
+
     dispatch(setLoading(true));
     dispatch(setError(null));
     dispatch(setSearchQuery(query));
-  
+
     try {
-      const results = await searchCustomers(type, query);
-      const adaptedCustomers = results.map(adaptCustomer);
-      
-      const customersWithWaiverStatus = await Promise.all(
-        adaptedCustomers.map(async (customer: Customer) => {
-          try {
-            const hasSignedWaiver = await checkWaiverStatus(customer.id);
-            return { ...customer, hasSignedWaiver };
-          } catch (error) {
-            console.error(`Failed to check waiver status for customer ${customer.id}:`, error);
-            return customer;
-          }
-        })
-      );
-      dispatch(setCustomers(customersWithWaiverStatus));
+      // Local search for all types
+      let results = customerNames.filter(c => {
+        if (type === 'name') {
+          return (`${c.given_name} ${c.family_name}`.toLowerCase().includes(query.toLowerCase()));
+        } else if (type === 'email') {
+          return c.email_address && c.email_address.toLowerCase().includes(query.toLowerCase());
+        } else if (type === 'phone') {
+          return c.phone_number && c.phone_number.toLowerCase().includes(query.toLowerCase());
+        } else if (type === 'lot') {
+          return c.reference_id && c.reference_id.toLowerCase().includes(query.toLowerCase());
+        }
+        return false;
+      });
+      // Adapt to Customer type and derive membershipType
+      const adaptedResults = await Promise.all(results.map(async c => {
+        const membershipType = c.segment_ids && c.segment_ids.includes('gv2:TVR6JXEM4N5XQ2XV51GBKFDN74') ? 'Member' : 'Non-Member';
+        let hasSignedWaiver = false;
+        try {
+          hasSignedWaiver = await checkWaiverStatus(c.id);
+        } catch {}
+        return {
+          id: c.id,
+          firstName: c.given_name,
+          lastName: c.family_name,
+          email: c.email_address,
+          phone: c.phone_number,
+          lotNumber: c.reference_id,
+          membershipType,
+          hasSignedWaiver
+        };
+      }));
+      dispatch(setCustomers(adaptedResults));
     } catch (err) {
       dispatch(setError('Unable to search customers. Please try again.'));
       dispatch(setCustomers([]));

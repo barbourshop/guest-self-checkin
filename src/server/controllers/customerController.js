@@ -176,6 +176,21 @@ class CustomerController {
       next(error);
     }
   }
+
+  /**
+   * Get all customer data for local search (id, names, email, phone, lot, segment_ids)
+   * @param {Request} req
+   * @param {Response} res
+   */
+  async getCustomerNames(req, res, next) {
+    try {
+      const customers = await squareService.getCustomerNames();
+      res.json(customers);
+    } catch (error) {
+      logger.error(`Error fetching customer names: ${error.message}`);
+      next(error);
+    }
+  }
 }
 
 module.exports = new CustomerController();

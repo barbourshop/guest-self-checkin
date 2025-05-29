@@ -246,6 +246,40 @@ class SquareService {
     const data = await response.json();
     return data.customer;
   }
+
+  /**
+   * Fetch all customer data needed for local search from Square
+   * @returns {Promise<Array<{id: string, given_name: string, family_name: string, email_address: string, phone_number: string, reference_id: string, segment_ids: string[] }>>}
+   */
+  async getCustomerNames() {
+    let customers = [];
+    let cursor = undefined;
+    do {
+      const url = new URL(`${SQUARE_API_CONFIG.baseUrl}/customers`);
+      url.searchParams.append('limit', 100);
+      if (cursor) url.searchParams.append('cursor', cursor);
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: SQUARE_API_CONFIG.headers
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Failed to list customers');
+      }
+      const data = await response.json();
+      customers = customers.concat(data.customers || []);
+      cursor = data.cursor;
+    } while (cursor);
+    return customers.map(c => ({
+      id: c.id,
+      given_name: c.given_name,
+      family_name: c.family_name,
+      email_address: c.email_address,
+      phone_number: c.phone_number,
+      reference_id: c.reference_id,
+      segment_ids: c.segment_ids || []
+    }));
+  }
 }
 
 module.exports = new SquareService();
