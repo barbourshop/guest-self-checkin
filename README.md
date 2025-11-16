@@ -6,9 +6,18 @@
 - [Integration Details](#integration-details)
 - [Testing](#testing)
 - [Deployment](#deployment)
+- [AWS CDK Deployment](#aws-cdk-deployment)
 
 ## Introduction
 The Guest Self Check-In App is a web-based solution for recreational facilities to manage guest check-ins. It integrates with Square's customer management system and provides digital waiver management capabilities.
+
+> ### v2 (Mobile + Cloud) Work in Progress
+> The repo now contains the next-generation architecture described in `docs/*.md`. New code lives under:
+> - `apps/web` – SvelteKit front-end (mobile-first, Squarespace-friendly).
+> - `services/api` – AWS Lambda handler workspace (Node/TypeScript).
+> - `infra/` – AWS CDK project defining infrastructure.
+>
+> See `docs/implementation-plan.md` for the build roadmap and `docs/local-testing.md` for running everything locally without touching production Square data.
 
 Key features:
 - Integration with Square's customer management system
@@ -44,15 +53,62 @@ The app aims to streamline the check-in process while maintaining necessary secu
    SQUARE_ENVIRONMENT=production
    SQUARE_ACCESS_TOKEN=your_square_access_token
    SQUARE_API_URL=https://connect.squareup.com/v2
-   SQUARE_API_VERSION=2025-01-23
+   SQUARE_API_VERSION=2025-10-16
    PORT=3000
    VITE_USE_MOCK_API=true
    ```
+
+> #### v2 Local Development (Svelte + AWS stack)
+> 1. Install dependencies inside each workspace:
+>    ```bash
+>    npm install --workspaces
+>    ```
+> 2. Configure backend env vars (see `services/api/README.md`). The key ones:
+>    ```
+>    SQUARE_ENV=sandbox
+>    SQUARE_API_BASE_URL=https://connect.squareupsandbox.com/v2
+>    SQUARE_API_VERSION=2025-10-16
+>    SQUARE_LOCATION_ID=SANDBOX_LOC_ID
+>    CUSTOMER_HASH_SALT=local-dev-salt
+>    MEMBERSHIP_SEGMENT_ID=SEGMENT_ID
+>    DAY_PASS_ITEM_IDS=ITEM_ID_1
+>    MEMBERSHIP_ITEM_IDS=ITEM_ID_2
+>    PASSES_TABLE_NAME=local-passes
+>    CHECKINS_TABLE_NAME=local-checkins
+>    CONFIG_TABLE_NAME=local-config
+>    ```
+> 3. Start the API dev server:
+>    ```bash
+>    cd services/api
+>    npm run dev
+>    ```
+> 4. Start the Svelte web app and point it to the API (default `http://localhost:3001/v1`). Override with `PUBLIC_API_BASE_URL`:
+>    ```bash
+>    cd apps/web
+>    PUBLIC_API_BASE_URL=http://localhost:3001/v1 npm run dev -- --open
+>    ```
+> 5. Follow `docs/local-testing.md` for Square sandbox seeding, QR code generation, and LocalStack/SAM setup.
 
 ### Development Workflow
 - Frontend development: `npm run dev`
 - Backend development: `npm run server`
 - Both servers must run for full functionality
+
+> For v2 Svelte + API work:
+> - `services/api`: `npm run dev` (Hono server exposing `/v1/...` endpoints).
+> - `apps/web`: `npm run dev -- --open` (SvelteKit UI hitting the API).
+>   - Use `/` for operator view, `/kiosk` for the hands-free scanner interface.
+
+### AWS CDK Deployment
+See `docs/cdk-deploy.md` for regional setup (targeting `us-east-1`).
+High-level commands:
+```bash
+cd infra
+AWS_PROFILE=guest-checkin-service-acct npm run build
+AWS_PROFILE=guest-checkin-service-acct cdk bootstrap aws://<ACCOUNT_ID>/us-east-1
+AWS_PROFILE=guest-checkin-service-acct cdk deploy GuestSelfCheckInAppStack
+```
+The stack outputs `GuestApiUrl-<stage>` which the frontend should reference via `PUBLIC_API_BASE_URL`.
 
 ### CI/CD Pipeline
 The project uses GitHub Actions for continuous integration and deployment. The workflow is defined in `.github/workflows/` and includes:
@@ -238,7 +294,7 @@ The application is built as a Windows executable and deployed locally at the rec
    SQUARE_ENVIRONMENT=production
    SQUARE_ACCESS_TOKEN=your_square_access_token
    SQUARE_API_URL=https://connect.squareup.com/v2
-   SQUARE_API_VERSION=2025-01-23
+   SQUARE_API_VERSION=2025-10-16
    PORT=3000
    VITE_USE_MOCK_API=false
    ```
