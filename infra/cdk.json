@@ -1,0 +1,7 @@
+{
+  "app": "node --loader ts-node/esm ./bin/infra.ts",
+  "context": {
+    "@aws-cdk/core:newStyleStackSynthesis": true
+  }
+}
+
