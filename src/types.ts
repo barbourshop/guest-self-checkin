@@ -30,7 +30,6 @@ export interface Customer {
   email: string;
   phone: string;
   membershipType?: String;
-  hasSignedWaiver?: boolean;
   lotNumber?: string;
 }
 
@@ -42,7 +41,6 @@ export function adaptCustomer(data: any): Customer {
     email: data.email_address,
     phone: data.phone_number,
     membershipType: data.membershipType,
-    hasSignedWaiver: false,
     lotNumber: data.reference_id
   };
 }

@@ -55,14 +55,6 @@
               >
                 {customer.membershipType || 'Non-Member'}
               </span>
-              <span
-                data-testid="waiver-status"
-                class="inline-block px-2 py-1 text-xs font-medium rounded {customer.hasSignedWaiver
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'}"
-              >
-                {customer.hasSignedWaiver ? 'Waiver Signed' : 'No Waiver'}
-              </span>
             </div>
           </div>
         </div>

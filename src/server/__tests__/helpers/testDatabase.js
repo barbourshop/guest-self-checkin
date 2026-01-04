@@ -3,11 +3,33 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Create an in-memory SQLite database for testing
+ * Create a test SQLite database for testing
+ * Uses in-memory database by default, but can use test.db file if needed
+ * @param {boolean} useFile - If true, use test.db file instead of in-memory
  * @returns {Database} SQLite database instance
  */
-function createTestDatabase() {
-  const db = new Database(':memory:');
+function createTestDatabase(useFile = false) {
+  // Ensure we're in test mode
+  process.env.NODE_ENV = 'test';
+  process.env.USE_TEST_DB = 'true';
+  
+  let db;
+  if (useFile) {
+    // Use test database file
+    const testDbPath = path.join(process.cwd(), 'checkin.test.db');
+    // Delete existing test database if it exists
+    if (fs.existsSync(testDbPath)) {
+      try {
+        fs.unlinkSync(testDbPath);
+      } catch (error) {
+        // Ignore - might be locked
+      }
+    }
+    db = new Database(testDbPath);
+  } else {
+    // Use in-memory database (default)
+    db = new Database(':memory:');
+  }
   
   // Create tables
   db.exec(`

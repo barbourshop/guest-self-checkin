@@ -1,5 +1,4 @@
 const squareService = require('./squareService');
-const waiverService = require('./waiverService');
 const MembershipCache = require('./membershipCache');
 
 /**
@@ -25,14 +24,10 @@ class CustomerService {
       const membershipStatus = await this.membershipCache.getMembershipStatus(customerId);
       const hasMembership = membershipStatus.hasMembership;
       
-      // Check waiver status
-      const hasSignedWaiver = await waiverService.checkStatus(customerId);
-      
-      // Enrich the customer data with membership and waiver status
+      // Enrich the customer data with membership status
       return {
         ...customer,
-        membershipType: hasMembership ? 'Member' : 'Non-Member',
-        hasSignedWaiver
+        membershipType: hasMembership ? 'Member' : 'Non-Member'
       };
     } catch (error) {
       console.error('Error getting customer by ID:', error);
@@ -48,24 +43,31 @@ class CustomerService {
    * @returns {Promise<Array<Object>>} Array of enriched customer objects
    */
   async searchCustomers(searchType, searchValue) {
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
+    // #region agent log
+    fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:entry',message:'CustomerService.searchCustomers called',data:{searchType,searchValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+    // #endregion
+
     try {
       // Get raw customer data from Square API
       const customers = await squareService.searchCustomers(searchType, searchValue);
       
-      // Enrich each customer with membership (from cache) and waiver status
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:after-square',message:'Square service returned',data:{customersCount:customers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+      // #endregion
+      
+      // Enrich each customer with membership (from cache)
       const enrichedCustomers = await Promise.all(
         customers.map(async (customer) => {
           // Use cache for membership status
           const membershipStatus = await this.membershipCache.getMembershipStatus(customer.id);
           const hasMembership = membershipStatus.hasMembership;
           
-          // Check waiver status
-          const hasSignedWaiver = await waiverService.checkStatus(customer.id);
-          
           return {
             ...customer,
-            membershipType: hasMembership ? 'Member' : 'Non-Member',
-            hasSignedWaiver
+            membershipType: hasMembership ? 'Member' : 'Non-Member'
           };
         })
       );
@@ -82,23 +84,35 @@ class CustomerService {
    * @param {string} query - Search query (could be email, phone, name, address, lot, or order ID)
    * @returns {Promise<{type: string, results: Array<Object>}>} Search results
    */
-  async unifiedSearch(query) {
+  async unifiedSearch(query, isQRMode = false) {
     if (!query || typeof query !== 'string') {
       return { type: 'search', results: [] };
     }
 
     const trimmed = query.trim();
 
-    // Check if it looks like an order ID (QR code)
+    // Check if it looks like an order ID (QR code) - regardless of mode
     // Square order IDs are typically alphanumeric and 10+ characters
     const orderIdPattern = /^[A-Z0-9]{10,}$/i;
-    if (orderIdPattern.test(trimmed)) {
+    if (orderIdPattern.test(trimmed) && trimmed.length >= 10) {
       // This is a QR code - return special type
       return { type: 'qr', orderId: trimmed, results: [] };
     }
 
-    // Auto-detect search type
+    // If in QR mode, treat everything as QR code (might be a partial scan)
+    if (isQRMode) {
+      return { type: 'qr', orderId: trimmed, results: [] };
+    }
+
+    // Manual search mode - auto-detect search type
     let searchType = 'name'; // Default to name search
+    
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:before-detection',message:'Starting type detection',data:{trimmed,isQRMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'}) + '\n');
+      // #endregion
     
     // Check for email pattern
     if (trimmed.includes('@') && trimmed.includes('.')) {
@@ -108,43 +122,41 @@ class CustomerService {
     else if (/^[\d\s\-\(\)\+]+$/.test(trimmed) && trimmed.replace(/\D/g, '').length >= 10) {
       searchType = 'phone';
     }
-    // Check for lot number pattern (alphanumeric, short)
-    else if (/^[A-Z0-9]{1,10}$/i.test(trimmed)) {
+    // Check for lot number pattern (format like "BTV 1.111" or "BTV1.111" - alphanumeric with optional spaces and dots)
+    // Pattern 1: Letters followed by optional space and numbers with optional dot (e.g., "BTV 1.111", "BTV1.111")
+    // Pattern 2: Very short alphanumeric (1-3 chars) that are all digits (likely lot codes)
+    // Pattern 3: Contains numbers with dots (e.g., "1.111", "A1.2")
+    // Exclude long alphanumeric strings (10+ chars) as they're likely QR codes
+    else if (
+      trimmed.length < 10 && (  // Lot numbers are typically short
+        /^[A-Z]{2,}\s*\d+\.?\d*$/i.test(trimmed) ||  // "BTV 1.111" or "BTV1.111" format
+        (/^[A-Z0-9]{1,3}$/i.test(trimmed) && /^\d+$/.test(trimmed)) ||  // All digits, 1-3 chars
+        /^\d+\.\d+/.test(trimmed) ||  // Numbers with dot (e.g., "1.111")
+        (/^[A-Z]{1,2}\d+\.?\d*$/i.test(trimmed) && trimmed.length <= 8)  // Short alphanumeric with numbers (e.g., "A1.2", "BTV1.111")
+      )
+    ) {
       searchType = 'lot';
     }
-    // Otherwise treat as name or address
-    else if (trimmed.length > 5 && /[A-Za-z]/.test(trimmed)) {
-      // Try name first, then address
+    // If it contains letters, treat as name
+    else if (/[A-Za-z]/.test(trimmed)) {
       searchType = 'name';
     }
+    // Otherwise treat as name (default)
+
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:after-detection',message:'Type detection complete',data:{searchType,trimmed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'}) + '\n');
+      // #endregion
 
     // Perform search
     const results = await this.searchCustomers(searchType, trimmed);
     
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:after-search',message:'Search complete',data:{searchType,resultsCount:results.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+      // #endregion
+    
     return { type: searchType, results };
   }
 
-  /**
-   * Update customer's waiver status
-   * @param {string} customerId - The customer ID
-   * @param {boolean} hasSignedWaiver - The new waiver status
-   * @returns {Promise<boolean>} True if update was successful
-   */
-  async updateWaiverStatus(customerId, hasSignedWaiver) {
-    try {
-      if (hasSignedWaiver) {
-        // Set waiver as signed
-        await waiverService.setStatus(customerId);
-      } else {
-        // Clear waiver status
-        await waiverService.clearStatus(customerId);
-      }
-      return true;
-    } catch (error) {
-      console.error('Error updating waiver status:', error);
-      return false;
-    }
-  }
 }
 
 module.exports = new CustomerService(); 

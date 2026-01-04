@@ -15,7 +15,6 @@ router.post('/search', asyncHandler(customerController.unifiedSearch));
 
 // Admin endpoints
 router.get('/admin/:customerId', asyncHandler(customerController.getCustomerDetails));
-router.post('/admin/:customerId/waiver', asyncHandler(customerController.updateWaiverStatus));
 
 router.get('/list', asyncHandler(customerController.listCustomers));
 

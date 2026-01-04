@@ -39,15 +39,6 @@ jest.mock('../../services/offlineQueue', () => {
   });
 });
 
-// Mock waiver service
-jest.mock('../../services/waiverService', () => {
-  return {
-    checkStatus: jest.fn().mockResolvedValue(false),
-    setStatus: jest.fn().mockResolvedValue(true),
-    clearStatus: jest.fn().mockResolvedValue(true)
-  };
-});
-
 const request = require('supertest');
 const express = require('express');
 const customerRoutes = require('../customerRoutes');
@@ -129,6 +120,94 @@ describe('Customer Routes', () => {
 
       expect(response.body.type).toBe('qr');
       expect(response.body.orderId).toBe('CA1234567890');
+    });
+
+    it('should detect lot number with space format (BTV 1.111)', async () => {
+      mockSquareService.addCustomer({
+        id: 'CUSTOMER_LOT_1',
+        given_name: 'Test',
+        family_name: 'User',
+        reference_id: 'BTV 1.111'
+      });
+
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'BTV 1.111', isQRMode: false })
+        .expect(200);
+
+      expect(response.body.type).toBe('lot');
+      expect(Array.isArray(response.body.results)).toBe(true);
+    });
+
+    it('should detect lot number without space format (BTV1.111)', async () => {
+      mockSquareService.addCustomer({
+        id: 'CUSTOMER_LOT_2',
+        given_name: 'Test',
+        family_name: 'User',
+        reference_id: 'BTV1.111'
+      });
+
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'BTV1.111', isQRMode: false })
+        .expect(200);
+
+      expect(response.body.type).toBe('lot');
+      expect(Array.isArray(response.body.results)).toBe(true);
+    });
+
+    it('should detect lot number in lowercase (btv1.111)', async () => {
+      mockSquareService.addCustomer({
+        id: 'CUSTOMER_LOT_3',
+        given_name: 'Test',
+        family_name: 'User',
+        reference_id: 'BTV1.111'
+      });
+
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'btv1.111', isQRMode: false })
+        .expect(200);
+
+      expect(response.body.type).toBe('lot');
+      expect(Array.isArray(response.body.results)).toBe(true);
+    });
+
+    it('should detect name search (John should not be detected as lot)', async () => {
+      mockSquareService.addCustomer({
+        id: 'CUSTOMER_NAME_1',
+        given_name: 'John',
+        family_name: 'Doe',
+        email_address: 'john.doe@example.com'
+      });
+
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'John', isQRMode: false })
+        .expect(200);
+
+      expect(response.body.type).toBe('name');
+      expect(Array.isArray(response.body.results)).toBe(true);
+    });
+
+    it('should treat query as QR code when isQRMode is true', async () => {
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'CA1234567890', isQRMode: true })
+        .expect(200);
+
+      expect(response.body.type).toBe('qr');
+      expect(response.body.orderId).toBe('CA1234567890');
+    });
+
+    it('should treat query as QR code in QR mode even if it looks like a name', async () => {
+      const response = await request(app)
+        .post('/api/customers/search')
+        .send({ query: 'John', isQRMode: true })
+        .expect(200);
+
+      expect(response.body.type).toBe('qr');
+      expect(response.body.orderId).toBe('John');
     });
 
     it('should return error for missing query', async () => {

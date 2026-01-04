@@ -71,18 +71,67 @@ class MockSquareService {
   async searchCustomers(searchType, searchValue) {
     await this._checkFailure('search');
     
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
+    // #region agent log
+    fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:entry',message:'Mock search called',data:{searchType,searchValue,totalCustomers:this.customers.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'}) + '\n');
+    // #endregion
+    
     const results = [];
+    const searchLower = searchValue.toLowerCase();
+    
     for (const customer of this.customers.values()) {
       let matches = false;
-      if (searchType === 'email' && customer.email_address?.includes(searchValue)) {
+      
+      if (searchType === 'email' && customer.email_address?.toLowerCase().includes(searchLower)) {
         matches = true;
-      } else if (searchType === 'phone' && customer.phone_number?.includes(searchValue)) {
-        matches = true;
-      } else if (searchType === 'lot' && customer.reference_id === searchValue) {
-        matches = true;
+      } else if (searchType === 'phone') {
+        // Normalize phone numbers for comparison
+        const customerPhone = customer.phone_number?.replace(/\D/g, '');
+        const searchPhone = searchValue.replace(/\D/g, '');
+        if (customerPhone?.includes(searchPhone)) {
+          matches = true;
+        }
+      } else if (searchType === 'lot') {
+        // Normalize lot numbers (remove spaces, case insensitive)
+        const customerLot = customer.reference_id?.replace(/\s/g, '').toLowerCase();
+        const searchLot = searchValue.replace(/\s/g, '').toLowerCase();
+        if (customerLot === searchLot) {
+          matches = true;
+        }
       } else if (searchType === 'name') {
-        const fullName = `${customer.given_name || ''} ${customer.family_name || ''}`.toLowerCase();
-        if (fullName.includes(searchValue.toLowerCase())) {
+        // Check both given_name and family_name separately and together
+        const givenName = (customer.given_name || '').toLowerCase();
+        const familyName = (customer.family_name || '').toLowerCase();
+        const fullName = `${givenName} ${familyName}`.trim();
+        
+        // #region agent log
+        fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:name-check',message:'Checking name match',data:{customerId:customer.id,givenName,familyName,fullName,searchLower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'}) + '\n');
+        // #endregion
+        
+        const givenMatch = givenName.includes(searchLower);
+        const familyMatch = familyName.includes(searchLower);
+        const fullMatch = fullName.includes(searchLower);
+        
+        if (givenMatch || familyMatch || fullMatch) {
+          matches = true;
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:name-match',message:'Name match found',data:{customerId:customer.id,givenMatch,familyMatch,fullMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'}) + '\n');
+          // #endregion
+        }
+      } else if (searchType === 'address') {
+        // Address search - check all address fields
+        const address = customer.address || {};
+        const addressStr = [
+          address.address_line_1,
+          address.address_line_2,
+          address.locality,
+          address.administrative_district_level_1,
+          address.postal_code
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        if (addressStr.includes(searchLower)) {
           matches = true;
         }
       }
@@ -91,6 +140,10 @@ class MockSquareService {
         results.push(customer);
       }
     }
+    
+    // #region agent log
+    fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:exit',message:'Mock search complete',data:{searchType,searchValue,resultsCount:results.length,resultIds:results.map(r => r.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'}) + '\n');
+    // #endregion
     
     return results;
   }

@@ -19,7 +19,6 @@ export const isLoading = writable<boolean>(false);
 export const error = writable<string | null>(null);
 export const selectedCustomer = writable<Customer | null>(null);
 export const guestCount = writable<number>(0);
-export const showWaiver = writable<boolean>(false);
 export const showConfirmation = writable<boolean>(false);
 export const searchQuery = writable<string>('');
 export const searchType = writable<'email' | 'phone' | 'lot' | 'name'>('name');
@@ -54,10 +53,6 @@ export const setGuestCount = (count: number) => {
   guestCount.set(count);
 };
 
-export const setShowWaiver = (show: boolean) => {
-  showWaiver.set(show);
-};
-
 export const setShowConfirmation = (show: boolean) => {
   showConfirmation.set(show);
 };
@@ -82,29 +77,12 @@ export const setCustomerNames = (names: Array<{
   customerNames.set(names);
 };
 
-export const updateCustomerWaiverStatus = (customerId: string, hasSignedWaiver: boolean) => {
-  customers.update(cs => 
-    cs.map(customer => 
-      customer.id === customerId
-        ? { ...customer, hasSignedWaiver }
-        : customer
-    )
-  );
-  
-  selectedCustomer.update(customer => 
-    customer && customer.id === customerId
-      ? { ...customer, hasSignedWaiver }
-      : customer
-  );
-};
-
 export const resetState = () => {
   customers.set(initialCustomers);
   isLoading.set(false);
   error.set(null);
   selectedCustomer.set(null);
   guestCount.set(0);
-  showWaiver.set(false);
   showConfirmation.set(false);
   searchQuery.set('');
   searchType.set('name');

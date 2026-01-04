@@ -19,7 +19,6 @@ function log(message) {
 }
 
 const customerRoutes = require('./routes/customerRoutes');
-const waiverRoutes = require('./routes/waiverRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -56,7 +55,6 @@ app.use((req, res, next) => {
 
 // API routes
 app.use('/api/customers', customerRoutes);
-app.use('/api/waivers', waiverRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -8,6 +8,8 @@ const {
   CHECKIN_VARIANT_ID
 } = require('../config/square');
 const logger = require('../logger');
+const MockSquareService = require('./mockSquareService');
+const { createMockSquareService } = require('../__tests__/helpers/mockSquareHelpers');
 
 /**
  * Service for interacting with Square API customer and order endpoints
@@ -40,49 +42,142 @@ class SquareService {
      * @returns {Object} The search parameters object.
      */
     // Build search filter based on type
-    let filterField;
-    if (searchType === 'email') {
-      filterField = 'email_address';
-    } else if (searchType === 'phone') {
-      filterField = 'phone_number';
-    } else if (searchType === 'lot') {
-      filterField = 'reference_id';
-    } else if (searchType === 'name') {
-      // Name search uses given_name or family_name
-      filterField = 'given_name'; // Square API supports fuzzy search on name fields
-    } else if (searchType === 'address') {
-      // Address search - Square API supports address_line_1, locality, etc.
-      filterField = 'address_line_1';
-    }
+    let searchParams;
+    let allCustomers = [];
+    
+    if (searchType === 'name') {
+      // Name search: Try searching both given_name and family_name
+      // Square API may not support fuzzy on name fields, so we'll try exact match
+      // and combine results from both fields
+      const searchFields = ['given_name', 'family_name'];
+      
+      const fs = require('fs');
+      const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+      
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-start',message:'Starting name search',data:{searchValue,searchFields},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+      // #endregion
+      
+      for (const field of searchFields) {
+        try {
+          // Try using exact match first (Square API may not support text_filter on name fields)
+          // If exact doesn't work, we'll need to fetch all and filter client-side
+          // For now, try exact match but log the attempt
+          searchParams = {
+            query: {
+              filter: {
+                [field]: {
+                  exact: searchValue
+                }
+              }
+            },
+            limit: 5
+          };
+          
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-using-exact',message:'Using exact match for name search',data:{field,searchValue,note:'Exact match requires full name - this may be why no results'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+          // #endregion
 
-    const searchParams = {
-      query: {
-        filter: {
-          [filterField]: {
-            fuzzy: searchValue
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-before-api',message:'About to call Square API',data:{field,searchValue,searchParams},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+          // #endregion
+
+          const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
+            method: 'POST',
+            headers: SQUARE_API_CONFIG.headers,
+            body: JSON.stringify(searchParams)
+          });
+
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-after-api',message:'Square API response received',data:{field,status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'}) + '\n');
+          // #endregion
+
+          if (response.ok) {
+            const data = await response.json();
+            
+            // #region agent log
+            fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-after-parse',message:'Square API data parsed',data:{field,customersCount:data.customers?.length||0,hasCustomers:!!data.customers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+            // #endregion
+            
+            if (data.customers && data.customers.length > 0) {
+              allCustomers.push(...data.customers);
+            }
+          } else {
+            // #region agent log
+            const errorText = await response.text().catch(() => 'Unable to read error'); fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-api-error',message:'Square API returned error',data:{field,status:response.status,errorText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'}) + '\n');
+            // #endregion
           }
+        } catch (error) {
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-exception',message:'Exception during name search',data:{field,error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'}) + '\n');
+          // #endregion
+          // Log but continue to try other fields
+          logger.warn(`Error searching by ${field}: ${error.message}`);
         }
-      },
-      "limit": 5
-    };
+      }
+      
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:name-search-complete',message:'Name search complete',data:{totalCustomers:allCustomers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+      // #endregion
+      
+      // Deduplicate customers by ID
+      const customerMap = new Map();
+      for (const customer of allCustomers) {
+        if (!customerMap.has(customer.id)) {
+          customerMap.set(customer.id, customer);
+        }
+      }
+      allCustomers = Array.from(customerMap.values());
+    } else {
+      // For other search types, use field-specific filters
+      let filterField;
+      if (searchType === 'email') {
+        filterField = 'email_address';
+      } else if (searchType === 'phone') {
+        filterField = 'phone_number';
+      } else if (searchType === 'lot') {
+        filterField = 'reference_id';
+      } else if (searchType === 'address') {
+        // Address search - Square API supports address_line_1, locality, etc.
+        filterField = 'address_line_1';
+      }
 
-    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
-      method: 'POST',
-      headers: SQUARE_API_CONFIG.headers,
-      body: JSON.stringify(searchParams)
-    });
+      searchParams = {
+        query: {
+          filter: {
+            [filterField]: {
+              fuzzy: searchValue
+            }
+          }
+        },
+        limit: 5
+      };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
+      const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify(searchParams)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Square API request failed');
+      }
+
+      const data = await response.json();
+      allCustomers = data.customers || [];
     }
 
-    const data = await response.json();
-    const customers = data.customers || [];
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
+    // #region agent log
+    fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:before-enrichment',message:'Before enrichment',data:{customersCount:allCustomers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'}) + '\n');
+    // #endregion
 
     // Enrich each customer with membership status based on segment
     const enrichedCustomers = await Promise.all(
-      customers.map(async (customer) => {
+      allCustomers.map(async (customer) => {
         const hasMembership = await this.checkMembershipBySegment(customer.id);
         return {
           ...customer,
@@ -90,6 +185,10 @@ class SquareService {
         };
       })
     );
+
+    // #region agent log
+    fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:searchCustomers:after-enrichment',message:'After enrichment',data:{enrichedCount:enrichedCustomers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'}) + '\n');
+    // #endregion
 
     return enrichedCustomers;
   }
@@ -457,4 +556,25 @@ class SquareService {
   }
 }
 
-module.exports = new SquareService();
+// Use mock service if USE_MOCK_SQUARE_SERVICE is set, otherwise use real service
+const USE_MOCK = process.env.USE_MOCK_SQUARE_SERVICE === 'true';
+
+const fs = require('fs');
+const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+
+// #region agent log
+fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:module-init',message:'SquareService module initializing',data:{USE_MOCK,envVar:process.env.USE_MOCK_SQUARE_SERVICE},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'}) + '\n');
+// #endregion
+
+if (USE_MOCK) {
+  const mockService = createMockSquareService();
+  // #region agent log
+  fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:module-init',message:'Using mock Square service',data:{mockCustomersCount:mockService.customers?.size || 0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'}) + '\n');
+  // #endregion
+  module.exports = mockService;
+} else {
+  // #region agent log
+  fs.appendFileSync(logPath, JSON.stringify({location:'squareService.js:module-init',message:'Using real Square service',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'}) + '\n');
+  // #endregion
+  module.exports = new SquareService();
+}

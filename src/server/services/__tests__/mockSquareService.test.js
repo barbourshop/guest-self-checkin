@@ -70,6 +70,30 @@ describe('MockSquareService', () => {
       expect(results[0].id).toBe('C1');
     });
 
+    it('should search customers by lot number with space format (BTV 1.111)', async () => {
+      mockService.addCustomer({
+        id: 'C_LOT_1',
+        given_name: 'Test',
+        family_name: 'User',
+        reference_id: 'BTV 1.111'
+      });
+      const results = await mockService.searchCustomers('lot', 'BTV 1.111');
+      expect(results).toHaveLength(1);
+      expect(results[0].reference_id).toBe('BTV 1.111');
+    });
+
+    it('should search customers by lot number without space format (BTV1.111)', async () => {
+      mockService.addCustomer({
+        id: 'C_LOT_2',
+        given_name: 'Test',
+        family_name: 'User',
+        reference_id: 'BTV1.111'
+      });
+      const results = await mockService.searchCustomers('lot', 'BTV1.111');
+      expect(results).toHaveLength(1);
+      expect(results[0].reference_id).toBe('BTV1.111');
+    });
+
     it('should search customers by name', async () => {
       const results = await mockService.searchCustomers('name', 'John');
       expect(results).toHaveLength(1);

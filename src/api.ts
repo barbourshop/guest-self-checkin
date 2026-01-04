@@ -1,4 +1,4 @@
-import { mockCustomers, mockWaiverStatus, mockDelays } from './mocks/mockData';
+import { mockCustomers, mockDelays } from './mocks/mockData';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -11,24 +11,14 @@ export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
  * @returns {Promise<{type: string, results: Array<any>}>} Search results
  */
 export async function unifiedSearch(query: string): Promise<{type: string, results: any[]}> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.search));
-    
-    // Simple mock implementation - return empty results
-    return {
-      type: 'search',
-      results: []
-    };
-  }
-
+  // Always call backend API - backend handles mock vs real data
   try {
     const response = await fetch(`${API_BASE_URL}/customers/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, isQRMode: false }),
     });
 
     if (!response.ok) {
@@ -134,65 +124,6 @@ export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: st
 }
 
 /**
- * Check if a customer has signed the waiver
- * @param {string} customerId - Customer ID
- * @returns {Promise<boolean>} True if waiver is signed
- */
-export async function checkWaiverStatus(customerId: string): Promise<boolean> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverCheck));
-    return mockWaiverStatus[customerId] || false;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/waivers/check-waiver/${customerId}`);
-
-    if (!response.ok) {
-      throw new Error('Failed to check waiver status');
-    }
-
-    const data = await response.json();
-    return data.hasSignedWaiver;
-  } catch (error) {
-    console.error('Error checking waiver status:', error);
-    return false;
-  }
-}
-
-/**
- * Sign the waiver for a customer
- * @param {string} customerId - Customer ID
- * @returns {Promise<boolean>} True if successful
- */
-export async function signWaiver(customerId: string): Promise<boolean> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
-    mockWaiverStatus[customerId] = true;
-    return true;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to sign waiver');
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error signing waiver:', error);
-    return false;
-  }
-}
-
-/**
  * Log a customer check-in
  * Supports both manual check-in (customerId) and QR code check-in (orderId)
  * @param {string} customerId - Customer ID (for manual check-in)
@@ -211,26 +142,29 @@ export async function logCheckIn(
   lotNumber?: string,
   orderId?: string
 ): Promise<{success: boolean, queued?: boolean, message?: string}> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true };
-  }
+  // Always call backend - backend handles mock vs real Square service
+  // USE_MOCK_API should not bypass backend for check-ins (unlike search which can use local mock data)
 
   try {
+    const requestBody = {
+      customerId,
+      orderId,
+      guestCount,
+      firstName,
+      lastName,
+      lotNumber,
+    };
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:logCheckIn:before-fetch',message:'About to send check-in request',data:{requestBody,url:`${API_BASE_URL}/customers/check-in`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    // #endregion
+    
     const response = await fetch(`${API_BASE_URL}/customers/check-in`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        customerId,
-        orderId,
-        guestCount,
-        firstName,
-        lastName,
-        lotNumber,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -279,6 +213,25 @@ export async function fetchCustomerNames(): Promise<Array<{id: string, given_nam
     return await response.json();
   } catch (error) {
     console.error('Error fetching customer names:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get database contents for admin view
+ * @returns {Promise<{membershipCache: Array<any>, checkinQueue: Array<any>, checkinLog: Array<any>}>}
+ */
+export async function getDatabaseContents(): Promise<{membershipCache: any[], checkinQueue: any[], checkinLog: any[]}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/database`);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch database contents');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching database contents:', error);
     throw error;
   }
 }

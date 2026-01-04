@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Check, AlertCircle } from 'lucide-svelte';
+  import { Check, AlertCircle, Settings } from 'lucide-svelte';
   import type { Customer } from './types';
   import { unifiedSearch, validateQRCode, logCheckIn } from './api';
   import UnifiedSearch, { type UnifiedSearchResult } from './UnifiedSearch.svelte';
   import CustomerList from './CustomerList.svelte';
   import CustomerDetail from './CustomerDetail.svelte';
+  import AdminView from './AdminView.svelte';
   import { resetState } from './stores/appStore';
 
   const STANDARD_ERROR_MESSAGE = 'An issue with check-in, please see the manager on duty';
@@ -16,6 +17,7 @@
   let guestCount = 1;
   let showConfirmation = false;
   let qrOrderId: string | null = null;
+  let showAdminView = false;
 
   const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
@@ -67,7 +69,6 @@
           phone: c.phone_number || c.phone || '',
           lotNumber: c.reference_id || c.lotNumber,
           membershipType: c.membershipType || 'Non-Member',
-          hasSignedWaiver: c.hasSignedWaiver || false,
         }));
         customers = adaptedCustomers;
       } else {
@@ -166,15 +167,26 @@
 <div class="min-h-screen bg-gray-50">
   <header class="bg-primary-600 text-white py-6 px-4 shadow-lg">
     <div class="max-w-3xl mx-auto">
-      <h1 class="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
-      <p class="mt-2 text-primary-100">
-        Scan your QR code or search by name, phone, email, address, or lot number
-      </p>
-      {#if USE_MOCK_API}
-        <div class="mt-1 px-2 py-1 bg-yellow-500 text-white text-xs inline-block rounded">
-          Demo Mode: Using Mock Data
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
+          <p class="mt-2 text-primary-100">
+            Scan your QR code or search by name, phone, email, address, or lot number
+          </p>
+          {#if USE_MOCK_API}
+            <div class="mt-1 px-2 py-1 bg-yellow-500 text-white text-xs inline-block rounded">
+              Demo Mode: Using Mock Data
+            </div>
+          {/if}
         </div>
-      {/if}
+        <button
+          on:click={() => showAdminView = true}
+          class="p-2 text-white hover:bg-primary-700 rounded-lg transition-colors"
+          title="Admin View"
+        >
+          <Settings class="h-6 w-6" />
+        </button>
+      </div>
     </div>
   </header>
 
@@ -194,15 +206,8 @@
       <CustomerDetail
         customer={selectedCustomer}
         {guestCount}
-        showWaiver={!selectedCustomer.hasSignedWaiver}
         onGuestCountChange={(count) => guestCount = count}
         onCheckIn={handleCheckIn}
-        onWaiverResponse={(accepted) => {
-          if (!accepted) {
-            handleResetState();
-          }
-        }}
-        onShowWaiver={() => {}}
         onReset={handleResetState}
       />
     {:else}
@@ -234,5 +239,9 @@
       {/if}
     {/if}
   </main>
+
+  {#if showAdminView}
+    <AdminView onClose={() => showAdminView = false} />
+  {/if}
 </div>
 

@@ -6,7 +6,7 @@ const MockSquareService = require('../../services/mockSquareService');
 function createMockSquareService() {
   const mockService = new MockSquareService();
   
-  // Add some default test customers
+  // Add some default test customers for name search testing
   mockService.addCustomer({
     id: 'CUSTOMER_MEMBER_1',
     given_name: 'John',
@@ -25,6 +25,27 @@ function createMockSquareService() {
     phone_number: '+15559876543',
     reference_id: 'LOT456',
     segment_ids: []
+  });
+  
+  // Add more test customers for better search coverage
+  mockService.addCustomer({
+    id: 'CUSTOMER_MEMBER_2',
+    given_name: 'John',
+    family_name: 'Smith',
+    email_address: 'john.smith@example.com',
+    phone_number: '+15551111111',
+    reference_id: 'BTV 1.111',
+    segment_ids: ['MEMBERSHIP_SEGMENT_ID']
+  });
+  
+  mockService.addCustomer({
+    id: 'CUSTOMER_MEMBER_3',
+    given_name: 'Mary',
+    family_name: 'Johnson',
+    email_address: 'mary.johnson@example.com',
+    phone_number: '+15552222222',
+    reference_id: 'BTV1.111',
+    segment_ids: ['MEMBERSHIP_SEGMENT_ID']
   });
   
   // Add test orders

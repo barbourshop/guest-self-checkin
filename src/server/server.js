@@ -2,11 +2,12 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
-require('dotenv').config();
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
-const waiverRoutes = require('./routes/waiverRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const logger = require('./logger');
 const errorHandler = require('./middleware/errorHandler');
 const { SQUARE_API_CONFIG } = require('./config/square');
@@ -14,6 +15,22 @@ const { SQUARE_API_CONFIG } = require('./config/square');
 function log(message) {
   console.log(`[Server] ${message}`);
   logger.info(message);
+}
+
+// Check if we're in demo mode
+const isDemoMode = process.env.USE_DEMO_DB === 'true' && process.env.USE_MOCK_SQUARE_SERVICE === 'true';
+
+if (isDemoMode) {
+  log('🎭 DEMO MODE: Using demo database with mock Square service');
+  log('   Database: checkin.demo.db');
+  log('   Square Service: Mock (no real API calls)');
+} else if (process.env.USE_DEMO_DB === 'true') {
+  log('⚠️  WARNING: USE_DEMO_DB is set but USE_MOCK_SQUARE_SERVICE is not');
+  log('   This may cause issues. Use "npm run demo" for proper demo mode.');
+} else {
+  log('🏭 PRODUCTION MODE: Using production database');
+  log('   Database: checkin.db');
+  log('   Square Service: ' + (process.env.USE_MOCK_SQUARE_SERVICE === 'true' ? 'Mock' : 'Real API'));
 }
 
 log('Starting server...');
@@ -47,7 +64,7 @@ try {
   
   // Routes
   app.use('/api/customers', customerRoutes);
-  app.use('/api/waivers', waiverRoutes);
+  app.use('/api/admin', adminRoutes);
   
   // Static files
   const staticPath = path.join(resourcesPath, 'dist');

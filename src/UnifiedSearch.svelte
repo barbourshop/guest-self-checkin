@@ -29,6 +29,7 @@
   
   let query = '';
   let isScanning = false;
+  let showManualSearch = false;
   let inputElement: HTMLInputElement;
 
   // Auto-focus input on mount for scanner support
@@ -38,22 +39,24 @@
     }
   });
 
-  // Handle input changes - detect if it's a QR code scan
+  // Handle input changes - in QR mode, treat all input as potential QR codes
   function handleInputChange(e: Event) {
     const target = e.target as HTMLInputElement;
     const value = target.value;
     query = value;
 
-    // If input looks like a QR code (long alphanumeric, typically from scanner)
+    // In QR mode, if input looks like a QR code (10+ alphanumeric characters)
     // QR codes are usually 10+ characters and alphanumeric
-    const qrPattern = /^[A-Z0-9]{10,}$/i;
-    if (qrPattern.test(value) && value.length >= 10) {
-      // Small delay to allow scanner to finish input
-      setTimeout(() => {
-        if (query === value) {
-          handleQRCode(value);
-        }
-      }, 100);
+    if (!showManualSearch) {
+      const qrPattern = /^[A-Z0-9]{10,}$/i;
+      if (qrPattern.test(value) && value.length >= 10) {
+        // Small delay to allow scanner to finish input
+        setTimeout(() => {
+          if (query === value) {
+            handleQRCode(value);
+          }
+        }, 100);
+      }
     }
   }
 
@@ -67,7 +70,7 @@
 
     try {
       // Validate QR code via API
-      const response = await fetch('http://localhost:3000/api/customers/validate-qr', {
+      const response = await fetch('/api/customers/validate-qr', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,21 +129,45 @@
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/customers/search', {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:entry',message:'Manual search started',data:{query:query.trim(),isQRMode:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
+      // Use relative URL to work with Vite proxy
+      // Pass isQRMode=false to indicate this is manual search
+      const requestBody = { query: query.trim(), isQRMode: false };
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:before-fetch',message:'About to send request',data:{requestBody,url:'/api/customers/search'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+
+      const response = await fetch('/api/customers/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify(requestBody),
       });
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:after-fetch',message:'Response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
 
       if (!response.ok) {
         throw new Error('Search failed');
       }
 
       const data = await response.json();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:after-parse',message:'Response data parsed',data:{type:data.type,resultsCount:data.results?.length||0,hasResults:!!data.results},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+
       onSearchResult(data);
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:error',message:'Search error caught',data:{error:err.message,stack:err.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error('Error searching:', err);
       onSearchResult({
         type: 'search',
@@ -152,12 +179,14 @@
   // Handle Enter key
   function handleKeyPress(e: KeyboardEvent) {
     if (e.key === 'Enter') {
-      // Check if it looks like a QR code
-      const qrPattern = /^[A-Z0-9]{10,}$/i;
-      if (qrPattern.test(query) && query.length >= 10) {
-        handleQRCode(query);
-      } else {
+      if (showManualSearch) {
+        // In manual search mode, perform search
         handleManualSearch();
+      } else {
+        // In QR mode, treat as QR code
+        if (query.trim().length >= 10) {
+          handleQRCode(query.trim());
+        }
       }
     }
   }
@@ -166,10 +195,18 @@
 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
   <div class="mb-4">
     <h2 class="text-xl font-semibold text-gray-800 mb-2">
-      Scan QR Code or Search
+      {#if showManualSearch}
+        Search for Customer
+      {:else}
+        Scan QR Code
+      {/if}
     </h2>
     <p class="text-sm text-gray-600">
-      Scan your QR code with the scanner, or search by name, phone, email, address, or lot number
+      {#if showManualSearch}
+        Search by name, phone, email, address, or lot number
+      {:else}
+        Scan your QR code with the scanner
+      {/if}
     </p>
   </div>
 
@@ -178,6 +215,8 @@
       <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
         {#if isScanning}
           <Loader2 class="h-5 w-5 text-primary-600 animate-spin" />
+        {:else if showManualSearch}
+          <Search class="h-5 w-5 text-gray-400" />
         {:else}
           <QrCode class="h-5 w-5 text-gray-400" />
         {/if}
@@ -185,7 +224,7 @@
       <input
         bind:this={inputElement}
         type="text"
-        placeholder="Scan QR code or type to search..."
+        placeholder={showManualSearch ? "Type to search..." : "Scan QR code..."}
         class="w-full pl-10 pr-4 py-4 text-lg border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         bind:value={query}
         on:input={handleInputChange}
@@ -195,19 +234,50 @@
         autocomplete="off"
       />
     </div>
-    <button
-      on:click={handleManualSearch}
-      disabled={isLoading || isScanning || !query.trim()}
-      class="px-6 py-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
-    >
-      {#if isLoading}
-        <Loader2 class="h-5 w-5 animate-spin" />
-        <span>Searching...</span>
-      {:else}
-        <Search class="h-5 w-5" />
-        <span>Search</span>
-      {/if}
-    </button>
+    {#if showManualSearch}
+      <button
+        on:click={handleManualSearch}
+        disabled={isLoading || isScanning || !query.trim()}
+        class="px-6 py-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+      >
+        {#if isLoading}
+          <Loader2 class="h-5 w-5 animate-spin" />
+          <span>Searching...</span>
+        {:else}
+          <Search class="h-5 w-5" />
+          <span>Search</span>
+        {/if}
+      </button>
+    {/if}
+  </div>
+
+  <div class="mt-3">
+    {#if showManualSearch}
+      <button
+        on:click={() => {
+          showManualSearch = false;
+          query = '';
+          if (inputElement) {
+            inputElement.focus();
+          }
+        }}
+        class="text-sm text-primary-600 hover:text-primary-700"
+      >
+        ← Back to QR Code Scan
+      </button>
+    {:else}
+      <button
+        on:click={() => {
+          showManualSearch = true;
+          if (inputElement) {
+            inputElement.focus();
+          }
+        }}
+        class="text-sm text-primary-600 hover:text-primary-700"
+      >
+        Need to search manually? Click here
+      </button>
+    {/if}
   </div>
 
   {#if error}

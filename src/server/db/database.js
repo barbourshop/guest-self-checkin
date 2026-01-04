@@ -5,24 +5,32 @@ const fs = require('fs');
 /**
  * Get the database path
  * In Electron, use userData directory; otherwise use current directory
+ * For tests, use a separate test database file
+ * For demo data, use a separate demo database file
  */
 function getDatabasePath() {
   // Try to get Electron app if available
-  let electronApp;
-  try {
-    electronApp = require('electron')?.app;
-  } catch (e) {
-    // Not in Electron environment
+  if (process.env.ELECTRON_USER_DATA) {
+    return path.join(process.env.ELECTRON_USER_DATA, 'checkin.db');
   }
   
-  if (electronApp && electronApp.getPath) {
-    // Electron environment
-    const userDataPath = electronApp.getPath('userData');
-    return path.join(userDataPath, 'checkin.db');
-  } else {
-    // Node.js environment (development/testing)
-    return path.join(process.cwd(), 'checkin.db');
+  // Use explicit database path if provided
+  if (process.env.DATABASE_PATH) {
+    return process.env.DATABASE_PATH;
   }
+  
+  // Test environment: use separate test database
+  if (process.env.NODE_ENV === 'test' || process.env.USE_TEST_DB === 'true') {
+    return path.join(process.cwd(), 'checkin.test.db');
+  }
+  
+  // Demo/development environment: use demo database if specified
+  if (process.env.USE_DEMO_DB === 'true') {
+    return path.join(process.cwd(), 'checkin.demo.db');
+  }
+  
+  // Default: production/development database
+  return path.join(process.cwd(), 'checkin.db');
 }
 
 /**

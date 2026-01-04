@@ -155,17 +155,31 @@ class CustomerController {
    * @param {Response} res - Express response object
    */
   async unifiedSearch(req, res, next) {
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
     try {
-      const { query } = req.body;
+      const { query, isQRMode = false } = req.body;
+      
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:entry',message:'Controller received request',data:{query,isQRMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n');
+      // #endregion
       
       if (!query) {
         return res.status(400).json({ error: 'Search query is required' });
       }
       
-      const result = await customerService.unifiedSearch(query);
+      const result = await customerService.unifiedSearch(query, isQRMode);
+      
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:before-response',message:'About to send response',data:{type:result.type,resultsCount:result.results?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'}) + '\n');
+      // #endregion
       
       res.json(result);
     } catch (error) {
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:error',message:'Controller error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n');
+      // #endregion
       logger.error(`Error in unified search: ${error.message}`);
       next(error);
     }
@@ -275,32 +289,6 @@ class CustomerController {
     }
   }
 
-  /**
-   * Update customer's waiver status
-   * @param {Request} req - Express request object
-   * @param {Response} res - Express response object
-   */
-  async updateWaiverStatus(req, res, next) {
-    try {
-      const { customerId } = req.params;
-      const { hasSignedWaiver } = req.body;
-
-      if (typeof hasSignedWaiver !== 'boolean') {
-        return res.status(400).json({ error: 'hasSignedWaiver must be a boolean' });
-      }
-
-      const updated = await customerService.updateWaiverStatus(customerId, hasSignedWaiver);
-      
-      if (!updated) {
-        return res.status(404).json({ error: 'Customer not found' });
-      }
-
-      res.json({ success: true, hasSignedWaiver });
-    } catch (error) {
-      logger.error(`Error updating waiver status: ${error.message}`);
-      next(error);
-    }
-  }
 
   /**
    * Log a customer check-in
@@ -309,8 +297,15 @@ class CustomerController {
    * @param {Response} res - Express response object
    */
   async logCheckIn(req, res, next) {
+    const fs = require('fs');
+    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
+    
     try {
       const { customerId, orderId, guestCount, firstName, lastName, lotNumber } = req.body;
+      
+      // #region agent log
+      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:entry',message:'Check-in request received',data:{customerId,orderId,guestCount,firstName,lastName,lotNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
+      // #endregion
       
       // If orderId provided, verify it first
       if (orderId) {
@@ -342,8 +337,10 @@ class CustomerController {
         
         // Also log to database for queue/sync
         try {
-          const { initDatabase } = require('../db/database');
           const db = initDatabase();
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:before-db-insert-qr',message:'About to insert QR check-in to database',data:{verifiedCustomerId,orderId,verifiedGuestCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
+          // #endregion
           db.prepare(`
             INSERT INTO checkin_log 
             (customer_id, order_id, guest_count, timestamp, synced_to_square)
@@ -356,6 +353,9 @@ class CustomerController {
             1 // Assume synced since we verified with Square
           );
           db.close();
+          // #region agent log
+          fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:after-db-insert-qr',message:'QR check-in logged to database',data:{verifiedCustomerId,orderId,verifiedGuestCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
+          // #endregion
         } catch (dbError) {
           logger.error('Error logging to database:', dbError);
           // Continue even if DB logging fails
@@ -392,8 +392,10 @@ class CustomerController {
       
       // Also log to database
       try {
-        const { initDatabase } = require('../db/database');
         const db = initDatabase();
+        // #region agent log
+        fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:before-db-insert-manual',message:'About to insert manual check-in to database',data:{customerId,guestCount,firstName,lastName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
+        // #endregion
         db.prepare(`
           INSERT INTO checkin_log 
           (customer_id, order_id, guest_count, timestamp, synced_to_square)
@@ -406,6 +408,9 @@ class CustomerController {
           0 // Not synced to Square (manual check-in)
         );
         db.close();
+        // #region agent log
+        fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:after-db-insert-manual',message:'Manual check-in logged to database',data:{customerId,guestCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
+        // #endregion
       } catch (dbError) {
         logger.error('Error logging to database:', dbError);
         // Continue even if DB logging fails

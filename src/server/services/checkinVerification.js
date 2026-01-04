@@ -10,9 +10,11 @@ const logger = require('../logger');
  * Service for verifying check-in orders
  * Validates that orders contain the required check-in catalog item/variant
  */
+const MembershipCacheDefault = require('./membershipCache');
+
 class CheckinVerification {
   constructor(cacheInstance = null) {
-    this.membershipCache = cacheInstance || new (require('./membershipCache'))();
+    this.membershipCache = cacheInstance || new MembershipCacheDefault();
   }
 
   /**

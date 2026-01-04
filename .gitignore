@@ -11,3 +11,10 @@ coverage/
 dist/
 dist-electron/
 logs/
+# Database files
+*.db
+*.db-shm
+*.db-wal
+checkin.db
+checkin.demo.db
+checkin.test.db
