@@ -19,5 +19,9 @@
 		"svelte-check": "^4.3.3",
 		"typescript": "^5.9.3",
 		"vite": "^7.1.10"
+	},
+	"dependencies": {
+		"html2canvas": "^1.4.1",
+		"jsbarcode": "^3.12.1"
 	}
 }

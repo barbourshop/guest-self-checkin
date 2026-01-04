@@ -69,10 +69,21 @@ export const passesValidateHandler: LambdaHandler = async (event) => {
     const payload = JSON.parse(event.body ?? '{}');
     const parsed = passValidationSchema.parse(payload);
 
-    // Simply retrieve the order - no validation for now
+    // Retrieve the order
     const order = await squareClient.getOrder(parsed.token);
 
-    // Return the full order details
+    // Valid catalog object IDs for Big Trees Rec Center access
+    const validCatalogObjectIds = [
+      'TSIXDBP7X2VVKP4UZTM6KDO3',
+      '53OFWEDVK453O6GBG52N3CM5'
+    ];
+
+    // Check if any line item has a matching catalog object ID
+    const hasValidAccess = order.line_items?.some(item => 
+      item.catalog_object_id && validCatalogObjectIds.includes(item.catalog_object_id)
+    ) ?? false;
+
+    // Return the full order details with access verification status
     return {
       statusCode: 200,
       headers: { 'content-type': 'application/json' },
@@ -92,7 +103,8 @@ export const passesValidateHandler: LambdaHandler = async (event) => {
             basePriceMoney: item.gross_sales_money,
             totalMoney: item.total_money
           })) || [],
-          totalMoney: order.total_money
+          totalMoney: order.total_money,
+          accessVerified: hasValidAccess
         }
       })
     };

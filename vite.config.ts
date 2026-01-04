@@ -1,11 +1,11 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [svelte()],
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    exclude: ['lucide-svelte'],
   },
   base: './',
   server: {

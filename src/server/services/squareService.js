@@ -1,7 +1,11 @@
 const { 
   SQUARE_API_CONFIG, 
   POOL_PASS_CATALOG_IDS, 
-  MEMBERSHIP_SEGMENT_ID 
+  MEMBERSHIP_SEGMENT_ID,
+  MEMBERSHIP_CATALOG_ITEM_ID,
+  MEMBERSHIP_VARIANT_ID,
+  CHECKIN_CATALOG_ITEM_ID,
+  CHECKIN_VARIANT_ID
 } = require('../config/square');
 const logger = require('../logger');
 
@@ -21,8 +25,8 @@ class SquareService {
    * await squareService.searchCustomers('phone', '555-0123')
    */
   async searchCustomers(searchType, searchValue) {
-    if (!['email', 'phone', 'lot'].includes(searchType)) {
-      throw new Error('Invalid search type. Must be either email, phone, or lot');
+    if (!['email', 'phone', 'lot', 'name', 'address'].includes(searchType)) {
+      throw new Error('Invalid search type. Must be email, phone, lot, name, or address');
     }
 
     /**
@@ -35,13 +39,29 @@ class SquareService {
      * @param {string} searchValue - The value to search for.
      * @returns {Object} The search parameters object.
      */
+    // Build search filter based on type
+    let filterField;
+    if (searchType === 'email') {
+      filterField = 'email_address';
+    } else if (searchType === 'phone') {
+      filterField = 'phone_number';
+    } else if (searchType === 'lot') {
+      filterField = 'reference_id';
+    } else if (searchType === 'name') {
+      // Name search uses given_name or family_name
+      filterField = 'given_name'; // Square API supports fuzzy search on name fields
+    } else if (searchType === 'address') {
+      // Address search - Square API supports address_line_1, locality, etc.
+      filterField = 'address_line_1';
+    }
+
     const searchParams = {
       query: {
-      filter: {
-        [searchType === 'email' ? 'email_address' : searchType === 'phone' ? 'phone_number' : 'reference_id']: {
-        fuzzy: searchValue
+        filter: {
+          [filterField]: {
+            fuzzy: searchValue
+          }
         }
-      }
       },
       "limit": 5
     };
@@ -279,6 +299,161 @@ class SquareService {
       reference_id: c.reference_id,
       segment_ids: c.segment_ids || []
     }));
+  }
+
+  /**
+   * Check if a customer has an active membership based on catalog item/variant purchase
+   * @param {string} customerId - Square customer ID
+   * @param {string} catalogItemId - Optional catalog item ID (uses config if not provided)
+   * @param {string} variantId - Optional variant ID (uses config if not provided)
+   * @returns {Promise<boolean>} True if customer has purchased the membership catalog item/variant
+   * @throws {Error} If API request fails
+   */
+  async checkMembershipByCatalogItem(customerId, catalogItemId = null, variantId = null) {
+    const membershipCatalogItemId = catalogItemId || MEMBERSHIP_CATALOG_ITEM_ID;
+    const membershipVariantId = variantId || MEMBERSHIP_VARIANT_ID;
+
+    if (!membershipCatalogItemId) {
+      throw new Error('Membership catalog item ID not configured');
+    }
+
+    try {
+      // Get all orders for this customer
+      const orders = await this.getCustomerOrders(customerId);
+
+      // Check if any order contains the membership catalog item/variant
+      for (const order of orders) {
+        if (order.line_items && order.line_items.length > 0) {
+          for (const item of order.line_items) {
+            if (item.catalog_object_id === membershipCatalogItemId) {
+              // If variant ID is specified, check it matches
+              if (membershipVariantId) {
+                // Note: Square API may return variant info in different fields
+                // Check both catalog_object_variant_id and variation_name
+                if (item.catalog_object_variant_id === membershipVariantId ||
+                    item.variation_name === membershipVariantId) {
+                  return true;
+                }
+              } else {
+                // Just check catalog item (any variant)
+                return true;
+              }
+            }
+          }
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error(`Error checking membership by catalog item for ${customerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify that an order contains the required check-in catalog item/variant
+   * @param {string} orderId - Square order ID
+   * @param {string} checkinCatalogItemId - Optional catalog item ID (uses config if not provided)
+   * @param {string} checkinVariantId - Optional variant ID (uses config if not provided)
+   * @returns {Promise<{valid: boolean, order?: Object, reason?: string}>} Validation result
+   * @throws {Error} If API request fails
+   */
+  async verifyCheckinOrder(orderId, checkinCatalogItemId = null, checkinVariantId = null) {
+    const catalogItemId = checkinCatalogItemId || CHECKIN_CATALOG_ITEM_ID;
+    const variantId = checkinVariantId || CHECKIN_VARIANT_ID;
+
+    if (!catalogItemId) {
+      throw new Error('Check-in catalog item ID not configured');
+    }
+
+    try {
+      // Get order from Square API
+      const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/${orderId}`, {
+        method: 'GET',
+        headers: SQUARE_API_CONFIG.headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return {
+          valid: false,
+          reason: errorData.errors?.[0]?.detail || 'Order not found'
+        };
+      }
+
+      const data = await response.json();
+      const order = data.order;
+
+      if (!order) {
+        return { valid: false, reason: 'Order not found' };
+      }
+
+      if (!order.line_items || order.line_items.length === 0) {
+        return { valid: false, reason: 'Order has no line items' };
+      }
+
+      // Check if order contains the check-in catalog item/variant
+      for (const item of order.line_items) {
+        if (item.catalog_object_id === catalogItemId) {
+          if (variantId) {
+            // Check variant matches
+            if (item.catalog_object_variant_id === variantId ||
+                item.variation_name === variantId) {
+              return { valid: true, order };
+            }
+          } else {
+            // Just check catalog item (any variant)
+            return { valid: true, order };
+          }
+        }
+      }
+
+      return { valid: false, reason: 'Order does not contain required check-in item' };
+    } catch (error) {
+      console.error(`Error verifying check-in order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search for customers by name
+   * @param {string} name - Name to search for (searches given_name and family_name)
+   * @returns {Promise<Array<Object>>} Array of customer objects from Square API
+   * @throws {Error} If API request fails
+   */
+  async searchCustomersByName(name) {
+    return this.searchCustomers('name', name);
+  }
+
+  /**
+   * Search for customers by address
+   * @param {string} address - Address to search for
+   * @returns {Promise<Array<Object>>} Array of customer objects from Square API
+   * @throws {Error} If API request fails
+   */
+  async searchCustomersByAddress(address) {
+    return this.searchCustomers('address', address);
+  }
+
+  /**
+   * Get order by ID
+   * @param {string} orderId - Square order ID
+   * @returns {Promise<Object>} Order object from Square API
+   * @throws {Error} If order not found or API request fails
+   */
+  async getOrder(orderId) {
+    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/${orderId}`, {
+      method: 'GET',
+      headers: SQUARE_API_CONFIG.headers
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.errors?.[0]?.detail || 'Order not found');
+    }
+
+    const data = await response.json();
+    return data.order;
   }
 }
 

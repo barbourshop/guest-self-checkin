@@ -46,6 +46,7 @@ export type OrderDetails = {
 	createdAt?: string;
 	lineItems: OrderLineItem[];
 	totalMoney?: { amount?: number; currency?: string };
+	accessVerified?: boolean;
 };
 
 export type PassValidationResponse = {
