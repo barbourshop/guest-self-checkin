@@ -8,6 +8,7 @@ dotenv.config();
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const passRoutes = require('./routes/passRoutes');
 const logger = require('./logger');
 const errorHandler = require('./middleware/errorHandler');
 const { SQUARE_API_CONFIG } = require('./config/square');
@@ -65,6 +66,7 @@ try {
   // Routes
   app.use('/api/customers', customerRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/passes', passRoutes);
   
   // Static files
   const staticPath = path.join(resourcesPath, 'dist');

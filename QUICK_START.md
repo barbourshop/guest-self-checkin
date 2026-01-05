@@ -13,8 +13,10 @@ npm run demo
 This will:
 1. Clear the demo database
 2. Seed it with demo data
-3. Start both the backend server (port 3000) and frontend dev server (port 5173)
+3. Start both the backend server (port 3000) and SvelteKit frontend dev server (port 5173)
 4. Open your browser to `http://localhost:5173`
+
+The SvelteKit app (in `apps/web/`) will proxy API requests to the backend server.
 
 **Or manually:**
 ```bash

@@ -65,6 +65,7 @@ function initDatabase(dbPath = null) {
         has_membership INTEGER NOT NULL,
         membership_catalog_item_id TEXT,
         membership_variant_id TEXT,
+        membership_order_id TEXT,
         last_verified_at TEXT NOT NULL
       );
       
@@ -92,7 +93,23 @@ function initDatabase(dbPath = null) {
       CREATE INDEX IF NOT EXISTS idx_checkin_queue_created_at ON checkin_queue(created_at);
       CREATE INDEX IF NOT EXISTS idx_checkin_log_timestamp ON checkin_log(timestamp);
       CREATE INDEX IF NOT EXISTS idx_checkin_log_customer_id ON checkin_log(customer_id);
+      CREATE INDEX IF NOT EXISTS idx_checkin_log_order_id ON checkin_log(order_id);
     `);
+  }
+  
+  // Migrate existing membership_cache table to add membership_order_id column if needed
+  // This runs regardless of whether schema.sql exists or not
+  try {
+    const tableInfo = db.prepare(`PRAGMA table_info(membership_cache)`).all();
+    if (tableInfo.length > 0) {
+      // Table exists, check if column exists
+      const hasOrderIdColumn = tableInfo.some(col => col.name === 'membership_order_id');
+      if (!hasOrderIdColumn) {
+        db.exec(`ALTER TABLE membership_cache ADD COLUMN membership_order_id TEXT`);
+      }
+    }
+  } catch (error) {
+    // Table might not exist yet, which is fine - it will be created with the column
   }
   
   return db;

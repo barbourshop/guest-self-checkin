@@ -19,6 +19,8 @@ function log(message) {
 }
 
 const customerRoutes = require('./routes/customerRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const passRoutes = require('./routes/passRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -55,6 +57,8 @@ app.use((req, res, next) => {
 
 // API routes
 app.use('/api/customers', customerRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/passes', passRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

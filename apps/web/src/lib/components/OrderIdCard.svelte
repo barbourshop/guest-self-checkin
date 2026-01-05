@@ -1,30 +1,74 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import JsBarcode from 'jsbarcode';
+	import QRCode from 'qrcode';
 	import html2canvas from 'html2canvas';
 	import type { PassValidationResponse, SearchResult } from '../types';
 
 	export let order: PassValidationResponse['order'];
 	export let customer: SearchResult | null = null;
+	export let useQRCode: boolean = false; // Toggle between barcode and QR code
+	export let variantDescription: string | null = null; // For display on card
 
 	let barcodeSvg: SVGSVGElement | null = null;
+	let qrCodeCanvas: HTMLCanvasElement | null = null;
+	let qrCodeDataUrl: string = '';
 	let cardElement: HTMLDivElement | null = null;
 	let isDownloading = false;
+
+	// Expose download function to parent
+	export function downloadCard() {
+		return downloadAsPNG();
+	}
 
 	function generateBarcode() {
 		if (barcodeSvg && order?.id) {
 			try {
-			JsBarcode(barcodeSvg, order.id, {
-				format: 'CODE128',
-				width: 3,
-				height: 120,
-				displayValue: true,
-				fontSize: 20,
-				margin: 15
-			});
+				JsBarcode(barcodeSvg, order.id, {
+					format: 'CODE128',
+					width: 3,
+					height: 120,
+					displayValue: true,
+					fontSize: 20,
+					margin: 15
+				});
 			} catch (error) {
 				console.error('Failed to generate barcode:', error);
 			}
+		}
+	}
+
+	async function generateQRCode() {
+		if (!qrCodeCanvas || !order?.id) return;
+
+		try {
+			// Generate QR code at a reasonable size that fits in the card
+			const qrSize = 250; // Slightly smaller to fit better
+			const dataUrl = await QRCode.toDataURL(order.id, {
+				width: qrSize,
+				margin: 2,
+				color: {
+					dark: '#000000',
+					light: '#FFFFFF'
+				}
+			});
+			qrCodeDataUrl = dataUrl;
+
+			// Set canvas size to match QR code
+			qrCodeCanvas.width = qrSize;
+			qrCodeCanvas.height = qrSize;
+			
+			const ctx = qrCodeCanvas.getContext('2d');
+			if (ctx) {
+				const img = new Image();
+				img.onload = () => {
+					ctx.clearRect(0, 0, qrCodeCanvas!.width, qrCodeCanvas!.height);
+					ctx.drawImage(img, 0, 0, qrCodeCanvas!.width, qrCodeCanvas!.height);
+				};
+				img.src = dataUrl;
+			}
+		} catch (error) {
+			console.error('Failed to generate QR code:', error);
 		}
 	}
 
@@ -79,76 +123,68 @@
 		}
 	}
 
-	$: if (order?.id && barcodeSvg) {
-		generateBarcode();
+	$: if (order?.id) {
+		if (useQRCode) {
+			generateQRCode();
+		} else if (barcodeSvg) {
+			generateBarcode();
+		}
 	}
 
 	onMount(() => {
-		generateBarcode();
+		if (useQRCode) {
+			generateQRCode();
+		} else {
+			generateBarcode();
+		}
 	});
 </script>
 
 <div class="id-card-wrapper">
 	<div class="id-card" bind:this={cardElement}>
-	<div class="id-card-header">
-		<div class="id-card-logo">
-			<img src="/btv-logo.webp" alt="Big Trees Rec Center Logo" />
+		<div class="id-card-header">
+			<div class="id-card-logo">
+				<img src="/btv-logo.webp" alt="Big Trees Rec Center Logo" />
+			</div>
+			<div class="id-card-title">
+				<h2>BIG TREES REC CENTER</h2>
+				<p class="subtitle">{variantDescription || 'Membership QR Code'}</p>
+			</div>
 		</div>
-		<div class="id-card-title">
-			<h2>BIG TREES REC CENTER</h2>
-			{#if order.accessVerified}
-				<p class="subtitle">Pool access verified</p>
-			{/if}
-		</div>
-	</div>
 
-	<div class="id-card-body">
-		{#if customer}
-			<div class="customer-section">
-				<div class="customer-name">{customer.displayName}</div>
-				{#if customer.contact.phone || customer.contact.email || customer.contact.lotNumber}
-					<div class="customer-info">
-						{#if customer.contact.phone}
-							<span class="info-item">{customer.contact.phone}</span>
-						{/if}
-						{#if customer.contact.email}
-							<span class="info-item">{customer.contact.email}</span>
-						{/if}
-						{#if customer.contact.lotNumber}
-							<span class="info-item">Lot: {customer.contact.lotNumber}</span>
-						{/if}
-					</div>
+		<div class="id-card-body">
+			{#if customer}
+				<div class="customer-section">
+					<div class="customer-name">{customer.displayName}</div>
+					{#if customer.contact.phone || customer.contact.email || customer.contact.lotNumber}
+						<div class="customer-info">
+							{#if customer.contact.phone}
+								<span class="info-item">{customer.contact.phone}</span>
+							{/if}
+							{#if customer.contact.email}
+								<span class="info-item">{customer.contact.email}</span>
+							{/if}
+							{#if customer.contact.lotNumber}
+								<span class="info-item">Lot: {customer.contact.lotNumber}</span>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<div class="id-card-code">
+				{#if useQRCode}
+					<canvas bind:this={qrCodeCanvas} class="qr-code"></canvas>
+				{:else}
+					<svg bind:this={barcodeSvg} class="barcode"></svg>
 				{/if}
 			</div>
-		{/if}
+		</div>
 
-		{#if order.lineItems && order.lineItems.length > 0}
-			<div class="item-name-section">
-				{#each order.lineItems as item, index}
-					{#if item.name}
-						<div class="item-name">
-							{item.name}{#if item.quantity && item.quantity !== '1'} <span class="quantity">(x{item.quantity})</span>{/if}
-						</div>
-						{#if index < order.lineItems.length - 1}
-							<div class="item-separator"></div>
-						{/if}
-					{/if}
-				{/each}
-			</div>
-		{/if}
-
-		<div class="id-card-barcode">
-			<svg bind:this={barcodeSvg} class="barcode"></svg>
+		<div class="id-card-footer">
+			<small>{useQRCode ? 'Scan QR code to verify membership' : 'Scan barcode to verify membership'}</small>
 		</div>
 	</div>
-
-	<div class="id-card-footer">
-		<small>Scan barcode to verify membership</small>
-	</div>
-	</div>
-	<button class="download-button" on:click={downloadAsPNG} disabled={isDownloading || !order?.id}>
-		{isDownloading ? 'Downloading...' : 'Download ID Card (PNG)'}
-	</button>
 </div>
 
 <style>
@@ -156,22 +192,24 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1.5rem;
+		width: 100%;
+		max-width: 450px;
 	}
 
 	.id-card {
 		background: #ffffff;
 		border-radius: 16px;
-		padding: 2rem;
+		padding: 1.5rem;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
 		width: 100%;
-		max-width: 500px;
+		max-width: 450px;
 		margin: 0 auto;
 		font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		/* ID card dimensions: 2.125" × 3.375" portrait at 300 DPI = 640px × 1013px */
 		aspect-ratio: 640 / 1013;
 		display: flex;
 		flex-direction: column;
+		flex-shrink: 0;
 	}
 
 	.id-card-header {
@@ -179,15 +217,15 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-		padding-bottom: 1.5rem;
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+		padding-bottom: 1rem;
 		border-bottom: 2px solid #e5e7eb;
 	}
 
 	.id-card-logo {
-		width: 240px;
-		height: 240px;
+		width: 200px;
+		height: 200px;
 		flex-shrink: 0;
 		display: flex;
 		align-items: center;
@@ -219,24 +257,32 @@
 		font-weight: 500;
 	}
 
+	.id-card-title .variant-description {
+		margin: 0.5rem 0 0;
+		font-size: 1rem;
+		color: #374151;
+		font-weight: 600;
+	}
+
 	.id-card-body {
 		display: grid;
-		gap: 1.5rem;
+		gap: 1rem;
 		flex: 1;
+		min-height: 0;
 	}
 
 	.customer-section {
 		text-align: center;
-		padding: 0.75rem 0;
+		padding: 0.5rem 0;
 		border-bottom: 2px solid #e5e7eb;
 		margin-bottom: 0.5rem;
 	}
 
 	.customer-name {
-		font-size: 1.5rem;
+		font-size: 1.25rem;
 		font-weight: 700;
 		color: #1f2937;
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.375rem;
 		letter-spacing: -0.01em;
 	}
 
@@ -281,28 +327,45 @@
 		margin: 0.75rem 0;
 	}
 
-	.id-card-barcode {
+	.id-card-code {
 		background: white;
 		border-radius: 8px;
-		padding: 1.5rem;
+		padding: 0.75rem;
 		border: 1px solid #e5e7eb;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		margin-top: 0.5rem;
-		min-height: 180px;
+		margin-top: 0.25rem;
+		min-height: 150px;
+		max-height: 220px;
+		overflow: hidden;
+		width: 100%;
+		box-sizing: border-box;
+		flex-shrink: 1;
 	}
 
-	.id-card-barcode .barcode {
-		width: 100%;
+	.id-card-code .barcode {
+		max-width: 100%;
+		max-height: 100%;
 		height: auto;
+		display: block;
+	}
+
+	.id-card-code .qr-code {
+		max-width: 100%;
+		max-height: 100%;
+		width: auto;
+		height: auto;
+		display: block;
+		object-fit: contain;
 	}
 
 	.id-card-footer {
-		margin-top: 1.5rem;
-		padding-top: 1rem;
+		margin-top: 1rem;
+		padding-top: 0.75rem;
 		border-top: 1px solid #e5e7eb;
 		text-align: center;
+		flex-shrink: 0;
 	}
 
 	.id-card-footer small {
@@ -311,26 +374,5 @@
 		font-weight: 500;
 	}
 
-	.download-button {
-		padding: 0.75rem 1.5rem;
-		background: #2563eb;
-		color: white;
-		border: none;
-		border-radius: 8px;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background-color 0.2s;
-		font-family: inherit;
-	}
-
-	.download-button:hover:not(:disabled) {
-		background: #1d4ed8;
-	}
-
-	.download-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
 </style>
 

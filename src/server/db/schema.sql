@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS membership_cache (
   has_membership INTEGER NOT NULL,
   membership_catalog_item_id TEXT,
   membership_variant_id TEXT,
+  membership_order_id TEXT,
   last_verified_at TEXT NOT NULL
 );
 
@@ -37,4 +38,5 @@ CREATE INDEX IF NOT EXISTS idx_checkin_queue_status ON checkin_queue(status);
 CREATE INDEX IF NOT EXISTS idx_checkin_queue_created_at ON checkin_queue(created_at);
 CREATE INDEX IF NOT EXISTS idx_checkin_log_timestamp ON checkin_log(timestamp);
 CREATE INDEX IF NOT EXISTS idx_checkin_log_customer_id ON checkin_log(customer_id);
+CREATE INDEX IF NOT EXISTS idx_checkin_log_order_id ON checkin_log(order_id);
 

@@ -1,6 +1,6 @@
 export type SearchRequestPayload = {
 	query: {
-		type: 'phone' | 'email' | 'lot';
+		type: 'phone' | 'email' | 'lot' | 'name';
 		value: string;
 		fuzzy?: boolean;
 	};
@@ -8,7 +8,8 @@ export type SearchRequestPayload = {
 };
 
 export type SearchResult = {
-	customerHash: string;
+	customerHash?: string;
+	customerId?: string;
 	displayName: string;
 	membership: {
 		type: string;
@@ -52,5 +53,27 @@ export type OrderDetails = {
 export type PassValidationResponse = {
 	status: string;
 	order: OrderDetails;
+	customerId?: string; // Customer ID from order, used to look up customer details
+};
+
+export type CustomerOrder = {
+	id: string;
+	createdAt?: string;
+	state?: string;
+	lineItems: Array<{
+		uid?: string;
+		catalogObjectId?: string;
+		catalogObjectVariantId?: string;
+		name?: string;
+		variationName?: string;
+		quantity?: string;
+		grossSalesMoney?: { amount?: number; currency?: string };
+		totalMoney?: { amount?: number; currency?: string };
+	}>;
+	totalMoney?: { amount?: number; currency?: string };
+};
+
+export type CustomerOrdersResponse = {
+	orders: CustomerOrder[];
 };
 

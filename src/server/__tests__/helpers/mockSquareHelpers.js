@@ -91,6 +91,79 @@ function createMockSquareService() {
     }
   });
   
+  // Add membership orders for all members
+  const membershipCatalogItemId = process.env.MEMBERSHIP_CATALOG_ITEM_ID || 'MEMBERSHIP_CATALOG_ITEM_ID';
+  const membershipVariantId = process.env.MEMBERSHIP_VARIANT_ID || 'MEMBERSHIP_VARIANT_ID';
+  
+  // Membership order for CUSTOMER_MEMBER_1 (John Doe)
+  mockService.addOrder({
+    id: 'ORDER_MEMBERSHIP_MEMBER_1',
+    customer_id: 'CUSTOMER_MEMBER_1',
+    location_id: 'LOCATION_1',
+    state: 'COMPLETED',
+    created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days ago
+    line_items: [
+      {
+        uid: 'line_item_membership_1',
+        catalog_object_id: membershipCatalogItemId,
+        catalog_object_variant_id: membershipVariantId,
+        name: 'Membership',
+        quantity: '1',
+        variation_name: 'Annual Membership'
+      }
+    ],
+    total_money: {
+      amount: 50000,
+      currency: 'USD'
+    }
+  });
+  
+  // Membership order for CUSTOMER_MEMBER_2 (John Smith)
+  mockService.addOrder({
+    id: 'ORDER_MEMBERSHIP_MEMBER_2',
+    customer_id: 'CUSTOMER_MEMBER_2',
+    location_id: 'LOCATION_1',
+    state: 'COMPLETED',
+    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+    line_items: [
+      {
+        uid: 'line_item_membership_2',
+        catalog_object_id: membershipCatalogItemId,
+        catalog_object_variant_id: membershipVariantId,
+        name: 'Membership',
+        quantity: '1',
+        variation_name: 'Annual Membership'
+      }
+    ],
+    total_money: {
+      amount: 50000,
+      currency: 'USD'
+    }
+  });
+  
+  // Membership order for CUSTOMER_MEMBER_3 (Mary Johnson)
+  mockService.addOrder({
+    id: 'ORDER_MEMBERSHIP_MEMBER_3',
+    customer_id: 'CUSTOMER_MEMBER_3',
+    location_id: 'LOCATION_1',
+    state: 'COMPLETED',
+    created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days ago
+    line_items: [
+      {
+        uid: 'line_item_membership_3',
+        catalog_object_id: membershipCatalogItemId,
+        catalog_object_variant_id: membershipVariantId,
+        name: 'Membership',
+        quantity: '1',
+        variation_name: 'Annual Membership'
+      }
+    ],
+    total_money: {
+      amount: 50000,
+      currency: 'USD'
+    }
+  });
+  
   return mockService;
 }
 

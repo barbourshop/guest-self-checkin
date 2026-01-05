@@ -40,19 +40,20 @@ class CustomerService {
    * Supports: email, phone, lot, name, address
    * @param {string} searchType - Type of search (email, phone, lot, name, address)
    * @param {string} searchValue - Value to search for
+   * @param {boolean} fuzzy - Whether to use fuzzy matching (default: true)
    * @returns {Promise<Array<Object>>} Array of enriched customer objects
    */
-  async searchCustomers(searchType, searchValue) {
+  async searchCustomers(searchType, searchValue, fuzzy = true) {
     const fs = require('fs');
     const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
     
     // #region agent log
-    fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:entry',message:'CustomerService.searchCustomers called',data:{searchType,searchValue},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
+    fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:entry',message:'CustomerService.searchCustomers called',data:{searchType,searchValue,fuzzy},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
     // #endregion
 
     try {
       // Get raw customer data from Square API
-      const customers = await squareService.searchCustomers(searchType, searchValue);
+      const customers = await squareService.searchCustomers(searchType, searchValue, fuzzy);
       
       // #region agent log
       fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:after-square',message:'Square service returned',data:{customersCount:customers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');

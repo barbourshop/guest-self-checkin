@@ -18,15 +18,16 @@ const { createMockSquareService } = require('../__tests__/helpers/mockSquareHelp
 class SquareService {
   /**
    * Search for customers by email or phone number
-   * @param {'email' | 'phone'} searchType - Type of search to perform
+   * @param {'email' | 'phone' | 'lot' | 'name' | 'address'} searchType - Type of search to perform
    * @param {string} searchValue - Value to search for
+   * @param {boolean} fuzzy - Whether to use fuzzy matching (default: true)
    * @returns {Promise<Array<Object>>} Array of customer objects from Square API
    * @throws {Error} If search type is invalid or API request fails
    * @example
-   * await squareService.searchCustomers('email', 'john@example.com')
-   * await squareService.searchCustomers('phone', '555-0123')
+   * await squareService.searchCustomers('email', 'john@example.com', true)
+   * await squareService.searchCustomers('phone', '555-0123', true)
    */
-  async searchCustomers(searchType, searchValue) {
+  async searchCustomers(searchType, searchValue, fuzzy = true) {
     if (!['email', 'phone', 'lot', 'name', 'address'].includes(searchType)) {
       throw new Error('Invalid search type. Must be email, phone, lot, name, or address');
     }
@@ -60,13 +61,14 @@ class SquareService {
       
       for (const field of searchFields) {
         try {
-          // Try using exact match first (Square API may not support text_filter on name fields)
-          // If exact doesn't work, we'll need to fetch all and filter client-side
-          // For now, try exact match but log the attempt
+          // For name search, use fuzzy if requested, otherwise exact
+          // Square API supports text_filter which can do fuzzy matching
           searchParams = {
             query: {
               filter: {
-                [field]: {
+                [field]: fuzzy ? {
+                  fuzzy: searchValue
+                } : {
                   exact: searchValue
                 }
               }
@@ -142,11 +144,14 @@ class SquareService {
         filterField = 'address_line_1';
       }
 
+      // Use fuzzy matching if requested, otherwise use exact match
       searchParams = {
         query: {
           filter: {
-            [filterField]: {
+            [filterField]: fuzzy ? {
               fuzzy: searchValue
+            } : {
+              exact: searchValue
             }
           }
         },
@@ -292,26 +297,40 @@ class SquareService {
    * const orders = await squareService.getCustomerOrders('CUSTOMER_ID')
    */
   async getCustomerOrders(customerId) {
-    const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
-      method: 'POST',
-      headers: SQUARE_API_CONFIG.headers,
-      body: JSON.stringify({
-        query: {
-          filter: {
-            customer_filter: {
-              customer_ids: [customerId]
+    try {
+      const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/orders/search`, {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify({
+          query: {
+            filter: {
+              customer_filter: {
+                customer_ids: [customerId]
+              }
             }
-          }
-        },
-        location_ids: ["LDH1GBS49SASE"]
-      })
-    });
+          },
+          location_ids: ["LDH1GBS49SASE"]
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch orders');
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to fetch orders from Square API';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.errors?.[0]?.detail || errorData.errors?.[0]?.code || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        logger.error(`Square API error fetching orders for customer ${customerId}: ${response.status} ${errorMessage}`);
+        throw new Error(errorMessage);
+      }
+      const data = await response.json();
+      return data.orders || [];
+    } catch (error) {
+      logger.error(`Error fetching customer orders: ${error.message}`);
+      throw error;
     }
-    const data = await response.json();
-    return data.orders || [];
   }
 
   /**

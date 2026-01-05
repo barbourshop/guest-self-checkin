@@ -6,6 +6,8 @@
 
   export let onClose: () => void;
 
+  const API_BASE_URL = 'http://localhost:3000/api';
+
   let activeTab: 'membership' | 'queue' | 'log' = 'membership';
   let membershipCache: any[] = [];
   let checkinQueue: any[] = [];
@@ -17,6 +19,9 @@
   let membershipFilter = '';
   let queueFilter = '';
   let logFilter = '';
+
+  // Loading states for QR generation
+  let generatingQR: { [customerId: string]: boolean } = {};
 
   // Load data on mount
   onMount(async () => {
@@ -36,6 +41,71 @@
       console.error('Error loading database contents:', err);
     } finally {
       isLoading = false;
+    }
+  }
+
+  async function handleGenerateQR(member: any) {
+    const customerId = member.customer_id;
+    if (!customerId) {
+      alert('Customer ID not available');
+      return;
+    }
+
+    generatingQR[customerId] = true;
+
+    try {
+      // Fetch customer orders from the API
+      console.log(`Fetching orders for customer: ${customerId}`);
+      const response = await fetch(`${API_BASE_URL}/customers/${customerId}/orders`);
+      console.log(`Response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        let errorMessage = 'Failed to fetch customer orders';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const orders = data.orders || [];
+
+      if (orders.length === 0) {
+        alert('No membership orders found for this customer.');
+        return;
+      }
+
+      // Get the first order (or most recent if sorted)
+      const order = orders[0];
+      const orderId = order.id;
+
+      // Get variant description from line items
+      const variantLineItem = order.lineItems?.find((item: any) => item.variationName);
+      const variantDescription = variantLineItem?.variationName || variantLineItem?.name || 'Membership';
+
+      // Get customer name
+      const customerName = `${member.given_name || ''} ${member.family_name || ''}`.trim() || 'Member';
+
+      // Build URL with all required data
+      const params = new URLSearchParams({
+        orderId: orderId,
+        customerName: customerName,
+        variantDescription: variantDescription
+      });
+
+      // Open member card page in new tab with all the data
+      window.open(`/member-card?${params.toString()}`, '_blank');
+    } catch (err) {
+      console.error('Error generating QR code:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate QR code';
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      generatingQR[customerId] = false;
     }
   }
 
@@ -99,6 +169,13 @@
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold text-gray-900">Admin - Database Contents</h2>
       <div class="flex gap-2">
+        <a
+          href="/member-card"
+          target="_blank"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 no-underline"
+        >
+          Generate Member Card
+        </a>
         <button
           on:click={loadData}
           disabled={isLoading}
@@ -182,12 +259,13 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Has Membership</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Verified</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             {#if filteredMembershipCache.length === 0}
               <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-gray-500">No membership cache entries found</td>
+                <td colspan="8" class="px-6 py-4 text-center text-gray-500">No membership cache entries found</td>
               </tr>
             {:else}
               {#each filteredMembershipCache as item}
@@ -227,6 +305,19 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.last_verified_at)}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    {#if item.has_membership}
+                      <button
+                        on:click={() => handleGenerateQR(item)}
+                        disabled={generatingQR[item.customer_id]}
+                        class="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline bg-transparent border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {generatingQR[item.customer_id] ? 'Loading...' : 'Generate QR'}
+                      </button>
+                    {:else}
+                      <span class="text-gray-400">—</span>
+                    {/if}
+                  </td>
                 </tr>
               {/each}
             {/if}

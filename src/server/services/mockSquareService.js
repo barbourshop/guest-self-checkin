@@ -67,8 +67,12 @@ class MockSquareService {
 
   /**
    * Mock customer search
+   * Note: Mock service always uses fuzzy matching (contains search) regardless of fuzzy parameter
+   * @param {string} searchType - Type of search
+   * @param {string} searchValue - Value to search for
+   * @param {boolean} fuzzy - Whether to use fuzzy matching (ignored in mock, always fuzzy)
    */
-  async searchCustomers(searchType, searchValue) {
+  async searchCustomers(searchType, searchValue, fuzzy = true) {
     await this._checkFailure('search');
     
     const fs = require('fs');
@@ -95,9 +99,10 @@ class MockSquareService {
         }
       } else if (searchType === 'lot') {
         // Normalize lot numbers (remove spaces, case insensitive)
+        // Use fuzzy matching: check if search value is contained in lot number
         const customerLot = customer.reference_id?.replace(/\s/g, '').toLowerCase();
         const searchLot = searchValue.replace(/\s/g, '').toLowerCase();
-        if (customerLot === searchLot) {
+        if (customerLot?.includes(searchLot)) {
           matches = true;
         }
       } else if (searchType === 'name') {
@@ -172,6 +177,21 @@ class MockSquareService {
       throw new Error('Order not found');
     }
     return order;
+  }
+
+  /**
+   * Mock get customer orders
+   */
+  async getCustomerOrders(customerId) {
+    await this._checkFailure('getCustomerOrders');
+    
+    const results = [];
+    for (const order of this.orders.values()) {
+      if (order.customer_id === customerId) {
+        results.push(order);
+      }
+    }
+    return results;
   }
 
   /**

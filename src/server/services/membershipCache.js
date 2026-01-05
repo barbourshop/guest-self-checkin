@@ -39,7 +39,8 @@ class MembershipCache {
             hasMembership: cached.has_membership === 1,
             fromCache: true,
             catalogItemId: cached.membership_catalog_item_id,
-            variantId: cached.membership_variant_id
+            variantId: cached.membership_variant_id,
+            membershipOrderId: cached.membership_order_id || null
           };
         }
         // Cache is stale, will refresh below
@@ -65,6 +66,7 @@ class MembershipCache {
       let hasMembership = false;
       let catalogItemId = null;
       let variantId = null;
+      let membershipOrderId = null;
 
       if (MEMBERSHIP_CATALOG_ITEM_ID) {
         hasMembership = await squareService.checkMembershipByCatalogItem(
@@ -74,19 +76,47 @@ class MembershipCache {
         );
         catalogItemId = MEMBERSHIP_CATALOG_ITEM_ID;
         variantId = MEMBERSHIP_VARIANT_ID;
+        
+        // If membership found, get the membership order ID
+        if (hasMembership) {
+          try {
+            const orders = await squareService.getCustomerOrders(customerId);
+            // Find the most recent membership order
+            const membershipOrder = orders
+              .filter(order => {
+                if (!order.line_items || order.line_items.length === 0) return false;
+                return order.line_items.some(item => 
+                  item.catalog_object_id === MEMBERSHIP_CATALOG_ITEM_ID
+                );
+              })
+              .sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB - dateA; // Most recent first
+              })[0];
+            
+            if (membershipOrder) {
+              membershipOrderId = membershipOrder.id;
+            }
+          } catch (error) {
+            logger.debug(`Could not fetch membership order ID for ${customerId}: ${error.message}`);
+            // Continue without order ID
+          }
+        }
       } else {
         // Fallback to segment-based checking
         hasMembership = await squareService.checkMembershipBySegment(customerId);
       }
 
       // Update cache
-      this._updateCache(customerId, hasMembership, catalogItemId, variantId);
+      this._updateCache(customerId, hasMembership, catalogItemId, variantId, membershipOrderId);
 
       return {
         hasMembership,
         fromCache: false,
         catalogItemId,
-        variantId
+        variantId,
+        membershipOrderId
       };
     } catch (error) {
       logger.error(`Error refreshing membership for ${customerId}:`, error);
@@ -99,7 +129,8 @@ class MembershipCache {
           hasMembership: cached.has_membership === 1,
           fromCache: true,
           catalogItemId: cached.membership_catalog_item_id,
-          variantId: cached.membership_variant_id
+          variantId: cached.membership_variant_id,
+          membershipOrderId: cached.membership_order_id || null
         };
       }
       
@@ -178,30 +209,67 @@ class MembershipCache {
    * Update cache with membership status
    * @private
    */
-  _updateCache(customerId, hasMembership, catalogItemId = null, variantId = null) {
+  _updateCache(customerId, hasMembership, catalogItemId = null, variantId = null, membershipOrderId = null) {
     try {
       const lastVerified = new Date().toISOString();
 
-      this.db.prepare(`
-        INSERT INTO membership_cache 
-        (customer_id, has_membership, membership_catalog_item_id, membership_variant_id, last_verified_at)
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(customer_id) DO UPDATE SET
-          has_membership = ?,
-          membership_catalog_item_id = ?,
-          membership_variant_id = ?,
-          last_verified_at = ?
-      `).run(
-        customerId,
-        hasMembership ? 1 : 0,
-        catalogItemId,
-        variantId,
-        lastVerified,
-        hasMembership ? 1 : 0,
-        catalogItemId,
-        variantId,
-        lastVerified
-      );
+      // Check if membership_order_id column exists (for migration compatibility)
+      let hasOrderIdColumn = false;
+      try {
+        const tableInfo = this.db.prepare(`PRAGMA table_info(membership_cache)`).all();
+        hasOrderIdColumn = tableInfo.some(col => col.name === 'membership_order_id');
+      } catch (error) {
+        // If table doesn't exist yet, it will be created with the column
+        hasOrderIdColumn = true;
+      }
+
+      if (hasOrderIdColumn) {
+        this.db.prepare(`
+          INSERT INTO membership_cache 
+          (customer_id, has_membership, membership_catalog_item_id, membership_variant_id, membership_order_id, last_verified_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(customer_id) DO UPDATE SET
+            has_membership = ?,
+            membership_catalog_item_id = ?,
+            membership_variant_id = ?,
+            membership_order_id = ?,
+            last_verified_at = ?
+        `).run(
+          customerId,
+          hasMembership ? 1 : 0,
+          catalogItemId,
+          variantId,
+          membershipOrderId,
+          lastVerified,
+          hasMembership ? 1 : 0,
+          catalogItemId,
+          variantId,
+          membershipOrderId,
+          lastVerified
+        );
+      } else {
+        // Fallback for old schema without membership_order_id
+        this.db.prepare(`
+          INSERT INTO membership_cache 
+          (customer_id, has_membership, membership_catalog_item_id, membership_variant_id, last_verified_at)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(customer_id) DO UPDATE SET
+            has_membership = ?,
+            membership_catalog_item_id = ?,
+            membership_variant_id = ?,
+            last_verified_at = ?
+        `).run(
+          customerId,
+          hasMembership ? 1 : 0,
+          catalogItemId,
+          variantId,
+          lastVerified,
+          hasMembership ? 1 : 0,
+          catalogItemId,
+          variantId,
+          lastVerified
+        );
+      }
     } catch (error) {
       logger.error(`Error updating cache for ${customerId}:`, error);
       throw error;

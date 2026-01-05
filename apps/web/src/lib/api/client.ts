@@ -1,7 +1,8 @@
 import { env } from '$env/dynamic/public';
-import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult } from '../types';
+import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult, CustomerOrdersResponse } from '../types';
 
-const API_BASE_URL = env.PUBLIC_API_BASE_URL ?? 'http://localhost:3001/v1';
+// Use relative paths for API calls (proxied by Vite to http://localhost:3000/api)
+const API_BASE_URL = env.PUBLIC_API_BASE_URL ?? '/api';
 const API_KEY = env.PUBLIC_API_KEY;
 
 async function request<T>(path: string, options: RequestInit): Promise<T> {
@@ -49,5 +50,58 @@ export async function validatePass(payload: PassValidationPayload): Promise<Pass
 		method: 'POST',
 		body: JSON.stringify(payload)
 	});
+}
+
+export async function getCustomerOrders(customerId: string, catalogItemId?: string): Promise<CustomerOrdersResponse> {
+	const params = new URLSearchParams();
+	if (catalogItemId) {
+		params.append('catalogItemId', catalogItemId);
+	}
+	const queryString = params.toString();
+	const path = `/customers/${customerId}/orders${queryString ? `?${queryString}` : ''}`;
+	return request<CustomerOrdersResponse>(path, {
+		method: 'GET'
+	});
+}
+
+/**
+ * Get customer by ID and transform to SearchResult format
+ * Uses the admin endpoint which returns raw customer data, then transforms it
+ */
+export async function getCustomerById(customerId: string): Promise<SearchResult | null> {
+	try {
+		// Get raw customer data from admin endpoint
+		const customer = await request<any>(`/customers/admin/${customerId}`, {
+			method: 'GET'
+		});
+
+		if (!customer || !customer.id) {
+			return null;
+		}
+
+		// Transform Square customer format to SearchResult format
+		const givenName = customer.given_name || '';
+		const familyName = customer.family_name || '';
+		const displayName = `${givenName} ${familyName}`.trim() || 'Unknown';
+
+		return {
+			customerId: customer.id,
+			displayName,
+			contact: {
+				email: customer.email_address || undefined,
+				phone: customer.phone_number || undefined,
+				lotNumber: customer.reference_id || undefined
+			},
+			membership: {
+				type: customer.membershipType || 'Non-Member',
+				segmentId: '',
+				lastVerifiedAt: new Date().toISOString()
+			},
+			customerHash: ''
+		};
+	} catch (error) {
+		console.error('Error fetching customer by ID:', error);
+		return null;
+	}
 }
 

@@ -11,7 +11,7 @@ class AdminController {
    * Enrich database entries with customer details from Square
    * @private
    */
-  async _enrichWithCustomerDetails(entries, customerIdField = 'customer_id') {
+  async _enrichWithCustomerDetails(entries, customerIdField = 'customer_id', includeOrderId = false) {
     // Get unique customer IDs
     const customerIds = [...new Set(entries.map(entry => entry[customerIdField]).filter(Boolean))];
     
@@ -21,13 +21,47 @@ class AdminController {
       customerIds.map(async (customerId) => {
         try {
           const customer = await squareService.getCustomer(customerId);
-          customerMap.set(customerId, {
+          const details = {
             given_name: customer.given_name || '',
             family_name: customer.family_name || '',
             email_address: customer.email_address || '',
             phone_number: customer.phone_number || '',
             reference_id: customer.reference_id || ''
-          });
+          };
+          
+          // If requested, also fetch membership order ID
+          if (includeOrderId) {
+            try {
+              const orders = await squareService.getCustomerOrders(customerId);
+              const { MEMBERSHIP_CATALOG_ITEM_ID } = require('../config/square');
+              
+              // Find the most recent membership order
+              const membershipOrder = orders
+                .filter(order => {
+                  if (!order.line_items || order.line_items.length === 0) return false;
+                  if (MEMBERSHIP_CATALOG_ITEM_ID) {
+                    return order.line_items.some(item => 
+                      item.catalog_object_id === MEMBERSHIP_CATALOG_ITEM_ID
+                    );
+                  }
+                  return true; // If no catalog item configured, accept any order
+                })
+                .sort((a, b) => {
+                  const dateA = new Date(a.created_at || 0);
+                  const dateB = new Date(b.created_at || 0);
+                  return dateB - dateA; // Most recent first
+                })[0];
+              
+              if (membershipOrder) {
+                details.membership_order_id = membershipOrder.id;
+              }
+            } catch (error) {
+              logger.debug(`Could not fetch orders for customer ${customerId}: ${error.message}`);
+              // Continue without order ID
+            }
+          }
+          
+          customerMap.set(customerId, details);
         } catch (error) {
           // Customer not found or error - leave fields empty
           logger.debug(`Could not fetch customer ${customerId}: ${error.message}`);
@@ -112,7 +146,8 @@ class AdminController {
       db.close();
       
       // Enrich with customer details
-      const enrichedMembershipCache = await this._enrichWithCustomerDetails(membershipCache);
+      // For membership cache, also include order IDs
+      const enrichedMembershipCache = await this._enrichWithCustomerDetails(membershipCache, 'customer_id', true);
       const enrichedCheckinQueue = await this._enrichWithCustomerDetails(checkinQueue);
       const enrichedCheckinLog = await this._enrichWithCustomerDetails(checkinLog);
       
