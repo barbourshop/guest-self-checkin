@@ -41,7 +41,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-build
-          path: dist/
+          path: apps/web/build/
 
   build-windows-app:
     needs: build-app
