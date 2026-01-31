@@ -129,17 +129,9 @@
     }
 
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:entry',message:'Manual search started',data:{query:query.trim(),isQRMode:false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-
       // Use relative URL to work with Vite proxy
       // Pass isQRMode=false to indicate this is manual search
       const requestBody = { query: query.trim(), isQRMode: false };
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:before-fetch',message:'About to send request',data:{requestBody,url:'/api/customers/search'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
 
       const response = await fetch('/api/customers/search', {
         method: 'POST',
@@ -149,25 +141,14 @@
         body: JSON.stringify(requestBody),
       });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:after-fetch',message:'Response received',data:{status:response.status,statusText:response.statusText,ok:response.ok},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-
       if (!response.ok) {
         throw new Error('Search failed');
       }
 
       const data = await response.json();
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:after-parse',message:'Response data parsed',data:{type:data.type,resultsCount:data.results?.length||0,hasResults:!!data.results},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
 
       onSearchResult(data);
     } catch (err) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'UnifiedSearch.svelte:handleManualSearch:error',message:'Search error caught',data:{error:err.message,stack:err.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       console.error('Error searching:', err);
       onSearchResult({
         type: 'search',

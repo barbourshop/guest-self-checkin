@@ -161,10 +161,6 @@ export async function logCheckIn(
       lotNumber,
     };
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/acecdc2a-4ddf-494f-864e-6a97e8023377',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:logCheckIn:before-fetch',message:'About to send check-in request',data:{requestBody,url:`${API_BASE_URL}/customers/check-in`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
-    // #endregion
-    
     const response = await fetch(`${API_BASE_URL}/customers/check-in`, {
       method: 'POST',
       headers: {
