@@ -7,7 +7,7 @@
 
 	let query = '';
 	let isScanning = false;
-	let showManualSearch = false;
+	let showManualSearch = true; // Default to manual search; card scan is opt-in
 	let isLoading = false;
 	let error: string | null = null;
 	let showConfirmation = false;
@@ -223,7 +223,7 @@
 				<div>
 					<h1 class="text-3xl font-bold">Big Trees Village Rec Center Check In</h1>
 					<p class="mt-2 text-primary-100">
-						Scan your membership card or search by name, phone, email, address, or lot number
+						Search by name, phone, email, or lot number — or scan your membership card
 					</p>
 				</div>
 				<button
@@ -349,19 +349,20 @@
 							}}
 							class="text-sm text-primary-600 hover:text-primary-700"
 						>
-							← Back to Card Scan
+							Need to scan your card? Click here
 						</button>
 					{:else}
 						<button
 							on:click={() => {
 								showManualSearch = true;
+								query = '';
 								if (inputElement) {
 									inputElement.focus();
 								}
 							}}
 							class="text-sm text-primary-600 hover:text-primary-700"
 						>
-							Need to search manually? Click here
+							← Back to Search
 						</button>
 					{/if}
 				</div>
