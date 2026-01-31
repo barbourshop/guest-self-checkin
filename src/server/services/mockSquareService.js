@@ -74,14 +74,7 @@ class MockSquareService {
    */
   async searchCustomers(searchType, searchValue, fuzzy = true) {
     await this._checkFailure('search');
-    
-    const fs = require('fs');
-    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
-    
-    // #region agent log
-    fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:entry',message:'Mock search called',data:{searchType,searchValue,totalCustomers:this.customers.size},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'}) + '\n');
-    // #endregion
-    
+
     const results = [];
     const searchLower = searchValue.toLowerCase();
     
@@ -110,20 +103,13 @@ class MockSquareService {
         const givenName = (customer.given_name || '').toLowerCase();
         const familyName = (customer.family_name || '').toLowerCase();
         const fullName = `${givenName} ${familyName}`.trim();
-        
-        // #region agent log
-        fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:name-check',message:'Checking name match',data:{customerId:customer.id,givenName,familyName,fullName,searchLower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'}) + '\n');
-        // #endregion
-        
+
         const givenMatch = givenName.includes(searchLower);
         const familyMatch = familyName.includes(searchLower);
         const fullMatch = fullName.includes(searchLower);
-        
+
         if (givenMatch || familyMatch || fullMatch) {
           matches = true;
-          // #region agent log
-          fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:name-match',message:'Name match found',data:{customerId:customer.id,givenMatch,familyMatch,fullMatch},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'}) + '\n');
-          // #endregion
         }
       } else if (searchType === 'address') {
         // Address search - check all address fields
@@ -145,11 +131,7 @@ class MockSquareService {
         results.push(customer);
       }
     }
-    
-    // #region agent log
-    fs.appendFileSync(logPath, JSON.stringify({location:'mockSquareService.js:searchCustomers:exit',message:'Mock search complete',data:{searchType,searchValue,resultsCount:results.length,resultIds:results.map(r => r.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'}) + '\n');
-    // #endregion
-    
+
     return results;
   }
 

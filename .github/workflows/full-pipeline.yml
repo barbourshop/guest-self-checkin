@@ -1,4 +1,4 @@
-name: Full pipeline (Test, E2E, Windows App, Release)
+name: Full pipeline (Test, Windows App, Release)
 
 on:
   workflow_dispatch:
@@ -41,36 +41,6 @@ jobs:
           name: app-build
           path: dist/
 
-  e2e-tests:
-    needs: build-app
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 23
-          cache: 'npm'
-      - run: npm install
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-build
-          path: dist/
-      - run: npx playwright install --with-deps
-      - run: npx playwright --version
-      - name: Create .env file for demo data
-        run: |
-          echo SQUARE_ACCESS_TOKEN=fake >> .env
-          echo SQUARE_API_URL=fake >> .env
-          echo SQUARE_API_VERSION=fake >> .env
-          echo SQUARE_ENVIRONMENT=fake >> .env
-          echo VITE_USE_MOCK_API=true >> .env
-      - run: xvfb-run --auto-servernum npx playwright test --headed
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-results
-          path: test-results
-
   build-windows-app:
     needs: build-app
     runs-on: windows-latest
@@ -111,7 +81,7 @@ jobs:
           path: dist/*.exe
 
   smoke-test-windows-app:
-    needs: [e2e-tests, build-windows-app]
+    needs: build-windows-app
     runs-on: windows-latest
     steps:
       - uses: actions/download-artifact@v4

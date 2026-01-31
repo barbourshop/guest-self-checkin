@@ -44,21 +44,10 @@ class CustomerService {
    * @returns {Promise<Array<Object>>} Array of enriched customer objects
    */
   async searchCustomers(searchType, searchValue, fuzzy = true) {
-    const fs = require('fs');
-    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
-    
-    // #region agent log
-    fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:entry',message:'CustomerService.searchCustomers called',data:{searchType,searchValue,fuzzy},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
-    // #endregion
-
     try {
       // Get raw customer data from Square API
       const customers = await squareService.searchCustomers(searchType, searchValue, fuzzy);
-      
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:searchCustomers:after-square',message:'Square service returned',data:{customersCount:customers.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
-      // #endregion
-      
+
       // Enrich each customer with membership (from cache)
       const enrichedCustomers = await Promise.all(
         customers.map(async (customer) => {
@@ -107,14 +96,7 @@ class CustomerService {
 
     // Manual search mode - auto-detect search type
     let searchType = 'name'; // Default to name search
-    
-    const fs = require('fs');
-    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
-    
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:before-detection',message:'Starting type detection',data:{trimmed,isQRMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'}) + '\n');
-      // #endregion
-    
+
     // Check for email pattern
     if (trimmed.includes('@') && trimmed.includes('.')) {
       searchType = 'email';
@@ -144,17 +126,9 @@ class CustomerService {
     }
     // Otherwise treat as name (default)
 
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:after-detection',message:'Type detection complete',data:{searchType,trimmed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'}) + '\n');
-      // #endregion
-
     // Perform search
     const results = await this.searchCustomers(searchType, trimmed);
-    
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerService.js:unifiedSearch:after-search',message:'Search complete',data:{searchType,resultsCount:results.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'}) + '\n');
-      // #endregion
-    
+
     return { type: searchType, results };
   }
 

@@ -40,6 +40,7 @@ module.exports = {
       testMatch: ['<rootDir>/src/server/**/*.test.{js,ts}', '<rootDir>/src/server/**/*.spec.{js,ts}'],
       testPathIgnorePatterns: ['<rootDir>/src/server/__tests__/setupTests.js'],
       testEnvironment: 'node',
+      setupFiles: ['<rootDir>/src/server/__tests__/setupEnv.js'],
       setupFilesAfterEnv: ['<rootDir>/src/server/__tests__/setupTests.js']
     }
   ]

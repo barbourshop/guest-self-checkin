@@ -197,31 +197,17 @@ class CustomerController {
    * @param {Response} res - Express response object
    */
   async unifiedSearch(req, res, next) {
-    const fs = require('fs');
-    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
-    
     try {
       const { query, isQRMode = false } = req.body;
-      
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:entry',message:'Controller received request',data:{query,isQRMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n');
-      // #endregion
-      
+
       if (!query) {
         return res.status(400).json({ error: 'Search query is required' });
       }
       
       const result = await customerService.unifiedSearch(query, isQRMode);
-      
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:before-response',message:'About to send response',data:{type:result.type,resultsCount:result.results?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'}) + '\n');
-      // #endregion
-      
+
       res.json(result);
     } catch (error) {
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:unifiedSearch:error',message:'Controller error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'}) + '\n');
-      // #endregion
       logger.error(`Error in unified search: ${error.message}`);
       next(error);
     }
@@ -339,16 +325,9 @@ class CustomerController {
    * @param {Response} res - Express response object
    */
   async logCheckIn(req, res, next) {
-    const fs = require('fs');
-    const logPath = '/Users/mbarbo000/Documents/Projects/guest-self-checkin/.cursor/debug.log';
-    
     try {
       const { customerId, orderId, guestCount, firstName, lastName, lotNumber } = req.body;
-      
-      // #region agent log
-      fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:entry',message:'Check-in request received',data:{customerId,orderId,guestCount,firstName,lastName,lotNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
-      // #endregion
-      
+
       // Check-in is by customerId only; membership is verified from cache (segment-based). Orders are not used.
       // Validate required fields
       if (!customerId || guestCount === undefined || !firstName || !lastName) {
@@ -384,9 +363,6 @@ class CustomerController {
       // Also log to database
       try {
         const db = initDatabase();
-        // #region agent log
-        fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:before-db-insert-manual',message:'About to insert manual check-in to database',data:{customerId,orderId,guestCount:guestCountNum,firstName,lastName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
-        // #endregion
         const result = db.prepare(`
           INSERT INTO checkin_log 
           (customer_id, order_id, guest_count, timestamp, synced_to_square)
@@ -399,9 +375,6 @@ class CustomerController {
           0
         );
         db.close();
-        // #region agent log
-        fs.appendFileSync(logPath, JSON.stringify({location:'customerController.js:logCheckIn:after-db-insert-manual',message:'Check-in logged to database',data:{customerId,guestCount:guestCountNum,insertId:result.lastInsertRowid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'}) + '\n');
-        // #endregion
         logger.info(`Check-in logged: customerId=${customerId}, guestCount=${guestCountNum}, insertId=${result.lastInsertRowid}`);
       } catch (dbError) {
         const errMsg = dbError && dbError.message ? dbError.message : String(dbError);
