@@ -250,7 +250,8 @@ describe('MockSquareService', () => {
       await mockService.getCustomer('NON_EXISTENT').catch(() => {});
 
       const elapsed = Date.now() - start;
-      expect(elapsed).toBeGreaterThanOrEqual(100);
+      // Allow small tolerance for timer/scheduling jitter (e.g. 99ms on CI)
+      expect(elapsed).toBeGreaterThanOrEqual(90);
     });
   });
 });
