@@ -1,4 +1,4 @@
-const { MEMBERSHIP_SEGMENT_ID } = require('../config/square');
+const SegmentService = require('../services/segmentService');
 const crypto = require('crypto');
 const logger = require('../logger');
 
@@ -56,63 +56,85 @@ function transformCustomer(customer, membershipMeta = null, includeMembershipMet
  * @returns {Object} Membership info object
  */
 function buildMembershipInfo(customer, membershipMeta = null, includeMembershipMeta = false) {
-  // Determine membership type
+  // Membership is derived from configured segments only
   const hasMembership = membershipMeta?.hasMembership || false;
-  const segmentIds = customer.segment_ids || [];
-  const hasSegmentMembership = segmentIds.includes(MEMBERSHIP_SEGMENT_ID);
+  const segmentIds = membershipMeta?.segmentIds || [];
+  const segmentNames = membershipMeta?.segmentNames || [];
 
-  // Determine verified via method
-  let verifiedVia = 'none';
-  if (hasMembership) {
-    if (membershipMeta?.catalogItemId && membershipMeta?.variantId) {
-      verifiedVia = 'order';
-    } else if (hasSegmentMembership) {
-      verifiedVia = 'segment';
-    }
-    
-    // If both catalog item and segment, mark as both
-    if (membershipMeta?.catalogItemId && hasSegmentMembership) {
-      verifiedVia = 'segment_and_order';
-    }
-  } else if (hasSegmentMembership) {
-    // Has segment but not confirmed via order
-    verifiedVia = 'segment';
-  }
+  const verifiedVia = hasMembership ? 'segment' : 'none';
+  const membershipType = hasMembership ? 'Member' : 'Non-Member';
 
-  // Get membership type string
-  const membershipType = (hasMembership || hasSegmentMembership) ? 'Member' : 'Non-Member';
-
-  // Get segment ID (use configured segment or first segment if available)
-  const segmentId = hasSegmentMembership 
-    ? MEMBERSHIP_SEGMENT_ID 
-    : (segmentIds[0] || '');
-
-  // Get lastVerifiedAt from cache or current time
   let lastVerifiedAt = new Date().toISOString();
   if (membershipMeta?.lastVerifiedAt) {
     lastVerifiedAt = membershipMeta.lastVerifiedAt;
   } else if (membershipMeta?.fromCache === true) {
-    // If from cache, use cache timestamp if available
-    // This will be set when getting from cache entry
     lastVerifiedAt = membershipMeta.lastVerifiedAt || new Date().toISOString();
   }
 
-  // Build base membership object
   const membership = {
     type: membershipType,
-    segmentId: segmentId,
+    segmentIds: segmentIds,
+    segmentNames: segmentNames,
     lastVerifiedAt: lastVerifiedAt,
     verifiedVia: verifiedVia
   };
 
-  // Add optional fields if detailed metadata is requested
-  if (includeMembershipMeta && membershipMeta) {
-    if (membershipMeta.membershipPurchaseDate) {
-      membership.membershipPurchaseDate = membershipMeta.membershipPurchaseDate;
-    }
+  return membership;
+}
+
+/**
+ * Transform a membership_cache row to frontend SearchResult format.
+ * Used when search is performed against the local cache (same data as admin view).
+ * @param {Object} cacheRow - Row from membership_cache (segment_ids already parsed to array)
+ * @param {Object} segmentService - SegmentService instance for segment display names
+ * @param {boolean} includeMembershipMeta - Whether to include segmentIds/segmentNames
+ * @returns {Object} SearchResult (camelCase)
+ */
+function transformCacheRowToSearchResult(cacheRow, segmentService, includeMembershipMeta = true) {
+  if (!cacheRow || !cacheRow.customer_id) {
+    throw new Error('Invalid cache row: missing customer_id');
   }
 
-  return membership;
+  const customerHash = crypto
+    .createHash('md5')
+    .update(JSON.stringify({
+      id: cacheRow.customer_id,
+      email: cacheRow.email_address,
+      phone: cacheRow.phone_number
+    }))
+    .digest('hex');
+
+  const givenName = cacheRow.given_name || '';
+  const familyName = cacheRow.family_name || '';
+  const displayName = `${givenName} ${familyName}`.trim() || 'Unknown';
+
+  const contact = {
+    email: cacheRow.email_address || undefined,
+    phone: cacheRow.phone_number || undefined,
+    lotNumber: cacheRow.reference_id || undefined
+  };
+
+  const hasMembership = cacheRow.has_membership === 1;
+  const segmentIds = cacheRow.segment_ids || [];
+  const segmentNames = segmentService && typeof segmentService.getDisplayNamesForSegmentIds === 'function'
+    ? segmentService.getDisplayNamesForSegmentIds(segmentIds)
+    : segmentIds;
+
+  const membership = {
+    type: hasMembership ? 'Member' : 'Non-Member',
+    segmentIds: includeMembershipMeta ? segmentIds : undefined,
+    segmentNames: includeMembershipMeta ? segmentNames : undefined,
+    lastVerifiedAt: cacheRow.last_verified_at || new Date().toISOString(),
+    verifiedVia: hasMembership ? 'segment' : 'none'
+  };
+
+  return {
+    customerHash,
+    customerId: cacheRow.customer_id,
+    displayName,
+    contact,
+    membership
+  };
 }
 
 /**
@@ -218,6 +240,7 @@ function transformCustomerOrder(order) {
 
 module.exports = {
   transformCustomer,
+  transformCacheRowToSearchResult,
   transformOrder,
   transformOrderLineItem,
   transformCustomerOrder,

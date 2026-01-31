@@ -398,12 +398,26 @@
 										selectedCustomer = customer;
 										guestCount = 1;
 									}}
-									class="w-full p-4 text-left hover:bg-gray-50 transition-colors"
+									class="w-full text-left hover:bg-gray-50 transition-colors"
 								>
-									<div class="flex justify-between items-start">
-										<div>
-											<div class="font-semibold text-gray-900">{customer.displayName}</div>
-											<div class="text-sm text-gray-600 mt-1">
+									<div class="bg-green-50 border-b border-green-200 px-4 py-2.5 flex justify-between items-center">
+										<span class="text-base font-bold text-gray-900 tracking-tight">{customer.displayName}</span>
+										<span
+											class="px-2 py-0.5 text-xs font-semibold rounded shrink-0 {customer.membership.type === 'Member'
+												? 'bg-green-100 text-green-800'
+												: 'bg-gray-200 text-gray-800'}"
+										>
+											{customer.membership.type}
+										</span>
+									</div>
+									<div class="p-4 pt-2">
+										<div class="min-w-0 flex-1">
+											{#if customer.membership.segmentNames && customer.membership.segmentNames.length > 0}
+												<div class="text-sm text-gray-700">
+													Membership: <span class="font-bold">{customer.membership.segmentNames.join(', ')}</span>
+												</div>
+											{/if}
+											<div class="text-xs text-gray-500 mt-1">
 												{#if customer.contact.email}
 													<span>{customer.contact.email}</span>
 												{/if}
@@ -414,15 +428,6 @@
 													<span>{customer.contact.lotNumber ? ' • ' : ''}Lot: {customer.contact.lotNumber}</span>
 												{/if}
 											</div>
-										</div>
-										<div class="ml-4">
-											<span
-												class="px-2 py-1 text-xs font-semibold rounded {customer.membership.type === 'Member'
-													? 'bg-green-100 text-green-800'
-													: 'bg-gray-100 text-gray-800'}"
-											>
-												{customer.membership.type}
-											</span>
 										</div>
 									</div>
 								</button>

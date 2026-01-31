@@ -18,21 +18,12 @@ function log(message) {
   logger.info(message);
 }
 
-// Check if we're in demo mode
-const isDemoMode = process.env.USE_DEMO_DB === 'true' && process.env.USE_MOCK_SQUARE_SERVICE === 'true';
-
-if (isDemoMode) {
-  log('🎭 DEMO MODE: Using demo database with mock Square service');
-  log('   Database: checkin.demo.db');
-  log('   Square Service: Mock (no real API calls)');
-} else if (process.env.USE_DEMO_DB === 'true') {
-  log('⚠️  WARNING: USE_DEMO_DB is set but USE_MOCK_SQUARE_SERVICE is not');
-  log('   This may cause issues. Use "npm run demo" for proper demo mode.');
+if (process.env.USE_MOCK_SQUARE_SERVICE === 'true') {
+  log('🧪 Using mock Square service (no real API calls)');
 } else {
-  log('🏭 PRODUCTION MODE: Using production database');
-  log('   Database: checkin.db');
-  log('   Square Service: ' + (process.env.USE_MOCK_SQUARE_SERVICE === 'true' ? 'Mock' : 'Real API'));
+  log('🏭 Production: Real Square API');
 }
+log('   Database: checkin.db');
 
 log('Starting server...');
 
@@ -68,40 +59,36 @@ try {
   app.use('/api/admin', adminRoutes);
   app.use('/api/passes', passRoutes);
   
-  // Static files
+  // Static files (optional when running with dev frontend - API still works without dist)
   const staticPath = path.join(resourcesPath, 'dist');
-  
-  // Verify static directory
+  let staticPathValid = false;
   try {
     const stats = fs.statSync(staticPath);
-    if (!stats.isDirectory()) {
-      throw new Error('Static path is not a directory');
-    }
-    
-    if (!fs.existsSync(path.join(staticPath, 'index.html'))) {
-      throw new Error('index.html not found in static directory');
+    if (stats.isDirectory() && fs.existsSync(path.join(staticPath, 'index.html'))) {
+      staticPathValid = true;
+      app.use(express.static(staticPath, {
+        index: 'index.html',
+        fallthrough: true,
+        redirect: false
+      }));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(staticPath, 'index.html'), err => {
+          if (err) {
+            log(`Error serving index.html: ${err.message}`);
+            res.status(500).send('Error serving application');
+          }
+        });
+      });
     }
   } catch (err) {
-    log(`ERROR: Static files setup failed: ${err.message}`);
-    process.exit(1);
+    // dist not found - normal when using dev frontend (npm run prod = server + dev)
+    log(`WARNING: Static path not found (${staticPath}). API only. Run 'npm run build' to serve the app from this server.`);
   }
-
-  // Serve static files
-  app.use(express.static(staticPath, {
-    index: 'index.html',
-    fallthrough: true,
-    redirect: false
-  }));
-
-  // Catch-all route for SPA
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'), err => {
-      if (err) {
-        log(`Error serving index.html: ${err.message}`);
-        res.status(500).send('Error serving application');
-      }
+  if (!staticPathValid) {
+    app.get('/', (req, res) => {
+      res.status(503).send('Frontend not built. Run npm run build, or use the dev server (npm run dev) with API proxy.');
     });
-  });
+  }
 
   // Add error handling middleware last
   app.use(errorHandler);
@@ -113,8 +100,33 @@ try {
   }
 
   // Start server
-  const server = app.listen(port, () => {
+  const server = app.listen(port, async () => {
     log(`Server is running on http://localhost:${port}`);
+    
+    // Check and refresh cache on boot if needed (non-blocking)
+    if (process.env.USE_MOCK_SQUARE_SERVICE !== 'true') {
+      try {
+        const MembershipCache = require('./services/membershipCache');
+        const membershipCache = new MembershipCache();
+        
+        // Check if cache needs refresh (non-blocking, runs in background)
+        membershipCache.checkAndRefreshIfNeeded().then(refreshed => {
+          if (refreshed) {
+            log('✅ Cache refresh started automatically (cache was empty or >24 hours old)');
+          } else {
+            log('✅ Cache is fresh, no refresh needed');
+          }
+        }).catch(error => {
+          log(`⚠️  Error checking cache on startup: ${error.message}`);
+          // Don't fail startup if cache check fails
+        });
+      } catch (error) {
+        log(`⚠️  Error initializing cache check on startup: ${error.message}`);
+        // Don't fail startup if cache initialization fails
+      }
+    } else {
+      log('⏭️  Skipping cache refresh check (mock service)');
+    }
   }).on('error', handleError);
 
   // Handle termination

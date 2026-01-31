@@ -7,11 +7,24 @@ const API_KEY = env.PUBLIC_API_KEY;
 
 async function request<T>(path: string, options: RequestInit): Promise<T> {
 	const headers: Record<string, string> = {
-		'content-type': 'application/json',
-		...(options.headers ?? {})
+		'content-type': 'application/json'
 	};
-
-	// Add API key header if provided
+	const incoming = options.headers;
+	if (incoming) {
+		if (incoming instanceof Headers) {
+			incoming.forEach((value, key) => {
+				headers[key] = value;
+			});
+		} else if (Array.isArray(incoming)) {
+			for (const [key, value] of incoming) {
+				headers[key] = value;
+			}
+		} else {
+			for (const [key, value] of Object.entries(incoming)) {
+				if (typeof value === 'string') headers[key] = value;
+			}
+		}
+	}
 	if (API_KEY) {
 		headers['X-API-Key'] = API_KEY;
 	}
@@ -52,18 +65,6 @@ export async function validatePass(payload: PassValidationPayload): Promise<Pass
 	});
 }
 
-export async function getCustomerOrders(customerId: string, catalogItemId?: string): Promise<CustomerOrdersResponse> {
-	const params = new URLSearchParams();
-	if (catalogItemId) {
-		params.append('catalogItemId', catalogItemId);
-	}
-	const queryString = params.toString();
-	const path = `/customers/${customerId}/orders${queryString ? `?${queryString}` : ''}`;
-	return request<CustomerOrdersResponse>(path, {
-		method: 'GET'
-	});
-}
-
 /**
  * Get customer by ID and transform to SearchResult format
  * Uses the admin endpoint which returns raw customer data, then transforms it
@@ -94,7 +95,8 @@ export async function getCustomerById(customerId: string): Promise<SearchResult 
 			},
 			membership: {
 				type: customer.membershipType || 'Non-Member',
-				segmentId: '',
+				segmentIds: [],
+				segmentNames: [],
 				lastVerifiedAt: new Date().toISOString()
 			},
 			customerHash: ''
@@ -104,4 +106,3 @@ export async function getCustomerById(customerId: string): Promise<SearchResult 
 		return null;
 	}
 }
-

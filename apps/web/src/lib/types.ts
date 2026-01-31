@@ -13,10 +13,10 @@ export type SearchResult = {
 	displayName: string;
 	membership: {
 		type: string;
-		segmentId: string;
+		segmentIds?: string[];
+		segmentNames?: string[];
 		lastVerifiedAt: string;
-		verifiedVia?: 'segment' | 'order' | 'segment_and_order' | 'none';
-		membershipPurchaseDate?: string | null;
+		verifiedVia?: 'segment' | 'none';
 	};
 	contact: {
 		email?: string;

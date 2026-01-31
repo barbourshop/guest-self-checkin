@@ -2,6 +2,12 @@ const {
   SQUARE_API_CONFIG, 
   POOL_PASS_CATALOG_IDS, 
   MEMBERSHIP_SEGMENT_ID,
+  getMembershipSegmentId,
+  getMembershipCatalogItemId,
+  getMembershipVariantId,
+  getCheckinCatalogItemId,
+  getCheckinVariantId,
+  // Backward compatibility
   MEMBERSHIP_CATALOG_ITEM_ID,
   MEMBERSHIP_VARIANT_ID,
   CHECKIN_CATALOG_ITEM_ID,
@@ -199,12 +205,71 @@ class SquareService {
   }
 
   /**
-   * Check if a customer has an active membership based on segment ID
+   * Search for all customers in a Square customer segment (no limit; paginates until complete).
+   * Uses SearchCustomers with segment_ids filter; follows cursor to return every customer in the segment.
+   * @param {string} segmentId - Square segment ID (e.g. gv2:8F7ZZE81CS3W745SDBTJHDAVNG)
+   * @returns {Promise<string[]>} Array of all customer IDs in the segment
+   * @throws {Error} If API request fails
+   */
+  async searchCustomersBySegment(segmentId) {
+    if (!segmentId) {
+      throw new Error('Segment ID is required');
+    }
+    const customerIds = [];
+    let cursor = undefined;
+    let page = 0;
+    const query = {
+      filter: {
+        segment_ids: {
+          any: [segmentId]
+        }
+      }
+    };
+    do {
+      page += 1;
+      const body = { query, limit: 100 };
+      if (cursor) body.cursor = cursor;
+      if (page === 1) body.count = true; // Get total match count on first request
+      const response = await fetch(`${SQUARE_API_CONFIG.baseUrl}/customers/search`, {
+        method: 'POST',
+        headers: SQUARE_API_CONFIG.headers,
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.errors?.[0]?.detail || 'Square API customer search failed');
+      }
+
+      const data = await response.json();
+      const customers = data.customers || [];
+      for (const c of customers) {
+        if (c.id) customerIds.push(c.id);
+      }
+      if (page === 1 && data.count != null) {
+        logger.info(`Segment ${segmentId}: Square reports ${data.count} total matching customers`);
+      }
+      logger.info(`Segment ${segmentId}: page ${page} returned ${customers.length} customers (total so far: ${customerIds.length})`);
+      // Cursor may be at data.cursor or data.next_cursor; empty string means no more
+      const nextCursor = data.cursor ?? data.next_cursor ?? '';
+      cursor = (typeof nextCursor === 'string' && nextCursor.length > 0) ? nextCursor : undefined;
+    } while (cursor);
+
+    logger.info(`Segment ${segmentId}: finished with ${customerIds.length} customer IDs`);
+    return customerIds;
+  }
+
+  /**
+   * Check if a customer has active membership (in any configured segment).
    * @param {string} customerId - Square customer ID
-   * @returns {Promise<boolean>} True if customer has active membership
+   * @returns {Promise<boolean>} True if customer is in at least one configured segment
    */
   async checkMembershipBySegment(customerId) {
     try {
+      const SegmentService = require('./segmentService');
+      const segmentService = new SegmentService();
+      const configuredIds = segmentService.getConfiguredSegmentIds();
+      if (configuredIds.length === 0) return false;
       const response = await fetch(
         `${SQUARE_API_CONFIG.baseUrl}/customers/${customerId}`,
         {
@@ -212,15 +277,14 @@ class SquareService {
           headers: SQUARE_API_CONFIG.headers
         }
       );
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.errors?.[0]?.detail || 'Failed to get customer');
       }
-
       const data = await response.json();
       const customer = data.customer;
-      return customer.segment_ids?.includes(MEMBERSHIP_SEGMENT_ID) || false;
+      const customerSegmentIds = customer.segment_ids || [];
+      return customerSegmentIds.some(id => configuredIds.includes(id));
     } catch (error) {
       console.error(`Error checking membership for ${customerId}:`, error);
       return false;
@@ -273,9 +337,11 @@ class SquareService {
       }
       
       const data = await response.json();
-      
-      // Check if the customer has the membership segment
-      const hasMembership = data.customer.segment_ids?.includes(MEMBERSHIP_SEGMENT_ID);
+      const SegmentService = require('./segmentService');
+      const segmentService = new SegmentService();
+      const configuredIds = segmentService.getConfiguredSegmentIds();
+      const customerSegmentIds = data.customer.segment_ids || [];
+      const hasMembership = configuredIds.length > 0 && customerSegmentIds.some(id => configuredIds.includes(id));
       
       const timestamp = new Date().toISOString();
       console.log(`${timestamp} [ CHECK MEMBERSHIP STATUS ] Customer ID: ${customerId}, Status: ${hasMembership ? 'Member' : 'Non-Member'}`);
@@ -322,8 +388,14 @@ class SquareService {
         } catch {
           errorMessage = errorText || errorMessage;
         }
+        
+        // Include status code in error for better error handling
+        const error = new Error(errorMessage);
+        error.status = response.status;
+        error.statusCode = response.status;
+        
         logger.error(`Square API error fetching orders for customer ${customerId}: ${response.status} ${errorMessage}`);
-        throw new Error(errorMessage);
+        throw error;
       }
       const data = await response.json();
       return data.orders || [];
@@ -420,52 +492,11 @@ class SquareService {
   }
 
   /**
-   * Check if a customer has an active membership based on catalog item/variant purchase
-   * @param {string} customerId - Square customer ID
-   * @param {string} catalogItemId - Optional catalog item ID (uses config if not provided)
-   * @param {string} variantId - Optional variant ID (uses config if not provided)
-   * @returns {Promise<boolean>} True if customer has purchased the membership catalog item/variant
-   * @throws {Error} If API request fails
+   * @deprecated Membership is now derived from customer segment only. Use checkMembershipBySegment.
+   * Kept for backward compatibility; delegates to checkMembershipBySegment.
    */
-  async checkMembershipByCatalogItem(customerId, catalogItemId = null, variantId = null) {
-    const membershipCatalogItemId = catalogItemId || MEMBERSHIP_CATALOG_ITEM_ID;
-    const membershipVariantId = variantId || MEMBERSHIP_VARIANT_ID;
-
-    if (!membershipCatalogItemId) {
-      throw new Error('Membership catalog item ID not configured');
-    }
-
-    try {
-      // Get all orders for this customer
-      const orders = await this.getCustomerOrders(customerId);
-
-      // Check if any order contains the membership catalog item/variant
-      for (const order of orders) {
-        if (order.line_items && order.line_items.length > 0) {
-          for (const item of order.line_items) {
-            if (item.catalog_object_id === membershipCatalogItemId) {
-              // If variant ID is specified, check it matches
-              if (membershipVariantId) {
-                // Note: Square API may return variant info in different fields
-                // Check both catalog_object_variant_id and variation_name
-                if (item.catalog_object_variant_id === membershipVariantId ||
-                    item.variation_name === membershipVariantId) {
-                  return true;
-                }
-              } else {
-                // Just check catalog item (any variant)
-                return true;
-              }
-            }
-          }
-        }
-      }
-
-      return false;
-    } catch (error) {
-      console.error(`Error checking membership by catalog item for ${customerId}:`, error);
-      throw error;
-    }
+  async checkMembershipByCatalogItem(customerId) {
+    return this.checkMembershipBySegment(customerId);
   }
 
   /**

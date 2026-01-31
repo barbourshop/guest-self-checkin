@@ -174,8 +174,8 @@
             Scan your QR code or search by name, phone, email, address, or lot number
           </p>
           {#if USE_MOCK_API}
-            <div class="mt-1 px-2 py-1 bg-yellow-500 text-white text-xs inline-block rounded">
-              Demo Mode: Using Mock Data
+            <div class="mt-1 px-2 py-1 bg-amber-500 text-white text-xs inline-block rounded">
+              Mock API
             </div>
           {/if}
         </div>

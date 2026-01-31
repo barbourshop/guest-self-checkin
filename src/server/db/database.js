@@ -6,7 +6,6 @@ const fs = require('fs');
  * Get the database path
  * In Electron, use userData directory; otherwise use current directory
  * For tests, use a separate test database file
- * For demo data, use a separate demo database file
  */
 function getDatabasePath() {
   // Try to get Electron app if available
@@ -22,11 +21,6 @@ function getDatabasePath() {
   // Test environment: use separate test database
   if (process.env.NODE_ENV === 'test' || process.env.USE_TEST_DB === 'true') {
     return path.join(process.cwd(), 'checkin.test.db');
-  }
-  
-  // Demo/development environment: use demo database if specified
-  if (process.env.USE_DEMO_DB === 'true') {
-    return path.join(process.cwd(), 'checkin.demo.db');
   }
   
   // Default: production/development database
@@ -60,12 +54,16 @@ function initDatabase(dbPath = null) {
   } else {
     // Fallback: create tables directly
     db.exec(`
+      CREATE TABLE IF NOT EXISTS customer_segments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        segment_id TEXT NOT NULL UNIQUE,
+        display_name TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      );
       CREATE TABLE IF NOT EXISTS membership_cache (
         customer_id TEXT PRIMARY KEY,
         has_membership INTEGER NOT NULL,
-        membership_catalog_item_id TEXT,
-        membership_variant_id TEXT,
-        membership_order_id TEXT,
+        segment_ids TEXT,
         last_verified_at TEXT NOT NULL
       );
       
@@ -88,30 +86,38 @@ function initDatabase(dbPath = null) {
         synced_to_square INTEGER NOT NULL DEFAULT 0
       );
       
+      CREATE INDEX IF NOT EXISTS idx_customer_segments_sort ON customer_segments(sort_order);
       CREATE INDEX IF NOT EXISTS idx_membership_cache_last_verified ON membership_cache(last_verified_at);
       CREATE INDEX IF NOT EXISTS idx_checkin_queue_status ON checkin_queue(status);
       CREATE INDEX IF NOT EXISTS idx_checkin_queue_created_at ON checkin_queue(created_at);
       CREATE INDEX IF NOT EXISTS idx_checkin_log_timestamp ON checkin_log(timestamp);
       CREATE INDEX IF NOT EXISTS idx_checkin_log_customer_id ON checkin_log(customer_id);
       CREATE INDEX IF NOT EXISTS idx_checkin_log_order_id ON checkin_log(order_id);
+      
+      CREATE TABLE IF NOT EXISTS app_config (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
     `);
   }
-  
-  // Migrate existing membership_cache table to add membership_order_id column if needed
-  // This runs regardless of whether schema.sql exists or not
-  try {
-    const tableInfo = db.prepare(`PRAGMA table_info(membership_cache)`).all();
-    if (tableInfo.length > 0) {
-      // Table exists, check if column exists
-      const hasOrderIdColumn = tableInfo.some(col => col.name === 'membership_order_id');
-      if (!hasOrderIdColumn) {
-        db.exec(`ALTER TABLE membership_cache ADD COLUMN membership_order_id TEXT`);
+
+  // Migration: add enrichment columns to membership_cache if they don't exist
+  const membershipCacheColumns = db.prepare('PRAGMA table_info(membership_cache)').all().map(r => r.name);
+  const enrichmentColumns = [
+    'given_name', 'family_name', 'email_address', 'phone_number', 'reference_id',
+    'address_line_1', 'locality', 'postal_code'
+  ];
+  for (const col of enrichmentColumns) {
+    if (!membershipCacheColumns.includes(col)) {
+      try {
+        db.prepare(`ALTER TABLE membership_cache ADD COLUMN ${col} TEXT`).run();
+      } catch (e) {
+        if (!/duplicate column name/i.test(e.message)) throw e;
       }
     }
-  } catch (error) {
-    // Table might not exist yet, which is fine - it will be created with the column
   }
-  
+
   return db;
 }
 

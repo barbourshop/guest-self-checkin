@@ -124,20 +124,13 @@ The project uses GitHub Actions for continuous integration and deployment. The w
 - **Automated Testing**
   - Unit tests: Jest for component and utility testing
   - E2E tests: Playwright for full user flow testing
-  - Tests run against a demo environment with mock data
+  - Tests use mock Square service and test database
   - Test results are reported in GitHub Actions
 
 - **Documentation**
   - Automated PDF generation of technical documentation
   - Documentation is generated on successful builds
   - Stored as build artifacts in GitHub Actions
-
-- **Demo Build**
-  - Creates a build of the application with demo data
-  - Generates Windows installer package
-  - Build artifacts are available for download
-  - Used for testing and demonstration purposes
-  - See [Testing](#testing) section for details on testing against demo builds
 
 #### Available Scripts
 ```bash
@@ -200,7 +193,7 @@ interface WaiverService {
 - [Release Testing](#release-testing)
 
 ### Automated Testing
-The application uses Playwright for end-to-end testing against a demo environment. These tests cover:
+The application uses Playwright for end-to-end testing. These tests cover:
 
 #### Search & Status Verification
 - Search by phone, email, and lot number (with/without results)

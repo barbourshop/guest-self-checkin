@@ -1,12 +1,26 @@
+-- Customer segments we care about (Square segment ID + user-friendly name)
+CREATE TABLE IF NOT EXISTS customer_segments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  segment_id TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
 -- Membership cache table
--- Stores cached membership status to avoid expensive Square API calls
+-- Stores cached membership and customer details (names, address, etc.) from Square
 CREATE TABLE IF NOT EXISTS membership_cache (
   customer_id TEXT PRIMARY KEY,
   has_membership INTEGER NOT NULL,
-  membership_catalog_item_id TEXT,
-  membership_variant_id TEXT,
-  membership_order_id TEXT,
-  last_verified_at TEXT NOT NULL
+  segment_ids TEXT,
+  last_verified_at TEXT NOT NULL,
+  given_name TEXT,
+  family_name TEXT,
+  email_address TEXT,
+  phone_number TEXT,
+  reference_id TEXT,
+  address_line_1 TEXT,
+  locality TEXT,
+  postal_code TEXT
 );
 
 -- Check-in queue table
@@ -32,7 +46,16 @@ CREATE TABLE IF NOT EXISTS checkin_log (
   synced_to_square INTEGER NOT NULL DEFAULT 0
 );
 
+-- Application configuration table
+-- Stores editable configuration settings (overrides environment variables)
+CREATE TABLE IF NOT EXISTS app_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_customer_segments_sort ON customer_segments(sort_order);
 CREATE INDEX IF NOT EXISTS idx_membership_cache_last_verified ON membership_cache(last_verified_at);
 CREATE INDEX IF NOT EXISTS idx_checkin_queue_status ON checkin_queue(status);
 CREATE INDEX IF NOT EXISTS idx_checkin_queue_created_at ON checkin_queue(created_at);

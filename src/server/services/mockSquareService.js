@@ -210,7 +210,24 @@ class MockSquareService {
   }
 
   /**
-   * Mock check membership by segment (legacy method)
+   * Mock search customers by segment (returns customer IDs in the segment)
+   */
+  async searchCustomersBySegment(segmentId) {
+    await this._checkFailure('searchCustomersBySegment');
+    if (!segmentId) {
+      throw new Error('Segment ID is required');
+    }
+    const ids = [];
+    for (const [id, customer] of this.customers) {
+      if (customer.segment_ids?.includes(segmentId)) {
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+
+  /**
+   * Mock check membership by segment
    */
   async checkMembershipBySegment(customerId) {
     await this._checkFailure('checkMembershipBySegment');
@@ -219,8 +236,10 @@ class MockSquareService {
     if (!customer) {
       return false;
     }
-    // Check if customer has membership segment
-    return customer.segment_ids?.includes('MEMBERSHIP_SEGMENT_ID') || false;
+    // Check if customer has membership segment (mock data uses 'MEMBERSHIP_SEGMENT_ID')
+    const { getMembershipSegmentId } = require('../config/square');
+    const segmentId = getMembershipSegmentId();
+    return customer.segment_ids?.includes(segmentId) || customer.segment_ids?.includes('MEMBERSHIP_SEGMENT_ID') || false;
   }
 
   /**

@@ -31,6 +31,5 @@ router.post('/validate-qr', asyncHandler(customerController.validateQRCode));
 router.get('/names', asyncHandler(customerController.getCustomerNames));
 
 // Get customer orders filtered by catalog item (must come after /admin/:customerId)
-router.get('/:customerId/orders', asyncHandler(customerController.getCustomerOrders));
 
 module.exports = router;

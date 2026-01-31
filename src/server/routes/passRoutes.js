@@ -65,7 +65,7 @@ router.post('/validate', asyncHandler(async (req, res) => {
           // Try to get the actual order from Square if available (for full order details)
           // But don't fail if Square is unavailable - we have enough info from cache
           try {
-            // Only query Square if not in demo/mock mode (production)
+            // Only query Square when not using mock service
             if (process.env.USE_MOCK_SQUARE_SERVICE !== 'true') {
               order = await squareService.getOrder(token);
             }
@@ -100,12 +100,11 @@ router.post('/validate', asyncHandler(async (req, res) => {
       db.close();
     }
     
-    // Step 2: If not found locally, query Square (production mode only)
+    // Step 2: If not found locally, query Square
     if (!order) {
-      // Only query Square in production (not in demo/mock mode)
-      const isProduction = process.env.USE_MOCK_SQUARE_SERVICE !== 'true';
+      const useRealSquare = process.env.USE_MOCK_SQUARE_SERVICE !== 'true';
       
-      if (isProduction) {
+      if (useRealSquare) {
         try {
           order = await squareService.getOrder(token);
           
@@ -136,7 +135,7 @@ router.post('/validate', asyncHandler(async (req, res) => {
           });
         }
       } else {
-        // Demo/mock mode - try to get order from mock service
+        // Mock service - try to get order from mock
         try {
           order = await squareService.getOrder(token);
           

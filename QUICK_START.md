@@ -2,79 +2,40 @@
 
 ## Running the Application
 
-### Demo Mode (Recommended for Development)
-Demo mode uses mock Square service and a pre-seeded demo database. The database is automatically cleared and reseeded for repeatable results.
-
-**One command to start everything:**
+### Production (with dev frontend)
 ```bash
-npm run demo
+npm run prod
 ```
+Starts the backend server (port 3000) and SvelteKit dev server (port 5173). Open `http://localhost:5173`. The frontend proxies API requests to the backend.
 
-This will:
-1. Clear the demo database
-2. Seed it with demo data
-3. Start both the backend server (port 3000) and SvelteKit frontend dev server (port 5173)
-4. Open your browser to `http://localhost:5173`
-
-The SvelteKit app (in `apps/web/`) will proxy API requests to the backend server.
-
-**Or manually:**
+### Backend only
 ```bash
-# Initialize demo database (clears and seeds)
-npm run demo:init
-
-# Start both servers in demo mode
-npm run demo:start
-
-# Or start just the backend
-npm run server:demo
-```
-
-### Production Mode
-Production mode uses the real database (`checkin.db`) and does NOT auto-clear or reseed. The database is only modified through normal app operations.
-
-```bash
-npm run server:prod
-# or simply
 npm run server
 ```
+Serves the API on port 3000. Run `npm run build` then serve the built app from `dist/` if you need the UI from the same process.
+
+### Frontend only (dev)
+```bash
+npm run dev
+```
+Runs the SvelteKit app in `apps/web/`. Configure `PUBLIC_API_BASE_URL` or use the Vite proxy to point at your backend.
 
 ## Running Tests
 
-Tests automatically use test database (in-memory or `checkin.test.db`) and are isolated from production/demo databases.
-
 ```bash
-# Run all tests
 npm test
-
-# Watch mode
 npm run test:watch
 ```
 
-## Database Files
-
-- `checkin.db` - Production database (real data)
-- `checkin.demo.db` - Demo database (pre-seeded, safe to delete)
-- `checkin.test.db` - Test database (auto-managed by tests)
-
-All database files are in `.gitignore` and should not be committed.
+Tests use the test database and are isolated from production.
 
 ## Environment Variables
 
-### For Demo Mode:
-- `USE_DEMO_DB=true` - Use demo database
-- `USE_MOCK_SQUARE_SERVICE=true` - Use mock Square service
+- **Production**: No special variables. Set `SQUARE_ACCESS_TOKEN` and optionally `MEMBERSHIP_SEGMENT_ID` (or configure segments in Admin).
+- **Mock Square (testing)**: `USE_MOCK_SQUARE_SERVICE=true`
+- **Tests**: `NODE_ENV=test` is set automatically by the test script
 
-### For Production Mode:
-- No special variables needed (or set `USE_MOCK_SQUARE_SERVICE=false` for real API)
+## Database
 
-### For Tests:
-- Automatically set: `NODE_ENV=test` and `USE_TEST_DB=true`
-
-## Server Startup Messages
-
-The server will display which mode it's running in:
-
-- **Demo Mode**: `🎭 DEMO MODE: Using demo database with mock Square service`
-- **Production Mode**: `🏭 PRODUCTION MODE: Using production database`
-
+- `checkin.db` - Production database (created on first run)
+- Add customer segments in Admin → Segments, then refresh the membership cache

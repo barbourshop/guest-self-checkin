@@ -2,6 +2,8 @@
 
 This document defines the standardized data contract between the frontend (SvelteKit app) and backend (Express.js API). All API endpoints follow consistent data formats to ensure compatibility between mock and real Square API data.
 
+**Membership**: Membership is derived solely from Square customer segments. The app manages a list of segments (Square segment ID + user-friendly display name) in Admin → Segments. Customers in any of those segments are treated as members. Search results show which segment(s) each customer is in using the display names. Orders are not used; segment membership is cached and refreshed from Square.
+
 ## Data Transformation
 
 All Square API data (which uses `snake_case` field names) is transformed to frontend format (which uses `camelCase` field names) through transformation utilities in `src/server/utils/squareDataTransformers.js`.
@@ -20,12 +22,12 @@ All Square API data (which uses `snake_case` field names) is transformed to fron
 
 2. **Nested Objects**: Square's flat structure is transformed to nested objects where appropriate
    - Contact info is grouped into `contact: { email, phone, lotNumber }`
-   - Membership info is grouped into `membership: { type, segmentId, lastVerifiedAt, verifiedVia, membershipPurchaseDate? }`
+   - Membership info is grouped into `membership: { type, segmentId, lastVerifiedAt, verifiedVia }`
 
 3. **Computed Fields**: Some fields are computed from Square data
    - `displayName` = `given_name + ' ' + family_name`
    - `customerHash` = MD5 hash of customer identifying data
-   - `verifiedVia` = determined from membership check method
+   - `verifiedVia` = `'segment'` when membership is determined from segment; `'none'` otherwise
 
 ## Endpoints
 
@@ -53,10 +55,10 @@ All Square API data (which uses `snake_case` field names) is transformed to fron
       displayName: string;
       membership: {
         type: string; // "Member" | "Non-Member"
-        segmentId: string;
+        segmentIds: string[];   // Square segment IDs the customer is in (from configured segments)
+        segmentNames: string[]; // User-friendly names for those segments
         lastVerifiedAt: string; // ISO timestamp
-        verifiedVia?: 'segment' | 'order' | 'segment_and_order' | 'none';
-        membershipPurchaseDate?: string | null; // ISO timestamp (if includeMembershipMeta=true)
+        verifiedVia?: 'segment' | 'none';
       };
       contact: {
         email?: string;
@@ -90,9 +92,10 @@ All Square API data (which uses `snake_case` field names) is transformed to fron
       "displayName": "John Doe",
       "membership": {
         "type": "Member",
-        "segmentId": "gv2:TVR6JXEM4N5XQ2XV51GBKFDN74",
+        "segmentIds": ["gv2:8F7ZZE81CS3W745SDBTJHDAVNG"],
+        "segmentNames": ["Annual Member"],
         "lastVerifiedAt": "2024-01-15T10:30:00.000Z",
-        "verifiedVia": "segment_and_order"
+        "verifiedVia": "segment"
       },
       "contact": {
         "email": "john.doe@example.com",
@@ -401,4 +404,5 @@ When testing with real Square API:
 3. Frontend receives identical camelCase format
 
 This ensures seamless switching between mock and production data without frontend changes.
+
 
