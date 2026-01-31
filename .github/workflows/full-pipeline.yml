@@ -18,7 +18,8 @@ jobs:
           cache: 'npm'
       - run: npm install
       - run: npm run type-check
-      - run: npx jest --coverage
+      - name: Run tests with coverage
+        run: npm run test -- --coverage --no-watchman --runInBand
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-report
