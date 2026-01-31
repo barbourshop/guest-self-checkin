@@ -31,14 +31,27 @@ function createTestDatabase(useFile = false) {
     db = new Database(':memory:');
   }
   
-  // Create tables
+  // Create tables (match production schema for membership_cache and add customer_segments)
   db.exec(`
+    CREATE TABLE IF NOT EXISTS customer_segments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      segment_id TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
     CREATE TABLE IF NOT EXISTS membership_cache (
       customer_id TEXT PRIMARY KEY,
       has_membership INTEGER NOT NULL,
-      membership_catalog_item_id TEXT,
-      membership_variant_id TEXT,
-      last_verified_at TEXT NOT NULL
+      segment_ids TEXT,
+      last_verified_at TEXT NOT NULL,
+      given_name TEXT,
+      family_name TEXT,
+      email_address TEXT,
+      phone_number TEXT,
+      reference_id TEXT,
+      address_line_1 TEXT,
+      locality TEXT,
+      postal_code TEXT
     );
     
     CREATE TABLE IF NOT EXISTS checkin_queue (
@@ -82,6 +95,7 @@ function clearTestDatabase(db) {
       DELETE FROM membership_cache;
       DELETE FROM checkin_queue;
       DELETE FROM checkin_log;
+      DELETE FROM customer_segments;
     `);
   }
 }

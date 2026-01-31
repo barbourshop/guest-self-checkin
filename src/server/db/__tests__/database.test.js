@@ -44,16 +44,15 @@ describe('Database Utilities', () => {
     it('should insert and retrieve membership cache entry', () => {
       const customerId = 'CUSTOMER_1';
       const hasMembership = 1;
-      const catalogItemId = 'ITEM_1';
-      const variantId = 'VARIANT_1';
+      const segmentIds = JSON.stringify(['SEGMENT_1']);
       const lastVerified = new Date().toISOString();
 
-      // Insert
+      // Insert (current schema: segment_ids, not catalog item/variant)
       db.prepare(`
         INSERT INTO membership_cache 
-        (customer_id, has_membership, membership_catalog_item_id, membership_variant_id, last_verified_at)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(customerId, hasMembership, catalogItemId, variantId, lastVerified);
+        (customer_id, has_membership, segment_ids, last_verified_at)
+        VALUES (?, ?, ?, ?)
+      `).run(customerId, hasMembership, segmentIds, lastVerified);
 
       // Retrieve
       const result = db.prepare(`
@@ -63,8 +62,7 @@ describe('Database Utilities', () => {
       expect(result).toBeDefined();
       expect(result.customer_id).toBe(customerId);
       expect(result.has_membership).toBe(hasMembership);
-      expect(result.membership_catalog_item_id).toBe(catalogItemId);
-      expect(result.membership_variant_id).toBe(variantId);
+      expect(result.segment_ids).toBe(segmentIds);
     });
 
     it('should update membership cache entry', () => {

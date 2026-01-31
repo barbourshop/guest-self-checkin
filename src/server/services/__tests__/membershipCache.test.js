@@ -12,40 +12,64 @@ jest.mock('../squareService', () => {
 
 const MembershipCache = require('../membershipCache');
 
+const TEST_SEGMENT_ID = 'TEST_SEGMENT_1';
+
 describe('MembershipCache', () => {
   let cache;
   let db;
-  let mockSquareService;
 
   beforeEach(() => {
     db = createTestDatabase();
     cache = new MembershipCache(db);
-    mockSquareService = createMockSquareService();
-    
-    // Setup test data
+
+    // Use the same mock instance that jest mocked for squareService (top-level mockSquareService)
+    mockSquareService.reset();
+
+    // Segment must exist so getConfiguredSegmentIds() returns it and membership can be true
+    db.prepare(`
+      INSERT INTO customer_segments (segment_id, display_name, sort_order) VALUES (?, ?, ?)
+    `).run(TEST_SEGMENT_ID, 'Test Segment', 0);
+
     mockSquareService.addCustomer({
       id: 'MEMBER_1',
       given_name: 'John',
-      family_name: 'Doe'
+      family_name: 'Doe',
+      segment_ids: [TEST_SEGMENT_ID]
     });
-    
+
     mockSquareService.addCustomer({
       id: 'NON_MEMBER_1',
       given_name: 'Jane',
-      family_name: 'Smith'
+      family_name: 'Smith',
+      segment_ids: []
     });
-    
-    // Add membership order
-    mockSquareService.addOrder({
-      id: 'MEMBERSHIP_ORDER',
-      customer_id: 'MEMBER_1',
-      line_items: [
-        {
-          catalog_object_id: 'MEMBERSHIP_ITEM_ID',
-          catalog_object_variant_id: 'MEMBERSHIP_VARIANT_ID',
-          name: 'Annual Membership'
-        }
-      ]
+
+    mockSquareService.addCustomer({
+      id: 'STALE_CUSTOMER',
+      given_name: 'Stale',
+      family_name: 'User',
+      segment_ids: []
+    });
+
+    mockSquareService.addCustomer({
+      id: 'FORCE_REFRESH',
+      given_name: 'Force',
+      family_name: 'Refresh',
+      segment_ids: []
+    });
+
+    mockSquareService.addCustomer({
+      id: 'ERROR_CUSTOMER',
+      given_name: 'Error',
+      family_name: 'User',
+      segment_ids: []
+    });
+
+    mockSquareService.addCustomer({
+      id: 'NO_CACHE_CUSTOMER',
+      given_name: 'NoCache',
+      family_name: 'User',
+      segment_ids: []
     });
   });
 
@@ -190,8 +214,8 @@ describe('MembershipCache', () => {
         VALUES (?, ?, ?)
       `).run('ERROR_CUSTOMER', 1, new Date().toISOString());
 
-      // Mock squareService to throw error
-      mockSquareService.setShouldFail(true, 'checkMembershipByCatalogItem');
+      // Mock squareService.getCustomer to throw error
+      mockSquareService.setShouldFail(true, 'getCustomer');
 
       // Should return stale cache
       const result = await cache.getMembershipStatus('ERROR_CUSTOMER');
@@ -203,13 +227,8 @@ describe('MembershipCache', () => {
     });
 
     it('should handle error when no cache available and refresh fails', async () => {
-      // This test verifies error handling - the actual behavior depends on configuration
-      // If catalog item ID is set and API fails, it should throw
-      // If catalog item ID is not set, it falls back to segment checking
-      // We'll test that errors are handled gracefully
-      
-      // Make checkMembershipByCatalogItem throw
-      mockSquareService.setShouldFail(true, 'checkMembershipByCatalogItem');
+      // Make getCustomer throw so refresh fails
+      mockSquareService.setShouldFail(true, 'getCustomer');
       
       // Since MEMBERSHIP_CATALOG_ITEM_ID might not be set, this might not throw
       // But it should handle the error gracefully
@@ -223,7 +242,6 @@ describe('MembershipCache', () => {
         expect(error).toBeDefined();
       }
 
-      // Reset
       mockSquareService.setShouldFail(false);
     });
   });

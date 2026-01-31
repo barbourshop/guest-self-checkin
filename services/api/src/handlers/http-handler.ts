@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { handle } from 'hono/aws-lambda';
 import { customersSearchHandler } from './customers-search.js';
 import { passesValidateHandler } from './passes-validate.js';
@@ -71,12 +72,12 @@ app.use('*', async (c, next) => {
 });
 
 function adapt(handler: typeof customersSearchHandler) {
-  return async (c: any) => {
+  return async (c: Context) => {
     const res = await handler({
       body: await c.req.text(),
       headers: Object.fromEntries(c.req.raw.headers.entries()),
       queryStringParameters: Object.fromEntries(new URL(c.req.url).searchParams.entries()),
-      requestContext: {} as any
+      requestContext: {} as Record<string, unknown>
     });
     
     const statusCode = res.statusCode || 200;

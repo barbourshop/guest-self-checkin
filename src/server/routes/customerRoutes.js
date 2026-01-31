@@ -24,8 +24,8 @@ router.get('/list', asyncHandler(customerController.listCustomers));
 // Check-in endpoints
 router.post('/check-in', asyncHandler((req, res, next) => customerController.logCheckIn(req, res, next)));
 
-// QR code validation endpoint
-router.post('/validate-qr', asyncHandler(customerController.validateQRCode));
+// QR code validation endpoint (wrap so controller "this" is preserved)
+router.post('/validate-qr', asyncHandler((req, res, next) => customerController.validateQRCode(req, res, next)));
 
 // Returns all customer data for local search
 router.get('/names', asyncHandler(customerController.getCustomerNames));

@@ -10,7 +10,7 @@ export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
  * @param {string} query - Search query
  * @returns {Promise<{type: string, results: Array<any>}>} Search results
  */
-export async function unifiedSearch(query: string): Promise<{type: string, results: any[]}> {
+export async function unifiedSearch(query: string): Promise<{ type: string; results: unknown[] }> {
   // Always call backend API - backend handles mock vs real data
   try {
     const response = await fetch(`${API_BASE_URL}/customers/search`, {
@@ -37,7 +37,13 @@ export async function unifiedSearch(query: string): Promise<{type: string, resul
  * @param {string} orderId - Order ID from QR code
  * @returns {Promise<{valid: boolean, order?: any, customerId?: string, hasMembership?: boolean, reason?: string}>}
  */
-export async function validateQRCode(orderId: string): Promise<{valid: boolean, order?: any, customerId?: string, hasMembership?: boolean, reason?: string}> {
+export async function validateQRCode(orderId: string): Promise<{
+  valid: boolean;
+  order?: { id: string };
+  customerId?: string;
+  hasMembership?: boolean;
+  reason?: string;
+}> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.search));
@@ -80,9 +86,9 @@ export async function validateQRCode(orderId: string): Promise<{valid: boolean, 
  * Search for customers by email, phone, or lot number
  * @param {string} type - Search type (email, phone, lot)
  * @param {string} query - Search query
- * @returns {Promise<Array<any>>} Array of customer objects
+ * @returns {Promise<unknown[]>} Array of customer objects
  */
-export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: string): Promise<any[]> {
+export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: string): Promise<unknown[]> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.search));
@@ -221,7 +227,11 @@ export async function fetchCustomerNames(): Promise<Array<{id: string, given_nam
  * Get database contents for admin view
  * @returns {Promise<{membershipCache: Array<any>, checkinQueue: Array<any>, checkinLog: Array<any>}>}
  */
-export async function getDatabaseContents(): Promise<{membershipCache: any[], checkinQueue: any[], checkinLog: any[]}> {
+export async function getDatabaseContents(): Promise<{
+  membershipCache: unknown[];
+  checkinQueue: unknown[];
+  checkinLog: unknown[];
+}> {
   try {
     const response = await fetch(`${API_BASE_URL}/admin/database`);
 

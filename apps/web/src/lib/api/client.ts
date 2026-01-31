@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult, CustomerOrdersResponse } from '../types';
+import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult } from '../types';
 
 // Use relative paths for API calls (proxied by Vite to http://localhost:3000/api)
 const API_BASE_URL = env.PUBLIC_API_BASE_URL ?? '/api';
@@ -72,7 +72,7 @@ export async function validatePass(payload: PassValidationPayload): Promise<Pass
 export async function getCustomerById(customerId: string): Promise<SearchResult | null> {
 	try {
 		// Get raw customer data from admin endpoint
-		const customer = await request<any>(`/customers/admin/${customerId}`, {
+		const customer = await request<Record<string, unknown>>(`/customers/admin/${customerId}`, {
 			method: 'GET'
 		});
 

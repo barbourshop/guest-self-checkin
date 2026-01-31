@@ -22,7 +22,7 @@ export function formatDate(timestamp: string | null | undefined): string {
       minute: '2-digit',
       hour12: true
     });
-  } catch (error) {
+  } catch {
     return 'Invalid Date';
   }
 }
@@ -61,7 +61,7 @@ export function formatRelativeTime(timestamp: string | null | undefined): string
     } else {
       return formatDate(timestamp);
     }
-  } catch (error) {
+  } catch {
     return 'Invalid Date';
   }
 }
