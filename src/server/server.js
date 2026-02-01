@@ -3,7 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const dotenv = require('dotenv');
-dotenv.config();
+
+// Load .env from cwd (where you ran "npm run prod") then project root
+const cwdEnv = path.join(process.cwd(), '.env');
+const projectRoot = path.resolve(__dirname, '..', '..');
+const rootEnv = path.join(projectRoot, '.env');
+dotenv.config({ path: cwdEnv });
+dotenv.config({ path: rootEnv }); // cwd loaded first; root fills any missing
 
 // Import routes
 const customerRoutes = require('./routes/customerRoutes');
@@ -22,6 +28,13 @@ if (process.env.USE_MOCK_SQUARE_SERVICE === 'true') {
   log('🧪 Using mock Square service (no real API calls)');
 } else {
   log('🏭 Production: Real Square API');
+  const u = process.env.SQUARE_API_URL;
+  const t = process.env.SQUARE_ACCESS_TOKEN;
+  log(`   SQUARE_ACCESS_TOKEN set: ${!!t}`);
+  log(`   SQUARE_API_URL: ${u || '(not set — Square will fail)'}`);
+  log(`   SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION || '(not set)'}`);
+  if (!u) log('⚠️  SQUARE_API_URL not set in .env — must match API Explorer (sandbox vs production)');
+  if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env');
 }
 log('   Database: checkin.db');
 

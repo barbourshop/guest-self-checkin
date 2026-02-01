@@ -231,7 +231,9 @@ class AdminController {
 
       // Start refresh in background (don't await)
       membershipCache.refreshAllCustomers().catch(error => {
-        logger.error('Error during background cache refresh:', error);
+        const msg = error?.message ?? String(error);
+        logger.error(`Error during background cache refresh: ${msg}`);
+        if (error?.stack) logger.error(error.stack);
       });
 
       // Return immediately with initial progress

@@ -192,20 +192,20 @@ class MockSquareService {
   }
 
   /**
-   * Mock search customers by segment (returns customer IDs in the segment)
+   * Mock search customers by segment (returns full customer objects in the segment)
    */
   async searchCustomersBySegment(segmentId) {
     await this._checkFailure('searchCustomersBySegment');
     if (!segmentId) {
       throw new Error('Segment ID is required');
     }
-    const ids = [];
+    const customers = [];
     for (const [id, customer] of this.customers) {
-      if (customer.segment_ids?.includes(segmentId)) {
-        ids.push(id);
+      if (customer.segment_ids?.includes(segmentId) && customer && id) {
+        customers.push({ ...customer, id });
       }
     }
-    return ids;
+    return customers;
   }
 
   /**

@@ -163,14 +163,14 @@ class SquareService {
    * Search for all customers in a Square customer segment (no limit; paginates until complete).
    * Uses SearchCustomers with segment_ids filter; follows cursor to return every customer in the segment.
    * @param {string} segmentId - Square segment ID (e.g. gv2:8F7ZZE81CS3W745SDBTJHDAVNG)
-   * @returns {Promise<string[]>} Array of all customer IDs in the segment
+   * @returns {Promise<Object[]>} Array of full customer objects from the segment (no extra API calls)
    * @throws {Error} If API request fails
    */
   async searchCustomersBySegment(segmentId) {
     if (!segmentId) {
       throw new Error('Segment ID is required');
     }
-    const customerIds = [];
+    const allCustomers = [];
     let cursor = undefined;
     let page = 0;
     const query = {
@@ -192,26 +192,41 @@ class SquareService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.errors?.[0]?.detail || 'Square API customer search failed');
+        let errorDetail = `Square API customer search failed (HTTP ${response.status})`;
+        try {
+          const errorData = await response.json();
+          const sqErr = errorData.errors?.[0];
+          if (sqErr) {
+            errorDetail = sqErr.detail || errorDetail;
+            if (sqErr.code) logger.error(`Square error code: ${sqErr.code}`);
+          }
+          logger.error(`Square customers/search: ${response.status} ${response.statusText}`);
+          if (response.status === 401) {
+            const tokenLen = (SQUARE_API_CONFIG.headers.Authorization || '').replace(/^Bearer\s+/i, '').length;
+            logger.error(`Square 401: Bearer token length sent = ${tokenLen} (expected 84 for your token; extra chars = wrong)`);
+          }
+        } catch (_) {
+          // response body may not be JSON
+        }
+        throw new Error(errorDetail);
       }
 
       const data = await response.json();
       const customers = data.customers || [];
       for (const c of customers) {
-        if (c.id) customerIds.push(c.id);
+        if (c && c.id) allCustomers.push(c);
       }
       if (page === 1 && data.count != null) {
         logger.info(`Segment ${segmentId}: Square reports ${data.count} total matching customers`);
       }
-      logger.info(`Segment ${segmentId}: page ${page} returned ${customers.length} customers (total so far: ${customerIds.length})`);
+      logger.info(`Segment ${segmentId}: page ${page} returned ${customers.length} customers (total so far: ${allCustomers.length})`);
       // Cursor may be at data.cursor or data.next_cursor; empty string means no more
       const nextCursor = data.cursor ?? data.next_cursor ?? '';
       cursor = (typeof nextCursor === 'string' && nextCursor.length > 0) ? nextCursor : undefined;
     } while (cursor);
 
-    logger.info(`Segment ${segmentId}: finished with ${customerIds.length} customer IDs`);
-    return customerIds;
+    logger.info(`Segment ${segmentId}: finished with ${allCustomers.length} customers`);
+    return allCustomers;
   }
 
   /**
