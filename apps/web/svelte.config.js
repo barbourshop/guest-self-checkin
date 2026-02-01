@@ -6,11 +6,12 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// adapter-static: predictable build output to build/ for CI and Electron
+		// adapter-static: predictable build output to build/ for CI and Electron.
+		// fallback enables SPA mode so client-side routes (/, /admin, etc.) work.
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: undefined,
+			fallback: '200.html',
 			precompress: false,
 			strict: true
 		})
