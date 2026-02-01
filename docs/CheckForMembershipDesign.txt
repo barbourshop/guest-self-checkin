@@ -1,0 +1,3203 @@
+#######
+GET CUSTOMER ID
+#######
+
+REQUEST
+curl https://connect.squareup.com/v2/customers/search \
+  -X POST \
+  -H 'Square-Version: 2025-10-16' \
+  -H 'Authorization: Bearer $SQUARE_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "filter": {
+        "phone_number": {
+          "fuzzy": "6503508236"
+        }
+      }
+    }
+  }'
+RESPONSE
+{
+  "customers": [
+    {
+      "id": "PYP1ZGVTES3GNB95MCN96YB458",
+      "created_at": "2022-05-27T00:14:08.117Z",
+      "updated_at": "2025-07-14T22:23:48Z",
+      "given_name": "Matt",
+      "family_name": "Barbour",
+      "email_address": "barbourfam@gmail.com",
+      "address": {
+        "address_line_1": "539 Highland Ave",
+        "locality": "Half Moon Bay",
+        "administrative_district_level_1": "CA",
+        "postal_code": "94019"
+      },
+      "phone_number": "+16503508236",
+      "note": "\n// Merged on 02/10/2024. Following fields were not transferred to the current customer:\n",
+      "reference_id": "BTV 1.222",
+      "company_name": "1.222",
+      "preferences": {
+        "email_unsubscribed": false
+      },
+      "creation_source": "MERGE",
+      "group_ids": [
+        "4GPKVC6GENDERJACGWX145ZTSX",
+        "d063ca38-1324-47e2-b512-2d338bbe39f5"
+      ],
+      "segment_ids": [
+        "MLHQMG4GJ93SR.CHURN_RISK",
+        "MLHQMG4GJ93SR.REACHABLE",
+        "gv2:0WRBGWCX8N6Y10BYXECM7773ZW",
+        "gv2:QDBX7WX4S14NZF0GDA8DATYW68",
+        "gv2:TVR6JXEM4N5XQ2XV51GBKFDN74"
+      ],
+      "version": 10
+    }
+  ]
+}
+
+#####
+GET ORDERS FOR A CUSTOMER
+#####
+
+REQUEST
+
+curl https://connect.squareup.com/v2/orders/search \
+  -X POST \
+  -H 'Square-Version: 2025-10-16' \
+  -H 'Authorization: Bearer $SQUARE_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "query": {
+      "filter": {
+        "fulfillment_filter": {},
+        "source_filter": {},
+        "customer_filter": {
+          "customer_ids": [
+            "PYP1ZGVTES3GNB95MCN96YB458"
+          ]
+        },
+        "date_time_filter": {
+          "updated_at": {
+            "end_at": "2026-01-19T00:49:42.009Z",
+            "start_at": "2025-01-19T00:49:46.975Z"
+          }
+        }
+      }
+    },
+    "location_ids": [
+      "LRMEBQE6GT16C"
+    ],
+    "limit": 100
+  }'
+
+  RESPONSE
+
+  {
+  "orders": [
+    {
+      "id": "01jhWt5FUwg4ElpiQy73Yvs1cEYZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "34ee4337-7ad2-462a-a692-39c0fce21c33",
+          "catalog_object_id": "KHS3UEZBIG56A3HGHKU5LVBA",
+          "catalog_version": 1755240029980,
+          "quantity": "1",
+          "name": "Soda 12oz. Can",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-08-30T21:43:16.300Z",
+      "updated_at": "2025-08-30T21:43:21.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 250,
+        "currency": "USD"
+      },
+      "closed_at": "2025-08-30T21:43:19.904Z",
+      "tenders": [
+        {
+          "id": "h4mBOl0V2YLrpvejNw2LZsLhsCNZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "01jhWt5FUwg4ElpiQy73Yvs1cEYZY",
+          "created_at": "2025-08-30T21:43:16Z",
+          "amount_money": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "7476",
+              "exp_month": 7,
+              "exp_year": 2029,
+              "fingerprint": "sq-1-Fufr0D7GNvw67RhQaITfnEm7kDszAkVStxuZn1fXaW2pNUXQgJ45fzuImB_Rk3Y07g",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414987"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "payment_id": "h4mBOl0V2YLrpvejNw2LZsLhsCNZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 250,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "2skwOEVHWrZwBLYiTwZahsJ1uMAZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "2517e31b-75da-4601-83b1-abb7670d06cb",
+          "catalog_object_id": "NXMTOCJRHFJXKDHXKTQPPGDY",
+          "catalog_version": 1755240031152,
+          "quantity": "1",
+          "name": "Italian Ice, Strawberry Lemonade",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-08-30T21:42:53.049Z",
+      "updated_at": "2025-08-30T21:43:03.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 500,
+        "currency": "USD"
+      },
+      "closed_at": "2025-08-30T21:43:02.089Z",
+      "tenders": [
+        {
+          "id": "9uwcyTOTy8qIdb2K4ZcLRs74mMNZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "2skwOEVHWrZwBLYiTwZahsJ1uMAZY",
+          "created_at": "2025-08-30T21:42:53Z",
+          "amount_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "7476",
+              "exp_month": 7,
+              "exp_year": 2029,
+              "fingerprint": "sq-1-Fufr0D7GNvw67RhQaITfnEm7kDszAkVStxuZn1fXaW2pNUXQgJ45fzuImB_Rk3Y07g",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414987"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "payment_id": "9uwcyTOTy8qIdb2K4ZcLRs74mMNZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 500,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "EhBdhTfPBRL2191gJ2YdAJ7mHSNZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "fc2cc71a-65aa-4398-a450-8c9f52327c53",
+          "catalog_object_id": "NXMTOCJRHFJXKDHXKTQPPGDY",
+          "catalog_version": 1755240031152,
+          "quantity": "2",
+          "name": "Italian Ice, Strawberry Lemonade",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-08-30T21:42:26.394Z",
+      "updated_at": "2025-08-30T21:42:35.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1000,
+        "currency": "USD"
+      },
+      "closed_at": "2025-08-30T21:42:33.180Z",
+      "tenders": [
+        {
+          "id": "tIvdtGQCP5XId7NwqN2SrAuiiJfZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "EhBdhTfPBRL2191gJ2YdAJ7mHSNZY",
+          "created_at": "2025-08-30T21:42:26Z",
+          "amount_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "7476",
+              "exp_month": 7,
+              "exp_year": 2029,
+              "fingerprint": "sq-1-Fufr0D7GNvw67RhQaITfnEm7kDszAkVStxuZn1fXaW2pNUXQgJ45fzuImB_Rk3Y07g",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414987"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "payment_id": "tIvdtGQCP5XId7NwqN2SrAuiiJfZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1000,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "qkLWZDolmZdvNKrODIUYhhKs07TZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "241ba106-9aec-4f53-8a2a-ffbfc6d10b4c",
+          "catalog_object_id": "G5PYRDWNYQ3HAOX5L5P6JVCI",
+          "catalog_version": 1751553212453,
+          "quantity": "2",
+          "name": "Ice Cream Sandwich",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "9f26063a-1dee-4984-af9e-672232ba8a34",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1751553219875,
+          "quantity": "1",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "d8094427-de05-4d7e-8e9b-d09f0bef7199",
+          "catalog_object_id": "G5PYRDWNYQ3HAOX5L5P6JVCI",
+          "catalog_version": 1751553212453,
+          "quantity": "3",
+          "name": "Ice Cream Sandwich",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 900,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 900,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 900,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-07-18T22:41:37.513Z",
+      "updated_at": "2025-07-18T22:41:44.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 270,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 2070,
+        "currency": "USD"
+      },
+      "closed_at": "2025-07-18T22:41:42.144Z",
+      "tenders": [
+        {
+          "id": "NCS0RwvkkNmKQIWRbzBTKcoBZtHZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "qkLWZDolmZdvNKrODIUYhhKs07TZY",
+          "created_at": "2025-07-18T22:41:37Z",
+          "amount_money": {
+            "amount": 2070,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "exp_month": 3,
+              "exp_year": 2028,
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414718"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 270,
+            "currency": "USD"
+          },
+          "payment_id": "NCS0RwvkkNmKQIWRbzBTKcoBZtHZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 2070,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 270,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "ctXE9osSLwQFUgkD4mrRisIljGUZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "08d7ccb9-82b2-492b-825a-fe8885b379f2",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1751553219875,
+          "quantity": "6",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1800,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1800,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1800,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-07-17T22:05:27.120Z",
+      "updated_at": "2025-07-17T22:05:35.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 360,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 2160,
+        "currency": "USD"
+      },
+      "closed_at": "2025-07-17T22:05:34.051Z",
+      "tenders": [
+        {
+          "id": "hs64Rk4lsecyqNkRKkEdLkLHMhJZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "ctXE9osSLwQFUgkD4mrRisIljGUZY",
+          "created_at": "2025-07-17T22:05:27Z",
+          "amount_money": {
+            "amount": 2160,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "exp_month": 3,
+              "exp_year": 2028,
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414718"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 360,
+            "currency": "USD"
+          },
+          "payment_id": "hs64Rk4lsecyqNkRKkEdLkLHMhJZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 2160,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 360,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "CWq4rroV5EIxRZ3AARGIm0RQQTBZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "fce422e6-6c52-42b2-81ae-04694ca6e8c9",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1748039578107,
+          "quantity": "4",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-06-30T21:58:55.022Z",
+      "updated_at": "2025-06-30T21:59:01.000Z",
+      "state": "COMPLETED",
+      "version": 6,
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 180,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1380,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-30T21:58:58.844Z",
+      "tenders": [
+        {
+          "id": "ntpw16jUge8Ve0t7mQJ5bnrNqWTZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "CWq4rroV5EIxRZ3AARGIm0RQQTBZY",
+          "created_at": "2025-06-30T21:58:55Z",
+          "amount_money": {
+            "amount": 1380,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "exp_month": 3,
+              "exp_year": 2028,
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414718"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 180,
+            "currency": "USD"
+          },
+          "payment_id": "ntpw16jUge8Ve0t7mQJ5bnrNqWTZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1380,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 180,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "naSo5kUxYW0t7seh9f21T8jeV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "0f294ea3-4f90-4b35-9609-5d6d401ad132",
+          "catalog_object_id": "DTM5G7SAEJ4BMOKIVPLYOXLN",
+          "catalog_version": 1748039371882,
+          "quantity": "1",
+          "name": "Chips, Small Bag, Less Than 2.5oz.",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 150,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 150,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 150,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 150,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-06-19T21:46:51Z",
+      "updated_at": "2025-06-19T21:46:56.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 300,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 450,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-19T21:46:56.000Z",
+      "tenders": [
+        {
+          "id": "1qwqpDKle0PL5bpY4QzPXCnkuaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "naSo5kUxYW0t7seh9f21T8jeV",
+          "created_at": "2025-06-19T21:46:55Z",
+          "amount_money": {
+            "amount": 450,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 300,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 450,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 300,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "PonOq4Mrr1LepNNTg5K9TbqeV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "46bbaf29-429b-40dc-b804-d2d5bdb43f9b",
+          "catalog_object_id": "N5LVDOUGRQBGQGQS6HS3JQ37",
+          "catalog_version": 1720800947212,
+          "quantity": "4",
+          "name": "Hot Pretzel",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 81,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "applied_taxes": [
+            {
+              "uid": "1f5864cf-c90a-4200-9713-083315a5921e",
+              "tax_uid": "1f5864cf-c90a-4200-9713-083315a5921e",
+              "applied_money": {
+                "amount": 81,
+                "currency": "USD"
+              },
+              "auto_applied": true
+            }
+          ],
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "1f5864cf-c90a-4200-9713-083315a5921e",
+          "catalog_object_id": "6OSPABVJPSLW6I2F3O5MZXJ7",
+          "catalog_version": 1749507718084,
+          "name": "Calaveras County Sales Tax",
+          "percentage": "7.25",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 81,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "created_at": "2025-06-19T21:23:22Z",
+      "updated_at": "2025-06-19T21:23:27.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 81,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 300,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1500,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-19T21:23:27.000Z",
+      "tenders": [
+        {
+          "id": "Dl2aMsXY4nGG1Qq2tUdKrzEMuaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "PonOq4Mrr1LepNNTg5K9TbqeV",
+          "created_at": "2025-06-19T21:23:26Z",
+          "amount_money": {
+            "amount": 1500,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 300,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1500,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 81,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 300,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "VBKiE1kmuHFyI2QPuGZoNZAfV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "57a6bedd-449f-4ad7-959f-a1828bb499f7",
+          "catalog_object_id": "NPOCNZQBLC3XPYZDYERVSP4Q",
+          "catalog_version": 1748039423088,
+          "quantity": "2",
+          "name": "Lemonade Per Cup",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 150,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-06-18T22:09:59Z",
+      "updated_at": "2025-06-18T22:10:13.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 400,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 700,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-18T22:10:13.000Z",
+      "tenders": [
+        {
+          "id": "jBAgwH4z8Tyt57LCTR7mTpStuaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "VBKiE1kmuHFyI2QPuGZoNZAfV",
+          "created_at": "2025-06-18T22:10:03Z",
+          "amount_money": {
+            "amount": 700,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 400,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 700,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 400,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "zQGOHTnBwIEaQJxumHZ0UQveV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "03151c41-6922-4bd2-b58d-ad1dd09e1e72",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1748039578107,
+          "quantity": "4",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-06-18T20:37:36Z",
+      "updated_at": "2025-06-18T20:37:46.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 300,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1500,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-18T20:37:46.000Z",
+      "tenders": [
+        {
+          "id": "fxBw8G6OUcyvW2Mcm2dAxtLEvaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "zQGOHTnBwIEaQJxumHZ0UQveV",
+          "created_at": "2025-06-18T20:37:40Z",
+          "amount_money": {
+            "amount": 1500,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 300,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1500,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 300,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "rEiQqgHjli7vvRXg8w8a3a7eV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "66710223-7bc0-4dab-bbd0-6118aa2336e2",
+          "catalog_object_id": "N5LVDOUGRQBGQGQS6HS3JQ37",
+          "catalog_version": 1720800947212,
+          "quantity": "2",
+          "name": "Hot Pretzel",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 41,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "applied_taxes": [
+            {
+              "uid": "791af3ae-3c9f-4e9a-8ecd-4cce2f7198b2",
+              "tax_uid": "791af3ae-3c9f-4e9a-8ecd-4cce2f7198b2",
+              "applied_money": {
+                "amount": 41,
+                "currency": "USD"
+              },
+              "auto_applied": true
+            }
+          ],
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "791af3ae-3c9f-4e9a-8ecd-4cce2f7198b2",
+          "catalog_object_id": "6OSPABVJPSLW6I2F3O5MZXJ7",
+          "catalog_version": 1749507718084,
+          "name": "Calaveras County Sales Tax",
+          "percentage": "7.25",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 41,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "created_at": "2025-06-16T22:48:09Z",
+      "updated_at": "2025-06-16T22:48:15.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 41,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 200,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 800,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-16T22:48:15.000Z",
+      "tenders": [
+        {
+          "id": "nhx9y73jVbwFc9HllunuOFpAvaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "rEiQqgHjli7vvRXg8w8a3a7eV",
+          "created_at": "2025-06-16T22:48:12Z",
+          "amount_money": {
+            "amount": 800,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 200,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 800,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 41,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 200,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "Jng6I7HKdhgKpR5zmwK1N6peV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "8731d903-e007-46a7-a38f-9bab27ce013d",
+          "catalog_object_id": "N5LVDOUGRQBGQGQS6HS3JQ37",
+          "catalog_version": 1720800947212,
+          "quantity": "1",
+          "name": "Hot Pretzel",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 20,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "applied_taxes": [
+            {
+              "uid": "b5ee9d15-bac9-414b-8690-f6c85c35ab96",
+              "tax_uid": "b5ee9d15-bac9-414b-8690-f6c85c35ab96",
+              "applied_money": {
+                "amount": 20,
+                "currency": "USD"
+              },
+              "auto_applied": true
+            }
+          ],
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "b5ee9d15-bac9-414b-8690-f6c85c35ab96",
+          "catalog_object_id": "6OSPABVJPSLW6I2F3O5MZXJ7",
+          "catalog_version": 1749507718084,
+          "name": "Calaveras County Sales Tax",
+          "percentage": "7.25",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 20,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "created_at": "2025-06-16T22:43:05Z",
+      "updated_at": "2025-06-16T22:43:12.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 20,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 300,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 600,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-16T22:43:12.000Z",
+      "tenders": [
+        {
+          "id": "zLn7aOiI4kAmNYecqOu5z22wvaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "Jng6I7HKdhgKpR5zmwK1N6peV",
+          "created_at": "2025-06-16T22:43:08Z",
+          "amount_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 300,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 600,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 20,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 300,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "nC4FlxG22NqzwIN6eLrDHk4eV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "14a5c873-3b9f-45f9-936d-0937023f34aa",
+          "catalog_object_id": "PSQ6N2BCSFQ5HY2BQQMXTVRJ",
+          "catalog_version": 1720801151090,
+          "quantity": "1",
+          "name": "Nachos W/Cheese and Jalepenos",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 32,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "applied_taxes": [
+            {
+              "uid": "5b127b05-59c8-4c84-841d-132c11bbdb54",
+              "tax_uid": "5b127b05-59c8-4c84-841d-132c11bbdb54",
+              "applied_money": {
+                "amount": 32,
+                "currency": "USD"
+              },
+              "auto_applied": true
+            }
+          ],
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "5b127b05-59c8-4c84-841d-132c11bbdb54",
+          "catalog_object_id": "6OSPABVJPSLW6I2F3O5MZXJ7",
+          "catalog_version": 1749507718084,
+          "name": "Calaveras County Sales Tax",
+          "percentage": "7.25",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 32,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "created_at": "2025-06-16T21:31:06Z",
+      "updated_at": "2025-06-16T21:31:11.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 32,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 200,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 675,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-16T21:31:11.000Z",
+      "tenders": [
+        {
+          "id": "JGla6hl8ZRMrFIlGon5U3ZDVvaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "nC4FlxG22NqzwIN6eLrDHk4eV",
+          "created_at": "2025-06-16T21:31:09Z",
+          "amount_money": {
+            "amount": 675,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 200,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 675,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 32,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 200,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "FV4yakMhlwL8mWnkP8TsGW7eV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "516cc2ac-331b-4ce9-9e38-014703811ed6",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1748039578107,
+          "quantity": "4",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1200,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-06-16T20:48:53Z",
+      "updated_at": "2025-06-16T20:49:00.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 180,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1380,
+        "currency": "USD"
+      },
+      "closed_at": "2025-06-16T20:49:00.000Z",
+      "tenders": [
+        {
+          "id": "FQDOgOzF9R0K8DbdmfyeOlABvaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "FV4yakMhlwL8mWnkP8TsGW7eV",
+          "created_at": "2025-06-16T20:48:55Z",
+          "amount_money": {
+            "amount": 1380,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 180,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1380,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 180,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "1TN3Ch9FHgHPfCA1U7KFCwheV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "e7757402-d3c9-4cf0-bc47-f93559a827dc",
+          "catalog_object_id": "NXMTOCJRHFJXKDHXKTQPPGDY",
+          "catalog_version": 1748039608669,
+          "quantity": "2",
+          "name": "Italian Ice, Strawberry Lemonade",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "baedf0cb-bfd5-4274-b3fe-dfea211c285d",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1748039578107,
+          "quantity": "2",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 600,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-05-25T23:00:49Z",
+      "updated_at": "2025-05-25T23:00:54.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 240,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1840,
+        "currency": "USD"
+      },
+      "closed_at": "2025-05-25T23:00:54.000Z",
+      "tenders": [
+        {
+          "id": "JulKXN9lDoSkeEEYL8rUG8zFuaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "1TN3Ch9FHgHPfCA1U7KFCwheV",
+          "created_at": "2025-05-25T23:00:49Z",
+          "amount_money": {
+            "amount": 1840,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          },
+          "tip_money": {
+            "amount": 240,
+            "currency": "USD"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1840,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 240,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "FZmoYT6MQEQ62epDffGzqg4eV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "94088f8d-e228-4fec-b245-831c257a7410",
+          "catalog_object_id": "NXMTOCJRHFJXKDHXKTQPPGDY",
+          "catalog_version": 1748039608669,
+          "quantity": "1",
+          "name": "Italian Ice, Strawberry Lemonade",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "da677929-4cb6-400a-b16c-935f753713c9",
+          "catalog_object_id": "JTHQBDHOSQDCVGJRGVIVEO3V",
+          "catalog_version": 1748039578107,
+          "quantity": "1",
+          "name": "Ice Cream Bars",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 300,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "ad91114e-f263-40db-b227-fa0b8bd59584",
+          "catalog_object_id": "NXMTOCJRHFJXKDHXKTQPPGDY",
+          "catalog_version": 1748039608669,
+          "quantity": "2",
+          "name": "Italian Ice, Strawberry Lemonade",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1000,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "created_at": "2025-05-24T22:16:58Z",
+      "updated_at": "2025-05-24T22:17:03.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 1800,
+        "currency": "USD"
+      },
+      "closed_at": "2025-05-24T22:17:03.000Z",
+      "tenders": [
+        {
+          "id": "pGTRw9ReGYV5g9auBTjUgK6uuaB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "FZmoYT6MQEQ62epDffGzqg4eV",
+          "created_at": "2025-05-24T22:16:58Z",
+          "amount_money": {
+            "amount": 1800,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 1800,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "R3Ad5iJg8pn1dXI54mGSkZzeV",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "501af6d0-fa35-4eb3-b537-cfe1fc10ce34",
+          "catalog_object_id": "F4R2LQ2S5KXE2GEXYMOOX6WC",
+          "catalog_version": 1721504956557,
+          "quantity": "3",
+          "name": "Member Donation - BBQ",
+          "variation_name": "$5.00",
+          "base_price_money": {
+            "amount": 500,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 1500,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 1500,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 1500,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "9b2356cd-0f69-4f25-8334-a75d8c3eea30",
+          "catalog_object_id": "6UW3KSCGBDHOS55TC322ZDOJ",
+          "catalog_version": 1721504956557,
+          "quantity": "1",
+          "name": "Member Donation - BBQ",
+          "variation_name": "$4.00",
+          "base_price_money": {
+            "amount": 400,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 400,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 400,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 400,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "d75bf6cf-b0dc-4642-89e5-05210cec54af",
+          "catalog_object_id": "PSQ6N2BCSFQ5HY2BQQMXTVRJ",
+          "catalog_version": 1720801151090,
+          "quantity": "1",
+          "name": "Nachos W/Cheese and Jalepenos",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 32,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 475,
+            "currency": "USD"
+          },
+          "applied_taxes": [
+            {
+              "uid": "b51355b9-a485-4eda-befa-b1ce782a4f14",
+              "tax_uid": "b51355b9-a485-4eda-befa-b1ce782a4f14",
+              "applied_money": {
+                "amount": 32,
+                "currency": "USD"
+              },
+              "auto_applied": true
+            }
+          ],
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_card_surcharge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "b51355b9-a485-4eda-befa-b1ce782a4f14",
+          "catalog_object_id": "6OSPABVJPSLW6I2F3O5MZXJ7",
+          "catalog_version": 1720800639787,
+          "name": "Calaveras County Sales Tax",
+          "percentage": "7.25",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 32,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "created_at": "2025-05-24T20:13:44Z",
+      "updated_at": "2025-05-24T20:13:49.000Z",
+      "state": "COMPLETED",
+      "total_tax_money": {
+        "amount": 32,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 2375,
+        "currency": "USD"
+      },
+      "closed_at": "2025-05-24T20:13:49.000Z",
+      "tenders": [
+        {
+          "id": "jTPJfl4Q2VpleBr3vqFRK2Y8taB",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "R3Ad5iJg8pn1dXI54mGSkZzeV",
+          "created_at": "2025-05-24T20:13:44Z",
+          "amount_money": {
+            "amount": 2375,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw"
+            },
+            "entry_method": "CONTACTLESS"
+          }
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "return_amounts": {
+        "total_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 2375,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 32,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "card_surcharge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {},
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_card_surcharge_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    },
+    {
+      "id": "0r6baUBgXuKV3en57B0O3Bc7HpZZY",
+      "location_id": "LRMEBQE6GT16C",
+      "line_items": [
+        {
+          "uid": "pxDXwr8yAcYDU0OkhT2RZC",
+          "catalog_object_id": "53OFWEDVK453O6GBG52N3CM5",
+          "catalog_version": 1739052175581,
+          "quantity": "1",
+          "name": "2025 Pool Pass for 10",
+          "variation_name": "Regular",
+          "base_price_money": {
+            "amount": 65000,
+            "currency": "USD"
+          },
+          "modifiers": [
+            {
+              "uid": "DPFDe9s6vgcYn4lukjMgzD",
+              "base_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "total_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "name": "Authorized Members: Eddie, Gigi, Serafina, Aaron, Matthew, Emily, Margaret",
+              "quantity": "1"
+            },
+            {
+              "uid": "P7KKGp6N8LVARWrSyS5NUB",
+              "base_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "total_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "name": "BTV Address: 2820 Tahos Dr",
+              "quantity": "1"
+            },
+            {
+              "uid": "QNWRAjbX7qwYT4vMnEFpqD",
+              "base_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "total_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "name": "I agree to membership rules at https://www.bigtreesvillage.org/membership-application",
+              "catalog_object_id": "JVTEGMQUDLF44J4JSGXMRHEO",
+              "catalog_version": 1739052175581,
+              "quantity": "1"
+            },
+            {
+              "uid": "WGcOggQir1IoEERGtmPZZC",
+              "base_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "total_price_money": {
+                "amount": 0,
+                "currency": "USD"
+              },
+              "name": "Enter your Unit and Lot Number - If you don't know this number please call (209) 795-1971: 1.222",
+              "quantity": "1"
+            }
+          ],
+          "gross_sales_money": {
+            "amount": 65000,
+            "currency": "USD"
+          },
+          "total_tax_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_discount_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "total_money": {
+            "amount": 65000,
+            "currency": "USD"
+          },
+          "variation_total_price_money": {
+            "amount": 65000,
+            "currency": "USD"
+          },
+          "item_type": "ITEM",
+          "total_service_charge_money": {
+            "amount": 0,
+            "currency": "USD"
+          }
+        }
+      ],
+      "taxes": [
+        {
+          "uid": "67d593d0c674d",
+          "name": "California",
+          "percentage": "9.3750",
+          "type": "INCLUSIVE",
+          "applied_money": {
+            "amount": 0,
+            "currency": "USD"
+          },
+          "scope": "LINE_ITEM"
+        }
+      ],
+      "fulfillments": [
+        {
+          "uid": "lUgfJ0aA2sQoAQwHnOEFHD",
+          "type": "DIGITAL",
+          "state": "PROPOSED",
+          "line_item_application": "ALL"
+        }
+      ],
+      "created_at": "2025-03-15T14:50:56.895Z",
+      "updated_at": "2025-03-15T14:50:59.000Z",
+      "state": "OPEN",
+      "version": 4,
+      "reference_id": "11f001abc33d2c5aa4887cc255b410a2",
+      "total_tax_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_discount_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_tip_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "total_money": {
+        "amount": 65000,
+        "currency": "USD"
+      },
+      "tenders": [
+        {
+          "id": "HDqZ4l85Hfwv8JLmW1bO1Rs15sUZY",
+          "location_id": "LRMEBQE6GT16C",
+          "transaction_id": "0r6baUBgXuKV3en57B0O3Bc7HpZZY",
+          "created_at": "2025-03-15T14:50:57Z",
+          "amount_money": {
+            "amount": 65000,
+            "currency": "USD"
+          },
+          "type": "CARD",
+          "card_details": {
+            "status": "CAPTURED",
+            "card": {
+              "card_brand": "VISA",
+              "last_4": "2954",
+              "exp_month": 3,
+              "exp_year": 2028,
+              "fingerprint": "sq-1-Hp-kVC4jKeDnBKWTEAiwv-0NK7XStJNRBxTx1RHjnxZ7oVQzdd_doATqojqQWeKHxw",
+              "card_type": "CREDIT",
+              "prepaid_type": "NOT_PREPAID",
+              "bin": "414718"
+            },
+            "entry_method": "KEYED"
+          },
+          "payment_id": "HDqZ4l85Hfwv8JLmW1bO1Rs15sUZY"
+        }
+      ],
+      "total_service_charge_money": {
+        "amount": 0,
+        "currency": "USD"
+      },
+      "net_amounts": {
+        "total_money": {
+          "amount": 65000,
+          "currency": "USD"
+        },
+        "tax_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "discount_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "tip_money": {
+          "amount": 0,
+          "currency": "USD"
+        },
+        "service_charge_money": {
+          "amount": 0,
+          "currency": "USD"
+        }
+      },
+      "source": {
+        "name": "Checkout Link"
+      },
+      "net_amount_due_money": {
+        "amount": 0,
+        "currency": "USD"
+      }
+    }
+  ]
+}

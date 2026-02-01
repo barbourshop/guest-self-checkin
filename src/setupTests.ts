@@ -1,1 +1,1 @@
-import '@testing-library/jest-dom';
+// Svelte test setup (if needed in the future)

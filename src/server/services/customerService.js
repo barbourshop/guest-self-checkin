@@ -1,11 +1,15 @@
 const squareService = require('./squareService');
-const waiverService = require('./waiverService');
+const MembershipCache = require('./membershipCache');
 
 /**
  * Service handling customer-related operations
  * @class CustomerService
  */
 class CustomerService {
+  constructor() {
+    this.membershipCache = new MembershipCache();
+  }
+
   /**
    * Get customer by ID with enriched data
    * @param {string} customerId - The customer ID
@@ -16,17 +20,14 @@ class CustomerService {
       // Get the raw customer data from Square API
       const customer = await squareService.getCustomer(customerId);
       
-      // Check membership status based on segment
-      const hasMembership = await squareService.checkMembershipBySegment(customerId);
+      // Check membership status using cache
+      const membershipStatus = await this.membershipCache.getMembershipStatus(customerId);
+      const hasMembership = membershipStatus.hasMembership;
       
-      // Check waiver status
-      const hasSignedWaiver = await waiverService.checkStatus(customerId);
-      
-      // Enrich the customer data with membership and waiver status
+      // Enrich the customer data with membership status
       return {
         ...customer,
-        membershipType: hasMembership ? 'Member' : 'Non-Member',
-        hasSignedWaiver
+        membershipType: hasMembership ? 'Member' : 'Non-Member'
       };
     } catch (error) {
       console.error('Error getting customer by ID:', error);
@@ -36,25 +37,27 @@ class CustomerService {
 
   /**
    * Search for customers with enriched data
-   * @param {string} searchType - Type of search (email, phone, lot)
+   * Supports: email, phone, lot, name, address
+   * @param {string} searchType - Type of search (email, phone, lot, name, address)
    * @param {string} searchValue - Value to search for
+   * @param {boolean} fuzzy - Whether to use fuzzy matching (default: true)
    * @returns {Promise<Array<Object>>} Array of enriched customer objects
    */
-  async searchCustomers(searchType, searchValue) {
+  async searchCustomers(searchType, searchValue, fuzzy = true) {
     try {
       // Get raw customer data from Square API
-      const customers = await squareService.searchCustomers(searchType, searchValue);
-      
-      // Enrich each customer with membership and waiver status
+      const customers = await squareService.searchCustomers(searchType, searchValue, fuzzy);
+
+      // Enrich each customer with membership (from cache)
       const enrichedCustomers = await Promise.all(
         customers.map(async (customer) => {
-          const hasMembership = await squareService.checkMembershipBySegment(customer.id);
-          const hasSignedWaiver = await waiverService.checkStatus(customer.id);
+          // Use cache for membership status
+          const membershipStatus = await this.membershipCache.getMembershipStatus(customer.id);
+          const hasMembership = membershipStatus.hasMembership;
           
           return {
             ...customer,
-            membershipType: hasMembership ? 'Member' : 'Non-Member',
-            hasSignedWaiver
+            membershipType: hasMembership ? 'Member' : 'Non-Member'
           };
         })
       );
@@ -67,26 +70,68 @@ class CustomerService {
   }
 
   /**
-   * Update customer's waiver status
-   * @param {string} customerId - The customer ID
-   * @param {boolean} hasSignedWaiver - The new waiver status
-   * @returns {Promise<boolean>} True if update was successful
+   * Unified search - auto-detects search type from input
+   * @param {string} query - Search query (could be email, phone, name, address, lot, or order ID)
+   * @returns {Promise<{type: string, results: Array<Object>}>} Search results
    */
-  async updateWaiverStatus(customerId, hasSignedWaiver) {
-    try {
-      if (hasSignedWaiver) {
-        // Set waiver as signed
-        await waiverService.setStatus(customerId);
-      } else {
-        // Clear waiver status
-        await waiverService.clearStatus(customerId);
-      }
-      return true;
-    } catch (error) {
-      console.error('Error updating waiver status:', error);
-      return false;
+  async unifiedSearch(query, isQRMode = false) {
+    if (!query || typeof query !== 'string') {
+      return { type: 'search', results: [] };
     }
+
+    const trimmed = query.trim();
+
+    // Check if it looks like an order ID (QR code) - regardless of mode
+    // Square order IDs are typically alphanumeric and 10+ characters
+    const orderIdPattern = /^[A-Z0-9]{10,}$/i;
+    if (orderIdPattern.test(trimmed) && trimmed.length >= 10) {
+      // This is a QR code - return special type
+      return { type: 'qr', orderId: trimmed, results: [] };
+    }
+
+    // If in QR mode, treat everything as QR code (might be a partial scan)
+    if (isQRMode) {
+      return { type: 'qr', orderId: trimmed, results: [] };
+    }
+
+    // Manual search mode - auto-detect search type
+    let searchType = 'name'; // Default to name search
+
+    // Check for email pattern
+    if (trimmed.includes('@') && trimmed.includes('.')) {
+      searchType = 'email';
+    }
+    // Check for phone pattern (digits, possibly with formatting)
+    else if (/^[\d\s\-\(\)\+]+$/.test(trimmed) && trimmed.replace(/\D/g, '').length >= 10) {
+      searchType = 'phone';
+    }
+    // Check for lot number pattern (format like "BTV 1.111" or "BTV1.111" - alphanumeric with optional spaces and dots)
+    // Pattern 1: Letters followed by optional space and numbers with optional dot (e.g., "BTV 1.111", "BTV1.111")
+    // Pattern 2: Very short alphanumeric (1-3 chars) that are all digits (likely lot codes)
+    // Pattern 3: Contains numbers with dots (e.g., "1.111", "A1.2")
+    // Exclude long alphanumeric strings (10+ chars) as they're likely QR codes
+    else if (
+      trimmed.length < 10 && (  // Lot numbers are typically short
+        /^[A-Z]{2,}\s*\d+\.?\d*$/i.test(trimmed) ||  // "BTV 1.111" or "BTV1.111" format
+        (/^[A-Z0-9]{1,3}$/i.test(trimmed) && /^\d+$/.test(trimmed)) ||  // All digits, 1-3 chars
+        /^\d+\.\d+/.test(trimmed) ||  // Numbers with dot (e.g., "1.111")
+        (/^[A-Z]{1,2}\d+\.?\d*$/i.test(trimmed) && trimmed.length <= 8)  // Short alphanumeric with numbers (e.g., "A1.2", "BTV1.111")
+      )
+    ) {
+      searchType = 'lot';
+    }
+    // If it contains letters, treat as name
+    else if (/[A-Za-z]/.test(trimmed)) {
+      searchType = 'name';
+    }
+    // Otherwise treat as name (default)
+
+    // Perform search
+    const results = await this.searchCustomers(searchType, trimmed);
+
+    return { type: searchType, results };
   }
+
 }
 
 module.exports = new CustomerService(); 

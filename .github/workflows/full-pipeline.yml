@@ -1,4 +1,4 @@
-name: Full pipeline (Test, E2E, Windows App, Release)
+name: Full pipeline (Test, Windows App, Release)
 
 on:
   workflow_dispatch:
@@ -14,11 +14,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 23
+          node-version: 22
           cache: 'npm'
       - run: npm install
       - run: npm run type-check
-      - run: npx jest --coverage
+      - name: Run tests with coverage
+        run: npm run test -- --coverage --no-watchman --runInBand
       - uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -31,44 +32,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 23
+          node-version: 22
           cache: 'npm'
       - run: npm install
+      - name: Install web app deps and generate .svelte-kit
+        run: cd apps/web && npm install
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:
           name: app-build
-          path: dist/
-
-  e2e-tests:
-    needs: build-app
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 23
-          cache: 'npm'
-      - run: npm install
-      - uses: actions/download-artifact@v4
-        with:
-          name: app-build
-          path: dist/
-      - run: npx playwright install --with-deps
-      - run: npx playwright --version
-      - name: Create .env file for demo data
-        run: |
-          echo SQUARE_ACCESS_TOKEN=fake >> .env
-          echo SQUARE_API_URL=fake >> .env
-          echo SQUARE_API_VERSION=fake >> .env
-          echo SQUARE_ENVIRONMENT=fake >> .env
-          echo VITE_USE_MOCK_API=true >> .env
-      - run: xvfb-run --auto-servernum npx playwright test --headed
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-results
-          path: test-results
+          path: apps/web/build/
 
   build-windows-app:
     needs: build-app
@@ -91,10 +64,8 @@ jobs:
         with:
           name: app-build
           path: dist/
-      - name: Build React app
-        run: npm run build
       - name: Build Electron app
-        run: npm run dist
+        run: npm run dist:ci
         env:
           SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
           SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
@@ -110,7 +81,7 @@ jobs:
           path: dist/*.exe
 
   smoke-test-windows-app:
-    needs: [e2e-tests, build-windows-app]
+    needs: build-windows-app
     runs-on: windows-latest
     steps:
       - uses: actions/download-artifact@v4

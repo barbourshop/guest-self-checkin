@@ -1,4 +1,4 @@
-import { mockCustomers, mockWaiverStatus, mockDelays } from './mocks/mockData';
+import { mockCustomers, mockDelays } from './mocks/mockData';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -6,12 +6,89 @@ const API_BASE_URL = 'http://localhost:3000/api';
 export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 /**
+ * Unified search - auto-detects search type
+ * @param {string} query - Search query
+ * @returns {Promise<{type: string, results: Array<any>}>} Search results
+ */
+export async function unifiedSearch(query: string): Promise<{ type: string; results: unknown[] }> {
+  // Always call backend API - backend handles mock vs real data
+  try {
+    const response = await fetch(`${API_BASE_URL}/customers/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, isQRMode: false }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to search');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in unified search:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate QR code (order ID)
+ * @param {string} orderId - Order ID from QR code
+ * @returns {Promise<{valid: boolean, order?: any, customerId?: string, hasMembership?: boolean, reason?: string}>}
+ */
+export async function validateQRCode(orderId: string): Promise<{
+  valid: boolean;
+  order?: { id: string };
+  customerId?: string;
+  hasMembership?: boolean;
+  reason?: string;
+}> {
+  if (USE_MOCK_API) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, mockDelays.search));
+    
+    // Mock: accept any order ID that looks valid
+    const isValid = /^[A-Z0-9]{10,}$/i.test(orderId);
+    return {
+      valid: isValid,
+      order: isValid ? { id: orderId } : undefined,
+      customerId: isValid ? 'MOCK_CUSTOMER_1' : undefined,
+      hasMembership: isValid,
+      reason: isValid ? undefined : 'Invalid QR code'
+    };
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/customers/validate-qr`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ orderId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to validate QR code');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error validating QR code:', error);
+    return {
+      valid: false,
+      reason: 'An issue with check-in, please see the manager on duty'
+    };
+  }
+}
+
+/**
  * Search for customers by email, phone, or lot number
  * @param {string} type - Search type (email, phone, lot)
  * @param {string} query - Search query
- * @returns {Promise<Array<any>>} Array of customer objects
+ * @returns {Promise<unknown[]>} Array of customer objects
  */
-export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: string): Promise<any[]> {
+export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: string): Promise<unknown[]> {
   if (USE_MOCK_API) {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, mockDelays.search));
@@ -53,109 +130,62 @@ export async function searchCustomers(type: 'email' | 'phone' | 'lot', query: st
 }
 
 /**
- * Check if a customer has signed the waiver
- * @param {string} customerId - Customer ID
- * @returns {Promise<boolean>} True if waiver is signed
- */
-export async function checkWaiverStatus(customerId: string): Promise<boolean> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverCheck));
-    return mockWaiverStatus[customerId] || false;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/waivers/check-waiver/${customerId}`);
-
-    if (!response.ok) {
-      throw new Error('Failed to check waiver status');
-    }
-
-    const data = await response.json();
-    return data.hasSignedWaiver;
-  } catch (error) {
-    console.error('Error checking waiver status:', error);
-    return false;
-  }
-}
-
-/**
- * Sign the waiver for a customer
- * @param {string} customerId - Customer ID
- * @returns {Promise<boolean>} True if successful
- */
-export async function signWaiver(customerId: string): Promise<boolean> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, mockDelays.waiverSign));
-    mockWaiverStatus[customerId] = true;
-    return true;
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/waivers/set-waiver/${customerId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to sign waiver');
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error signing waiver:', error);
-    return false;
-  }
-}
-
-/**
  * Log a customer check-in
- * @param {string} customerId - Customer ID
+ * Supports both manual check-in (customerId) and QR code check-in (orderId)
+ * @param {string} customerId - Customer ID (for manual check-in)
  * @param {number} guestCount - Number of guests
  * @param {string} firstName - Customer first name
  * @param {string} lastName - Customer last name
  * @param {string} lotNumber - Lot number
- * @returns {Promise<boolean>} True if successful
+ * @param {string} orderId - Order ID (for QR code check-in)
+ * @returns {Promise<{success: boolean, queued?: boolean, message?: string}>} Result object
  */
 export async function logCheckIn(
   customerId: string,
   guestCount: number,
   firstName: string,
   lastName: string,
-  lotNumber?: string
-): Promise<boolean> {
-  if (USE_MOCK_API) {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return true;
-  }
+  lotNumber?: string,
+  orderId?: string
+): Promise<{success: boolean, queued?: boolean, message?: string}> {
+  // Always call backend - backend handles mock vs real Square service
+  // USE_MOCK_API should not bypass backend for check-ins (unlike search which can use local mock data)
 
   try {
+    const requestBody = {
+      customerId,
+      orderId,
+      guestCount,
+      firstName,
+      lastName,
+      lotNumber,
+    };
+    
     const response = await fetch(`${API_BASE_URL}/customers/check-in`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        customerId,
-        guestCount,
-        firstName,
-        lastName,
-        lotNumber,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to log check-in');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to log check-in');
     }
 
-    return true;
+    const data = await response.json();
+    return {
+      success: data.success || true,
+      queued: data.queued || false,
+      message: data.message
+    };
   } catch (error) {
     console.error('Error logging check-in:', error);
-    return false;
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'An issue with check-in, please see the manager on duty'
+    };
   }
 }
 
@@ -185,6 +215,29 @@ export async function fetchCustomerNames(): Promise<Array<{id: string, given_nam
     return await response.json();
   } catch (error) {
     console.error('Error fetching customer names:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get database contents for admin view
+ * @returns {Promise<{membershipCache: Array<any>, checkinQueue: Array<any>, checkinLog: Array<any>}>}
+ */
+export async function getDatabaseContents(): Promise<{
+  membershipCache: unknown[];
+  checkinQueue: unknown[];
+  checkinLog: unknown[];
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/database`);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch database contents');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching database contents:', error);
     throw error;
   }
 }
