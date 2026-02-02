@@ -1,6 +1,6 @@
 {
   "name": "front-desk-app",
-  "version": "2.0.1",
+  "version": "2026.0.1",
   "main": "main.js",
   "scripts": {
     "type-check": "tsc --noEmit",
