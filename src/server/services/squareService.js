@@ -283,6 +283,39 @@ class SquareService {
   }
 
   /**
+   * List customer segments from Square API (GET /v2/customers/segments).
+   * Follows cursor pagination and returns all segments.
+   * @returns {Promise<Array<{id: string, name: string, created_at?: string, updated_at?: string}>>}
+   */
+  async listCustomerSegments() {
+    const allSegments = [];
+    let cursor = null;
+
+    do {
+      const url = new URL(`${SQUARE_API_CONFIG.baseUrl}/customers/segments`);
+      if (cursor) url.searchParams.set('cursor', cursor);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: SQUARE_API_CONFIG.headers
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const detail = errorData.errors?.[0]?.detail || `Square API error: ${response.status}`;
+        throw new Error(detail);
+      }
+
+      const data = await response.json();
+      const segments = data.segments || [];
+      allSegments.push(...segments);
+      cursor = data.cursor || null;
+    } while (cursor);
+
+    return allSegments;
+  }
+
+  /**
    * Check if a customer has an active membership
    * @param {string} customerId - Square customer ID
    * @returns {Promise<boolean>} True if customer has active membership

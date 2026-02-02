@@ -1,70 +1,70 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { validatePass } from '$lib';
-	import type { SearchResult, PassValidationResponse } from '$lib';
+	import type { SearchResult } from '$lib';
 	import OrderIdCard from '$lib/components/OrderIdCard.svelte';
 	import { Home } from 'lucide-svelte';
 
-	let passResponse: PassValidationResponse | null = null;
-	let passError = '';
-	let isValidatingPass = false;
+	/** Name to show on the card and to encode in the barcode/QR. When set, we show the card. */
+	let displayName: string | null = null;
 	let useQRCode = false; // Default to barcode
 	let variantDescription: string | null = null;
 	let customer: SearchResult | null = null;
 	let cardComponent: OrderIdCard | null = null;
 	let isDownloading = false;
+	let returnTo: string | null = null;
+	let needsManualEntry = false;
+	let manualCustomerName = '';
+	let manualVariantDescription = '';
+	let formError = '';
 
-	// Load data from URL parameters
 	onMount(() => {
 		const url = $page.url;
-		const orderIdParam = url.searchParams.get('orderId');
 		const customerNameParam = url.searchParams.get('customerName');
 		const variantDescriptionParam = url.searchParams.get('variantDescription');
-
-		// Validate that required orderId is present
-		if (!orderIdParam) {
-			passError = 'Missing orderId parameter in URL';
-			return;
+		const returnToParam = url.searchParams.get('returnTo');
+		if (returnToParam) {
+			returnTo = returnToParam.startsWith('/') ? returnToParam : `/${returnToParam}`;
 		}
 
-		// Create customer object from URL params
 		if (customerNameParam) {
-			customer = {
-				displayName: decodeURIComponent(customerNameParam.replace(/\+/g, ' ')),
-				contact: {},
-				membership: { type: 'Member' },
-				customerHash: ''
-			};
+			displayName = decodeURIComponent(customerNameParam.replace(/\+/g, ' ')).trim() || null;
+			customer = displayName
+				? {
+						displayName,
+						contact: {},
+						membership: { type: 'Member' },
+						customerHash: ''
+					}
+				: null;
+			if (variantDescriptionParam) {
+				variantDescription = decodeURIComponent(variantDescriptionParam.replace(/\+/g, ' '));
+			}
+		} else {
+			needsManualEntry = true;
 		}
-
-		// Get variant description from URL
-		if (variantDescriptionParam) {
-			variantDescription = decodeURIComponent(variantDescriptionParam.replace(/\+/g, ' '));
-		}
-
-		// Auto-validate order ID
-		handlePassValidation(orderIdParam);
 	});
 
-	async function handlePassValidation(orderId: string) {
-		if (isValidatingPass) return; // Prevent duplicate calls
-		isValidatingPass = true;
-		passError = '';
-		passResponse = null;
-		try {
-			passResponse = await validatePass({
-				token: orderId.trim()
-			});
-		} catch (error) {
-			passError = (error as Error).message;
-		} finally {
-			isValidatingPass = false;
+	function submitManualEntry() {
+		const name = manualCustomerName.trim();
+		if (!name) {
+			formError = 'Enter a customer name';
+			return;
 		}
+		formError = '';
+		displayName = name;
+		customer = {
+			displayName: name,
+			contact: {},
+			membership: { type: 'Member' },
+			customerHash: ''
+		};
+		variantDescription = manualVariantDescription.trim() || null;
+		needsManualEntry = false;
 	}
 
 	async function handleDownload() {
-		if (!cardComponent || isDownloading || !passResponse?.order?.id) return;
+		if (!cardComponent || isDownloading || !displayName) return;
 		isDownloading = true;
 		try {
 			await cardComponent.downloadCard();
@@ -83,22 +83,53 @@
 				<h1>Member Card</h1>
 				<p>View and download your membership card</p>
 			</div>
-			<a href="/" class="home-link">
+			<a href={returnTo || '/'} class="home-link">
 				<Home class="home-icon" />
-				<span>Home</span>
+				<span>{returnTo === '/admin' ? 'Back to Admin' : returnTo ? 'Back' : 'Home'}</span>
 			</a>
 		</div>
 	</div>
 
-	{#if passError}
+	{#if formError}
 		<div class="error-banner">
-			<p class="error">{passError}</p>
+			<p class="error">{formError}</p>
 		</div>
-	{:else if isValidatingPass}
-		<div class="loading-state">
-			<p>Loading member card...</p>
+	{/if}
+	{#if needsManualEntry}
+		<div class="manual-entry-card">
+			<h2>Enter member name</h2>
+			<p class="manual-entry-hint">The barcode or QR code will encode this name. Use it from the Membership list in Admin (QR/Barcode for a member) or enter a name below.</p>
+			<form
+				class="manual-entry-form"
+				on:submit|preventDefault={submitManualEntry}
+			>
+				<div class="form-row">
+					<label for="manual-customer-name">Member name <span class="required">*</span></label>
+					<input
+						id="manual-customer-name"
+						type="text"
+						bind:value={manualCustomerName}
+						placeholder="e.g. Jane Smith"
+						class="form-input"
+						autocomplete="off"
+					/>
+				</div>
+				<div class="form-row">
+					<label for="manual-variant">Membership type (optional)</label>
+					<input
+						id="manual-variant"
+						type="text"
+						bind:value={manualVariantDescription}
+						placeholder="e.g. Annual Member"
+						class="form-input"
+					/>
+				</div>
+				<button type="submit" class="submit-button">
+					Generate card
+				</button>
+			</form>
 		</div>
-	{:else if passResponse}
+	{:else if displayName}
 		<div class="content-split">
 			<div class="left-panel">
 				<div class="card-options">
@@ -107,14 +138,14 @@
 						<span>Use QR Code (instead of barcode)</span>
 					</label>
 				</div>
-				<button class="download-button" on:click={handleDownload} disabled={isDownloading || !passResponse?.order?.id}>
-					{isDownloading ? 'Downloading...' : 'Download ID Card (PNG)'}
+				<button class="download-button" on:click={handleDownload} disabled={isDownloading}>
+					{isDownloading ? 'Downloading…' : 'Download ID Card (PNG)'}
 				</button>
 			</div>
 			<div class="right-panel">
 				<OrderIdCard
 					bind:this={cardComponent}
-					order={passResponse.order}
+					encodedValue={displayName}
 					{customer}
 					{useQRCode}
 					{variantDescription}
@@ -123,7 +154,7 @@
 		</div>
 	{:else}
 		<div class="error-banner">
-			<p class="error">Missing required parameters. Please provide orderId, customerName, and variantDescription in the URL.</p>
+			<p class="error">Enter a member name above or open a member from the Admin Membership list.</p>
 		</div>
 	{/if}
 </main>
@@ -294,6 +325,88 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.manual-entry-card {
+		background: white;
+		border-radius: 12px;
+		padding: 1.5rem;
+		box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+		max-width: 420px;
+		flex: 1;
+		align-self: start;
+	}
+
+	.manual-entry-card h2 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.25rem;
+		color: #1f2937;
+	}
+
+	.manual-entry-hint {
+		color: #6b7280;
+		font-size: 0.875rem;
+		line-height: 1.5;
+		margin: 0 0 1.25rem 0;
+	}
+
+	.manual-entry-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.form-row {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.form-row label {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #374151;
+	}
+
+	.form-row label .required {
+		color: #b91c1c;
+	}
+
+	.form-input {
+		padding: 0.5rem 0.75rem;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-family: inherit;
+	}
+
+	.form-input:focus {
+		outline: none;
+		border-color: #2563eb;
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+	}
+
+	.submit-button {
+		padding: 0.75rem 1.5rem;
+		background: #2563eb;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s;
+		font-family: inherit;
+		margin-top: 0.25rem;
+	}
+
+	.submit-button:hover:not(:disabled) {
+		background: #1d4ed8;
+	}
+
+	.submit-button:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	@media (max-width: 640px) {

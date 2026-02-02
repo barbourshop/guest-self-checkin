@@ -7,6 +7,7 @@ class MockSquareService {
     // Default test data
     this.customers = new Map();
     this.orders = new Map();
+    this.segments = []; // Customer segments for listCustomerSegments
     this.shouldFail = false;
     this.failOnMethod = null; // 'search', 'getOrder', 'searchOrders', etc.
     this.networkDelay = 0;
@@ -47,6 +48,7 @@ class MockSquareService {
   reset() {
     this.customers.clear();
     this.orders.clear();
+    this.segments = [];
     this.shouldFail = false;
     this.failOnMethod = null;
     this.networkDelay = 0;
@@ -146,6 +148,14 @@ class MockSquareService {
       throw new Error('Customer not found');
     }
     return customer;
+  }
+
+  /**
+   * Mock list customer segments (GET /v2/customers/segments)
+   */
+  async listCustomerSegments() {
+    await this._checkFailure('listCustomerSegments');
+    return this.segments || [];
   }
 
   /**

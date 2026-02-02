@@ -37,7 +37,7 @@ All Square API data (which uses `snake_case` field names) is transformed to fron
 ```typescript
 {
   query: {
-    type: 'phone' | 'email' | 'lot';
+    type: 'phone' | 'email' | 'lot' | 'name' | 'customer_id';
     value: string;
     fuzzy?: boolean;
   };
@@ -280,6 +280,72 @@ GET /api/customers/CUSTOMER_MEMBER_3/orders?catalogItemId=MEMBERSHIP_CATALOG_ITE
       }
     }
   ]
+}
+```
+
+### POST /api/customers/check-in/daypass
+
+Anonymous day-pass check-in (no customer search). Used when the front desk sells a day pass on the spot. Recorded with `customer_id = 'DAYPASS'` and `checkin_type = 'daypass'` in the check-in log.
+
+**Request Body**:
+```typescript
+{
+  guestCount: number; // At least 1
+}
+```
+
+**Response**:
+```typescript
+{
+  success: true;
+  checkIn: {
+    customerId: 'DAYPASS';
+    orderId: null;
+    guestCount: number;
+    checkinType: 'daypass';
+  };
+}
+```
+
+**Example Request**:
+```json
+{ "guestCount": 2 }
+```
+
+**Example Response**:
+```json
+{
+  "success": true,
+  "checkIn": {
+    "customerId": "DAYPASS",
+    "orderId": null,
+    "guestCount": 2,
+    "checkinType": "daypass"
+  }
+}
+```
+
+### POST /api/customers/check-in
+
+Member check-in (after search or card scan). Requires `customerId`, `guestCount`, `firstName`, `lastName`. Recorded with `checkin_type = 'member'` in the check-in log.
+
+**Request Body**:
+```typescript
+{
+  customerId: string;
+  guestCount: number;
+  firstName: string;
+  lastName: string;
+  orderId?: string;
+  lotNumber?: string;
+}
+```
+
+**Response**:
+```typescript
+{
+  success: true;
+  checkIn: { customerId, orderId?, guestCount, firstName, lastName, lotNumber? };
 }
 ```
 

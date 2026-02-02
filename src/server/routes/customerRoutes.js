@@ -21,7 +21,8 @@ router.get('/admin/:customerId', asyncHandler(customerController.getCustomerDeta
 
 router.get('/list', asyncHandler(customerController.listCustomers));
 
-// Check-in endpoints
+// Check-in endpoints (daypass before generic so path is matched)
+router.post('/check-in/daypass', asyncHandler((req, res, next) => customerController.logDayPassCheckIn(req, res, next)));
 router.post('/check-in', asyncHandler((req, res, next) => customerController.logCheckIn(req, res, next)));
 
 // QR code validation endpoint (wrap so controller "this" is preserved)

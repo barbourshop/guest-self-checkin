@@ -327,8 +327,19 @@ class MembershipCache {
     try {
       const likePattern = fuzzy ? `%${value}%` : value;
       let stmt;
-      const params = [likePattern];
+      let params = [likePattern];
       switch (searchType) {
+        case 'customer_id':
+          // Exact match on customer_id (e.g. from scanned card)
+          stmt = this.db.prepare(`
+            SELECT customer_id, has_membership, segment_ids, last_verified_at,
+                   given_name, family_name, email_address, phone_number, reference_id,
+                   address_line_1, locality, postal_code
+            FROM membership_cache
+            WHERE customer_id = ?
+          `);
+          params = [value];
+          break;
         case 'phone':
           stmt = this.db.prepare(`
             SELECT customer_id, has_membership, segment_ids, last_verified_at,
@@ -366,7 +377,7 @@ class MembershipCache {
                OR (given_name || ' ' || family_name) LIKE ?
                OR (family_name || ' ' || given_name) LIKE ?
           `);
-          params.push(likePattern, likePattern, likePattern);
+          params = [likePattern, likePattern, likePattern, likePattern];
           break;
         default:
           return [];

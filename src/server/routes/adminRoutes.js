@@ -14,6 +14,7 @@ router.post('/cache/clear', asyncHandler(adminController.clearCache.bind(adminCo
 
 // Customer segments (Square segment ID + display name)
 router.get('/segments', asyncHandler(adminController.getSegments.bind(adminController)));
+router.get('/segments/square', asyncHandler(adminController.getSquareSegments.bind(adminController)));
 router.post('/segments', asyncHandler(adminController.addSegment.bind(adminController)));
 router.put('/segments/:segmentId', asyncHandler(adminController.updateSegment.bind(adminController)));
 router.delete('/segments/:segmentId', asyncHandler(adminController.deleteSegment.bind(adminController)));
