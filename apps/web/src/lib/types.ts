@@ -1,6 +1,6 @@
 export type SearchRequestPayload = {
 	query: {
-		type: 'phone' | 'email' | 'lot' | 'name';
+		type: 'phone' | 'email' | 'lot' | 'name' | 'customer_id';
 		value: string;
 		fuzzy?: boolean;
 	};

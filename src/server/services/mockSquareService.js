@@ -7,6 +7,7 @@ class MockSquareService {
     // Default test data
     this.customers = new Map();
     this.orders = new Map();
+    this.segments = []; // Customer segments for listCustomerSegments
     this.shouldFail = false;
     this.failOnMethod = null; // 'search', 'getOrder', 'searchOrders', etc.
     this.networkDelay = 0;
@@ -47,6 +48,7 @@ class MockSquareService {
   reset() {
     this.customers.clear();
     this.orders.clear();
+    this.segments = [];
     this.shouldFail = false;
     this.failOnMethod = null;
     this.networkDelay = 0;
@@ -149,6 +151,14 @@ class MockSquareService {
   }
 
   /**
+   * Mock list customer segments (GET /v2/customers/segments)
+   */
+  async listCustomerSegments() {
+    await this._checkFailure('listCustomerSegments');
+    return this.segments || [];
+  }
+
+  /**
    * Mock get order by ID
    */
   async getOrder(orderId) {
@@ -192,20 +202,20 @@ class MockSquareService {
   }
 
   /**
-   * Mock search customers by segment (returns customer IDs in the segment)
+   * Mock search customers by segment (returns full customer objects in the segment)
    */
   async searchCustomersBySegment(segmentId) {
     await this._checkFailure('searchCustomersBySegment');
     if (!segmentId) {
       throw new Error('Segment ID is required');
     }
-    const ids = [];
+    const customers = [];
     for (const [id, customer] of this.customers) {
-      if (customer.segment_ids?.includes(segmentId)) {
-        ids.push(id);
+      if (customer.segment_ids?.includes(segmentId) && customer && id) {
+        customers.push({ ...customer, id });
       }
     }
-    return ids;
+    return customers;
   }
 
   /**

@@ -3,9 +3,10 @@
 	import JsBarcode from 'jsbarcode';
 	import QRCode from 'qrcode';
 	import html2canvas from 'html2canvas';
-	import type { PassValidationResponse, SearchResult } from '../types';
+	import type { SearchResult } from '../types';
 
-	export let order: PassValidationResponse['order'];
+	/** Text to encode in the barcode or QR code (e.g. customer name). */
+	export let encodedValue: string;
 	export let customer: SearchResult | null = null;
 	export let useQRCode: boolean = false; // Toggle between barcode and QR code
 	export let variantDescription: string | null = null; // For display on card
@@ -22,9 +23,9 @@
 	}
 
 	function generateBarcode() {
-		if (barcodeSvg && order?.id) {
+		if (barcodeSvg && encodedValue) {
 			try {
-				JsBarcode(barcodeSvg, order.id, {
+				JsBarcode(barcodeSvg, encodedValue, {
 					format: 'CODE128',
 					width: 3,
 					height: 120,
@@ -39,12 +40,11 @@
 	}
 
 	async function generateQRCode() {
-		if (!qrCodeCanvas || !order?.id) return;
+		if (!qrCodeCanvas || !encodedValue) return;
 
 		try {
-			// Generate QR code at a reasonable size that fits in the card
-			const qrSize = 250; // Slightly smaller to fit better
-			const dataUrl = await QRCode.toDataURL(order.id, {
+			const qrSize = 250;
+			const dataUrl = await QRCode.toDataURL(encodedValue, {
 				width: qrSize,
 				margin: 2,
 				color: {
@@ -54,10 +54,9 @@
 			});
 			qrCodeDataUrl = dataUrl;
 
-			// Set canvas size to match QR code
 			qrCodeCanvas.width = qrSize;
 			qrCodeCanvas.height = qrSize;
-			
+
 			const ctx = qrCodeCanvas.getContext('2d');
 			if (ctx) {
 				const img = new Image();
@@ -73,28 +72,23 @@
 	}
 
 	async function downloadAsPNG() {
-		if (!cardElement || !order?.id || isDownloading) return;
+		if (!cardElement || !encodedValue || isDownloading) return;
 
 		isDownloading = true;
 		try {
-			// ID card dimensions: 2.125" × 3.375" (portrait) at 300 DPI
-			// That's approximately 637.5px × 1012.5px, we'll use 640px × 1013px
 			const cardWidth = 640;
 			const cardHeight = 1013;
-			const scale = 2; // Higher resolution for better quality
+			const scale = 2;
 
-			// Store original styles
 			const originalWidth = cardElement.style.width;
 			const originalMaxWidth = cardElement.style.maxWidth;
 			const originalAspectRatio = cardElement.style.aspectRatio;
 
-			// Temporarily set exact dimensions for capture
 			cardElement.style.width = `${cardWidth}px`;
 			cardElement.style.maxWidth = `${cardWidth}px`;
 			cardElement.style.aspectRatio = 'none';
 			cardElement.style.height = `${cardHeight}px`;
 
-			// Wait a moment for styles to apply
 			await new Promise(resolve => setTimeout(resolve, 100));
 
 			const canvas = await html2canvas(cardElement, {
@@ -104,15 +98,14 @@
 				logging: false
 			});
 
-			// Restore original styles
 			cardElement.style.width = originalWidth;
 			cardElement.style.maxWidth = originalMaxWidth;
 			cardElement.style.aspectRatio = originalAspectRatio;
 			cardElement.style.height = '';
 
-			// Create download link
+			const safeName = encodedValue.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80) || 'member';
 			const link = document.createElement('a');
-			link.download = `order-${order.id}-id-card.png`;
+			link.download = `member-card-${safeName}.png`;
 			link.href = canvas.toDataURL('image/png');
 			link.click();
 		} catch (error) {
@@ -123,7 +116,7 @@
 		}
 	}
 
-	$: if (order?.id) {
+	$: if (encodedValue) {
 		if (useQRCode) {
 			generateQRCode();
 		} else if (barcodeSvg) {

@@ -83,7 +83,8 @@ function initDatabase(dbPath = null) {
         order_id TEXT,
         guest_count INTEGER NOT NULL,
         timestamp TEXT NOT NULL,
-        synced_to_square INTEGER NOT NULL DEFAULT 0
+        synced_to_square INTEGER NOT NULL DEFAULT 0,
+        checkin_type TEXT NOT NULL DEFAULT 'member'
       );
       
       CREATE INDEX IF NOT EXISTS idx_customer_segments_sort ON customer_segments(sort_order);
@@ -115,6 +116,16 @@ function initDatabase(dbPath = null) {
       } catch (e) {
         if (!/duplicate column name/i.test(e.message)) throw e;
       }
+    }
+  }
+
+  // Migration: add checkin_type to checkin_log if not present
+  const checkinLogColumns = db.prepare('PRAGMA table_info(checkin_log)').all().map(r => r.name);
+  if (!checkinLogColumns.includes('checkin_type')) {
+    try {
+      db.prepare(`ALTER TABLE checkin_log ADD COLUMN checkin_type TEXT NOT NULL DEFAULT 'member'`).run();
+    } catch (e) {
+      if (!/duplicate column name/i.test(e.message)) throw e;
     }
   }
 

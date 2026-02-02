@@ -167,14 +167,14 @@ class CustomerController {
       const { type, value, fuzzy = true } = query; // Default to fuzzy=true for better UX
 
       // Validate search type
-      if (!['phone', 'email', 'lot', 'name'].includes(type)) {
-        return res.status(400).json({ error: `Invalid search type: ${type}. Must be 'phone', 'email', 'lot', or 'name'` });
+      if (!['phone', 'email', 'lot', 'name', 'customer_id'].includes(type)) {
+        return res.status(400).json({ error: `Invalid search type: ${type}. Must be 'phone', 'email', 'lot', 'name', or 'customer_id'` });
       }
 
-      // Search local membership cache (same source as admin view)
+      // Search local membership cache (same source as admin view); customer_id uses exact match
       const MembershipCache = require('../services/membershipCache');
       const membershipCache = new MembershipCache();
-      const cacheRows = membershipCache.searchCache(type, value, fuzzy);
+      const cacheRows = membershipCache.searchCache(type, value, type === 'customer_id' ? false : fuzzy);
 
       const SegmentService = require('../services/segmentService');
       const segmentService = new SegmentService();
@@ -360,13 +360,13 @@ class CustomerController {
       // Log the check-in as a CSV row
       logCheckInCSV({ customerId, guestCount, firstName, lastName, lotNumber });
       
-      // Also log to database
+      // Also log to database (checkin_type = 'member' for search/scan check-ins)
       try {
         const db = initDatabase();
         const result = db.prepare(`
           INSERT INTO checkin_log 
-          (customer_id, order_id, guest_count, timestamp, synced_to_square)
-          VALUES (?, ?, ?, ?, ?)
+          (customer_id, order_id, guest_count, timestamp, synced_to_square, checkin_type)
+          VALUES (?, ?, ?, ?, ?, 'member')
         `).run(
           customerId,
           orderId || null, // Optional; orders are not verified
@@ -430,6 +430,67 @@ class CustomerController {
         }
       }
       
+      next(error);
+    }
+  }
+
+  /**
+   * Log an anonymous day-pass check-in (no customer search).
+   * Used when front desk sells a day pass on the spot.
+   * POST /api/customers/check-in/daypass
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   */
+  async logDayPassCheckIn(req, res, next) {
+    try {
+      const { guestCount } = req.body;
+
+      const guestCountNum = typeof guestCount === 'number' ? Math.floor(guestCount) : parseInt(guestCount, 10);
+      if (Number.isNaN(guestCountNum) || guestCountNum < 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'Guest count must be at least 1'
+        });
+      }
+
+      const timestamp = new Date().toISOString();
+      logCheckInCSV({
+        customerId: 'DAYPASS',
+        guestCount: guestCountNum,
+        firstName: 'Day pass',
+        lastName: '',
+        lotNumber: ''
+      });
+
+      try {
+        const db = initDatabase();
+        const result = db.prepare(`
+          INSERT INTO checkin_log 
+          (customer_id, order_id, guest_count, timestamp, synced_to_square, checkin_type)
+          VALUES ('DAYPASS', NULL, ?, ?, 0, 'daypass')
+        `).run(guestCountNum, timestamp);
+        db.close();
+        logger.info(`Day-pass check-in logged: guestCount=${guestCountNum}, insertId=${result.lastInsertRowid}`);
+      } catch (dbError) {
+        const errMsg = dbError && dbError.message ? dbError.message : String(dbError);
+        logger.error(`Error logging day-pass check-in to database: ${errMsg}`);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to log day-pass check-in'
+        });
+      }
+
+      res.json({
+        success: true,
+        checkIn: {
+          customerId: 'DAYPASS',
+          orderId: null,
+          guestCount: guestCountNum,
+          checkinType: 'daypass'
+        }
+      });
+    } catch (error) {
+      logger.error(`Error logging day-pass check-in: ${error.message}`);
       next(error);
     }
   }

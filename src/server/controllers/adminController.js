@@ -16,8 +16,8 @@ class AdminController {
    * @private
    */
   async _enrichWithCustomerDetails(entries, customerIdField = 'customer_id') {
-    // Get unique customer IDs
-    const customerIds = [...new Set(entries.map(entry => entry[customerIdField]).filter(Boolean))];
+    // Get unique customer IDs (exclude DAYPASS - anonymous day-pass check-ins)
+    const customerIds = [...new Set(entries.map(entry => entry[customerIdField]).filter(id => id && id !== 'DAYPASS'))];
     
     // Rate limiting configuration for enrichment
     const ENRICHMENT_DELAY_MS = 500; // 500ms delay between requests
@@ -64,9 +64,22 @@ class AdminController {
       }
     }
     
-    // Enrich entries with customer details
+    // Enrich entries with customer details (day-pass rows get display "Day pass" without calling Square)
     return entries.map(entry => {
       const customerId = entry[customerIdField];
+      if (customerId === 'DAYPASS' || entry.checkin_type === 'daypass') {
+        return {
+          ...entry,
+          given_name: 'Day pass',
+          family_name: '',
+          email_address: '',
+          phone_number: '',
+          reference_id: '',
+          address_line_1: '',
+          locality: '',
+          postal_code: ''
+        };
+      }
       const customerDetails = customerMap.get(customerId) || {
         given_name: '',
         family_name: '',
@@ -77,7 +90,6 @@ class AdminController {
         locality: '',
         postal_code: ''
       };
-      
       return {
         ...entry,
         ...customerDetails
@@ -116,7 +128,7 @@ class AdminController {
       `).all();
       
       const checkinLog = db.prepare(`
-        SELECT id, customer_id, order_id, guest_count, timestamp, synced_to_square
+        SELECT id, customer_id, order_id, guest_count, timestamp, synced_to_square, checkin_type
         FROM checkin_log
         ORDER BY timestamp DESC
         LIMIT 1000
@@ -153,7 +165,14 @@ class AdminController {
       };
       if (!enrich) {
         finalCheckinQueue = checkinQueue.map(row => ({ ...row, ...emptyDetails }));
-        finalCheckinLog = checkinLog.map(row => ({ ...row, ...emptyDetails }));
+        finalCheckinLog = checkinLog.map(row => {
+          const out = { ...row, ...emptyDetails };
+          if (row.checkin_type === 'daypass' || row.customer_id === 'DAYPASS') {
+            out.given_name = 'Day pass';
+            out.family_name = '';
+          }
+          return out;
+        });
       }
       
       const result = {
@@ -231,7 +250,9 @@ class AdminController {
 
       // Start refresh in background (don't await)
       membershipCache.refreshAllCustomers().catch(error => {
-        logger.error('Error during background cache refresh:', error);
+        const msg = error?.message ?? String(error);
+        logger.error(`Error during background cache refresh: ${msg}`);
+        if (error?.stack) logger.error(error.stack);
       });
 
       // Return immediately with initial progress
@@ -263,6 +284,20 @@ class AdminController {
     } catch (error) {
       logger.error(`Error clearing cache: ${error.message}`);
       next(error);
+    }
+  }
+
+  /**
+   * Get customer segments from Square API (for admin UI to pick which to add)
+   */
+  async getSquareSegments(req, res, next) {
+    try {
+      const segments = await squareService.listCustomerSegments();
+      res.json({ segments });
+    } catch (error) {
+      logger.error(`Error listing Square segments: ${error.message}`);
+      res.status(error.message?.includes('401') || error.message?.includes('UNAUTHORIZED') ? 401 : 500)
+        .json({ error: error.message || 'Failed to list Square segments' });
     }
   }
 

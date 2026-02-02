@@ -327,8 +327,19 @@ class MembershipCache {
     try {
       const likePattern = fuzzy ? `%${value}%` : value;
       let stmt;
-      const params = [likePattern];
+      let params = [likePattern];
       switch (searchType) {
+        case 'customer_id':
+          // Exact match on customer_id (e.g. from scanned card)
+          stmt = this.db.prepare(`
+            SELECT customer_id, has_membership, segment_ids, last_verified_at,
+                   given_name, family_name, email_address, phone_number, reference_id,
+                   address_line_1, locality, postal_code
+            FROM membership_cache
+            WHERE customer_id = ?
+          `);
+          params = [value];
+          break;
         case 'phone':
           stmt = this.db.prepare(`
             SELECT customer_id, has_membership, segment_ids, last_verified_at,
@@ -366,7 +377,7 @@ class MembershipCache {
                OR (given_name || ' ' || family_name) LIKE ?
                OR (family_name || ' ' || given_name) LIKE ?
           `);
-          params.push(likePattern, likePattern, likePattern);
+          params = [likePattern, likePattern, likePattern, likePattern];
           break;
         default:
           return [];
@@ -544,17 +555,20 @@ class MembershipCache {
         throw new Error('No customer segments configured. Add segments in Admin → Segments.');
       }
 
-      // 1. For each configured segment, get customer IDs in that segment; build customerId -> [segment_ids]
+      // 1. For each configured segment, get full customer objects from search (no per-customer API calls)
       const customerToSegments = new Map();
+      const customerToData = new Map();
       for (const seg of segments) {
         logger.info(`Fetching customers in segment "${seg.display_name}" (${seg.segment_id})...`);
-        const memberIds = await squareService.searchCustomersBySegment(seg.segment_id);
-        for (const customerId of memberIds) {
-          const existing = customerToSegments.get(customerId) || [];
+        const customers = await squareService.searchCustomersBySegment(seg.segment_id);
+        for (const customer of customers) {
+          if (!customer || !customer.id) continue;
+          const existing = customerToSegments.get(customer.id) || [];
           if (!existing.includes(seg.segment_id)) {
             existing.push(seg.segment_id);
           }
-          customerToSegments.set(customerId, existing);
+          customerToSegments.set(customer.id, existing);
+          customerToData.set(customer.id, customer);
         }
       }
       const memberIds = Array.from(customerToSegments.keys());
@@ -570,15 +584,8 @@ class MembershipCache {
       logger.info('Clearing membership cache...');
       this.db.prepare('DELETE FROM membership_cache').run();
 
-      // 3. Fetch each member's details from Square and insert into cache (with rate limiting)
-      const concurrency = getBulkRefreshConcurrency();
-      const requestDelayMs = getBulkRefreshRequestDelayMs();
-      const rateLimitMs = getBulkRefreshRateLimitMs();
-      let processed = 0;
-      let errors = 0;
-
+      // 3. Insert into cache using data from search response (no extra API calls)
       const extractDetails = (customer) => {
-        // Square may return address (object) or addresses (array); use first available
         const addr = customer.address || (Array.isArray(customer.addresses) && customer.addresses[0]) || {};
         return {
           given_name: customer.given_name || '',
@@ -592,41 +599,37 @@ class MembershipCache {
         };
       };
 
-      for (let i = 0; i < memberIds.length; i += concurrency) {
-        const batch = memberIds.slice(i, i + concurrency);
-        const batchPromises = batch.map(async (customerId, idx) => {
-          if (idx > 0 && requestDelayMs > 0) {
-            await new Promise(r => setTimeout(r, requestDelayMs * idx));
+      let processed = 0;
+      let errors = 0;
+      for (const customerId of memberIds) {
+        try {
+          const customer = customerToData.get(customerId);
+          if (!customer) {
+            errors += 1;
+            continue;
           }
-          try {
-            const customer = await squareService.getCustomer(customerId);
-            const details = extractDetails(customer);
-            const segmentIds = customerToSegments.get(customerId) || [];
-            this._updateCache(customerId, true, segmentIds, details);
-            return null;
-          } catch (err) {
-            logger.warn(`Failed to fetch details for ${customerId}: ${err.message}`);
-            return err;
-          }
-        });
-        const results = await Promise.all(batchPromises);
-        errors += results.filter(Boolean).length;
-        processed += batch.length;
+          const details = extractDetails(customer);
+          const segmentIds = customerToSegments.get(customerId) || [];
+          this._updateCache(customerId, true, segmentIds, details);
+          processed += 1;
+        } catch (err) {
+          logger.warn(`Failed to cache ${customerId}: ${err.message}`);
+          errors += 1;
+        }
         this.refreshProgress.processed = processed;
         this.refreshProgress.errors = errors;
         globalRefreshProgress = { ...this.refreshProgress };
         if (onProgress) {
           onProgress(processed, memberIds.length);
         }
-        if (i + concurrency < memberIds.length && rateLimitMs > 0) {
-          await new Promise(r => setTimeout(r, rateLimitMs));
-        }
       }
 
       logger.info(`Cache refresh complete: ${processed} members in cache (from ${segments.length} segment(s))`);
       return this.refreshProgress;
     } catch (error) {
-      logger.error('Error refreshing all customers:', error);
+      const msg = error?.message ?? String(error);
+      logger.error(`Error refreshing all customers: ${msg}`);
+      if (error?.stack) logger.error(error.stack);
       throw error;
     } finally {
       this.refreshInProgress = false;

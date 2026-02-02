@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult } from '../types';
+import type { SearchRequestPayload, PassValidationPayload, PassValidationResponse, SearchResult, CustomerOrdersResponse } from '../types';
 
 // Use relative paths for API calls (proxied by Vite to http://localhost:3000/api)
 const API_BASE_URL = env.PUBLIC_API_BASE_URL ?? '/api';
@@ -7,24 +7,11 @@ const API_KEY = env.PUBLIC_API_KEY;
 
 async function request<T>(path: string, options: RequestInit): Promise<T> {
 	const headers: Record<string, string> = {
-		'content-type': 'application/json'
+		'content-type': 'application/json',
+		...(options.headers ?? {})
 	};
-	const incoming = options.headers;
-	if (incoming) {
-		if (incoming instanceof Headers) {
-			incoming.forEach((value, key) => {
-				headers[key] = value;
-			});
-		} else if (Array.isArray(incoming)) {
-			for (const [key, value] of incoming) {
-				headers[key] = value;
-			}
-		} else {
-			for (const [key, value] of Object.entries(incoming)) {
-				if (typeof value === 'string') headers[key] = value;
-			}
-		}
-	}
+
+	// Add API key header if provided
 	if (API_KEY) {
 		headers['X-API-Key'] = API_KEY;
 	}
@@ -65,6 +52,18 @@ export async function validatePass(payload: PassValidationPayload): Promise<Pass
 	});
 }
 
+export async function getCustomerOrders(customerId: string, catalogItemId?: string): Promise<CustomerOrdersResponse> {
+	const params = new URLSearchParams();
+	if (catalogItemId) {
+		params.append('catalogItemId', catalogItemId);
+	}
+	const queryString = params.toString();
+	const path = `/customers/${customerId}/orders${queryString ? `?${queryString}` : ''}`;
+	return request<CustomerOrdersResponse>(path, {
+		method: 'GET'
+	});
+}
+
 /**
  * Get customer by ID and transform to SearchResult format
  * Uses the admin endpoint which returns raw customer data, then transforms it
@@ -72,7 +71,7 @@ export async function validatePass(payload: PassValidationPayload): Promise<Pass
 export async function getCustomerById(customerId: string): Promise<SearchResult | null> {
 	try {
 		// Get raw customer data from admin endpoint
-		const customer = await request<Record<string, unknown>>(`/customers/admin/${customerId}`, {
+		const customer = await request<any>(`/customers/admin/${customerId}`, {
 			method: 'GET'
 		});
 
@@ -95,8 +94,7 @@ export async function getCustomerById(customerId: string): Promise<SearchResult 
 			},
 			membership: {
 				type: customer.membershipType || 'Non-Member',
-				segmentIds: [],
-				segmentNames: [],
+				segmentId: '',
 				lastVerifiedAt: new Date().toISOString()
 			},
 			customerHash: ''
@@ -106,3 +104,4 @@ export async function getCustomerById(customerId: string): Promise<SearchResult 
 		return null;
 	}
 }
+

@@ -37,13 +37,15 @@ CREATE TABLE IF NOT EXISTS checkin_queue (
 
 -- Check-in log table
 -- Stores all check-ins for local logging
+-- checkin_type: 'member' = from search/scan; 'daypass' = anonymous day-pass sale
 CREATE TABLE IF NOT EXISTS checkin_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   customer_id TEXT NOT NULL,
   order_id TEXT,
   guest_count INTEGER NOT NULL,
   timestamp TEXT NOT NULL,
-  synced_to_square INTEGER NOT NULL DEFAULT 0
+  synced_to_square INTEGER NOT NULL DEFAULT 0,
+  checkin_type TEXT NOT NULL DEFAULT 'member'
 );
 
 -- Application configuration table
@@ -62,4 +64,5 @@ CREATE INDEX IF NOT EXISTS idx_checkin_queue_created_at ON checkin_queue(created
 CREATE INDEX IF NOT EXISTS idx_checkin_log_timestamp ON checkin_log(timestamp);
 CREATE INDEX IF NOT EXISTS idx_checkin_log_customer_id ON checkin_log(customer_id);
 CREATE INDEX IF NOT EXISTS idx_checkin_log_order_id ON checkin_log(order_id);
+CREATE INDEX IF NOT EXISTS idx_checkin_log_checkin_type ON checkin_log(checkin_type);
 

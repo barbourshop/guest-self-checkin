@@ -1,3 +1,3 @@
 !macro preInit
-  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\Rec Center Check-in"
+  StrCpy $INSTDIR "$LOCALAPPDATA\Programs\Front Desk App"
 !macroend 
