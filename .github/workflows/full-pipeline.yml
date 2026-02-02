@@ -134,7 +134,7 @@ jobs:
         id: find_exe
         run: |
           $exe = $null
-          $userDir = "$env:LOCALAPPDATA\Programs\Rec Center Check-in"
+          $userDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
           if (Test-Path $userDir) {
             $exe = Get-ChildItem $userDir -Filter *.exe -Recurse | Select-Object -First 1
           }
@@ -156,7 +156,7 @@ jobs:
         shell: pwsh
       # - name: Check for 'server is running' log line and absence of fatal errors
       #   run: |
-      #     $userDir = "$env:LOCALAPPDATA\Programs\Rec Center Check-in"
+      #     $userDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
       #     # Look for server.log or app.log
       #     $logFile = Get-ChildItem $userDir -Filter server.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
       #     if (-not $logFile) {
