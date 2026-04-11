@@ -63,7 +63,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-build
-          path: dist/
+          path: apps/web/build
       - name: Build Electron app
         run: npm run dist:ci
         env:
@@ -84,6 +84,10 @@ jobs:
     needs: build-windows-app
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
       - uses: actions/download-artifact@v4
         with:
           name: windows-installer
@@ -140,6 +144,14 @@ jobs:
           }
           if (-not $exe) { throw "App executable not found" }
           echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+      - name: Verify installed bundle (frontend + server next to .exe)
+        run: |
+          $exe = "${{ steps.find_exe.outputs.exe_path }}"
+          $resources = Join-Path (Split-Path $exe -Parent) "resources"
+          Write-Host "Verifying resources at: $resources"
+          if (-not (Test-Path $resources)) { throw "Resources directory not found: $resources" }
+          node src/server/scripts/verifyElectronPack.js --resources $resources
         shell: pwsh
       - name: Run app and check it starts
         run: |
