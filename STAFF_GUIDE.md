@@ -1,129 +1,65 @@
-# Self Check-In App Staff Guide
+# Front desk check-in guide
 
-![Home Page](public/main-page.png)
-\newpage
+Quick steps for staff using the **Front Desk App** (Windows) at Big Trees Village Rec Center.
 
-## 1. UI Walkthrough
+Supervisors and IT: see [ADMIN_GUIDE.md](ADMIN_GUIDE.md) for Square, the Admin screen, and logs.
 
-### Main Search Page
-- **Search Options**: Phone, Email, or Lot number search
-- **Search Button**: Initiates customer lookup
-- **Results List**: Displays matching customers for selection
+---
 
-![Main Search Interface](public/search-interface.png)
+## 1. Open the app
 
-\newpage
+Start **Front Desk App** from the desktop or Start menu (your site may use a slightly different name). Wait until the check-in home screen loads.
 
-### Check-In Page
+---
 
-#### Waiver Signing
-If the customer hasn't signed the waiver yet, they'll see this screen with a QR code to scan and sign. Once they have signed it, click the "I've already signed" button to proceed:
-![Waiver Not Signed](public/member-nowaiversigned.png)
-*Figure 2a: Sign the waiver by scanning the QR code*
+## 2. Home screen — three ways to start
 
-#### Guest Selection
-If the customer has already signed the waiver, they'll see this screen and can select the number of guests they are bringing from the "Select Number of Guests" dropdown list:
-![Waiver Signed](public/member-waiversigned.png)
-*Figure 2b: Waiver is signed, ready for guest selection*
+| Action | When to use it |
+|--------|----------------|
+| **Search** | Look up a member by name, phone, email, address, or lot number. |
+| **Day pass** | Guest paid for a day pass and is **not** in the member list (no name search). |
+| **Scan** | Member has a physical or digital **membership card** to scan. |
 
-The screen will update to show their selection, and can click Check In Now to complete the process:
-![Guest Count Updated](public/check-in-2.png)
+The header reminds you: you can search by name, phone, email, or lot number, **or** scan a membership card.
 
-\newpage
-## 3. Troubleshooting
+---
 
-### Common Issues
+## 3. Check in a member (Search)
 
-#### Customer Marked as Non-Member
-- Verify customer is in "Membership 2025" Square segment by visiting:
-  [Square Customer Directory - Membership 2025](https://app.squareup.com/dashboard/customers/directory/Membership%25202025-gv2:VCB62KZ83D27SADBCX65FGJ5N0)
-- If customer should be a member, contact management to update the customer in Square
+1. Tap **Search** (if the big search card is not already in “search” mode).
+2. Type at least part of the guest’s information, then tap **Search** (or press Enter).
+3. If several people appear, tap the **correct** row. Check name, email or phone, and lot if shown.
+4. The green bar shows **membership** information from Square (segment names). If something looks wrong, stop and get a **supervisor**—do not try to fix Square yourself.
+5. On **Customer details**, choose **Number of guests (including you)** (buttons 1–10), then tap **Check In Now**.
+6. You should see **All Set!** The screen clears after a few seconds for the next guest.
 
-#### Waiver Status Issues
-- **Not Showing as Signed**: 
-  - If waiver was signed but not showing as such:
-    1. Search for the customer manually
-    2. Click the gear icon to open Admin Panel
-    3. Review customer information from Square
-    4. Click the check mark (✓) button to set waiver as signed:
+---
 
-![Check Mark Button](public/admin-view-2.png){ width=200 }
+## 4. Check in a member (Scan card)
 
-- **Incorrectly Showing as Signed**:
-  - Verify customer identity
-  - To reset waiver status:
-    1. Search for the customer manually
-    2. Click the gear icon to open Admin Panel
-    3. Review customer information from Square
-    4. Click the X button to clear waiver status:
+1. Tap **Scan** so the card is the active mode (or use the **Scan Card** flow from the home row).
+2. Scan the card with the scanner, or type the value and tap **Scan** (or press Enter).
+3. If there is **exactly one** match, the app may go straight to **Customer details**. If not, pick the right person from the list, then set guest count and **Check In Now** as in step 5 above.
+4. Confirm **All Set!**
 
-![X Button](public/admin-view-1.png){ width=200 }
+---
 
-\newpage
-## 4. Activity Logs
+## 5. Day pass check-in
 
-### Accessing Logs
-Logs can be accessed in several ways depending on the environment:
+1. Tap **Day pass**.
+2. Choose how many guests (including the purchaser if they are entering).
+3. Tap **Check in day pass**.
+4. Confirm **All Set!** when it appears.
 
-1. **Windows Application**
-   - Open Windows Event Viewer
-   - Navigate to: `Windows Logs > Application`
-   - Filter for events from "Rec Center Check-in" application
-   - Logs are also visible in the application's console window if running in windowed mode
+---
 
-2. **Check-In Metrics CSV Log**
-   - A dedicated CSV file is created for each day in `logs/checkins/` (on the server or app data directory).
-   - The file is named as `MM-DD-YY-check-ins.csv` (e.g., `06-07-24-check-ins.csv`).
-   - This file contains only check-in metrics, one row per check-in, in CSV format.
+## 6. If something goes wrong
 
-### Log Types
-The application logs the following types of events:
-- Search events
-- Check-in events
-- Waiver status changes
-- Error messages and exceptions
-- Square API interactions
-- **Dedicated daily CSV file for check-in metrics (see below)**
+- Message like **“An issue with check-in, please see the manager on duty”** or **“No customers found”** → ask the **manager on duty** or follow your site’s escalation process.
+- Do **not** use the **Admin** (gear) button unless a supervisor asked you to; that screen is for supervisors and IT.
 
-### Example Log Lines
+---
 
-#### Customer Search
-```
-2024-03-15T14:30:22.123Z [ SEARCH ] Type: phone, Query: 5551234567
-2024-03-15T14:30:22.234Z [ SEARCH RESULT ] Found 2 customers
-```
+## 7. After check-in
 
-#### Check-In Events
-```
-2024-03-15T14:35:00.456Z [ CHECK-IN ] Customer ID: ABC123, Guest Count: 2, First Name: John, Last Name: Doe, Lot Number: 123
-```
-
-#### Check-In Metrics CSV Log
-- Each check-in is recorded as a row in a CSV file for the current day.
-- The file is located at:  
-  `logs/checkins/MM-DD-YY-check-ins.csv`
-- The CSV columns are:  
-  `timestamp,customerId,guestCount,firstName,lastName,lotNumber`
-- Example:
-  ```
-  timestamp,customerId,guestCount,firstName,lastName,lotNumber
-  2024-06-07T14:35:00.456Z,ABC123,2,"John","Doe","123"
-  ```
-
-#### Error Messages
-```
-2024-03-15T14:36:00.789Z [ ERROR ] Failed to search customers: Network error
-2024-03-15T14:37:00.123Z [ ERROR ] Failed to update waiver status: Invalid customer ID
-```
-
-### Log Pattern Guide
-- Timestamp format: `YYYY-MM-DDTHH:mm:ss.sssZ`
-- Action types in brackets: `[ ACTION ]`
-- Customer IDs are alphanumeric
-- Error messages include specific error details
-
-### Troubleshooting
-- For application errors, check Windows Event Viewer first
-- For Square API issues, look for logs containing "[ ERROR ]" or "Square API"
-- For check-in issues, search for logs containing "[ CHECK-IN ]"
-- **For auditing or analyzing check-in activity, refer to the daily CSV files in `logs/checkins/`.**
+Nothing else is required on this app. The guest can proceed per your facility’s rules.
