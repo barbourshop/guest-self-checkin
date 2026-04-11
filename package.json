@@ -17,11 +17,12 @@
     "prod:start": "concurrently \"npm run server\" \"npm run dev\" --names \"backend,frontend\" --prefix-colors \"blue,green\"",
     "server:prod": "npm run server",
     "preview": "cd apps/web && npm run preview",
-    "electron:build": "npm run build && electron-builder",
+    "verify:electron-pack": "node src/server/scripts/verifyElectronPack.js",
+    "electron:build": "npm run build && electron-builder && npm run verify:electron-pack",
     "start": "electron .",
-    "pack": "npx electron-builder --dir",
-    "dist": "npm run build && npm prune --omit=dev && npx electron-builder --win --x64",
-    "dist:ci": "npm prune --omit=dev && npx electron-builder --win --x64",
+    "pack": "npx electron-builder --dir && npm run verify:electron-pack",
+    "dist": "npm run build && npm prune --omit=dev && npx electron-builder --win --x64 && npm run verify:electron-pack",
+    "dist:ci": "npm prune --omit=dev && npx electron-builder --win --x64 && npm run verify:electron-pack",
     "reset:local": "node src/server/scripts/resetLocalState.js",
     "reset:local-keep-db": "node src/server/scripts/resetLocalState.js --keep-db",
     "release": "semantic-release"
@@ -37,15 +38,12 @@
       "output": "dist"
     },
     "files": [
-      "dist/**/*",
-      "!dist/win-unpacked{,/**}",
       "src/server/**/*",
       "package.json",
       "main.js"
     ],
     "asar": true,
     "asarUnpack": [
-      "dist/**/*",
       "src/server/**/*",
       "node_modules/**/*"
     ],
@@ -55,11 +53,10 @@
     },
     "extraResources": [
       {
-        "from": "dist",
+        "from": "apps/web/build",
         "to": "dist",
         "filter": [
-          "**/*",
-          "!win-unpacked{,/**}"
+          "**/*"
         ]
       },
       {

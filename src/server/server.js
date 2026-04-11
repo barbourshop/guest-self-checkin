@@ -73,29 +73,50 @@ try {
   app.use('/api/passes', passRoutes);
   
   // Static files (optional when running with dev frontend - API still works without dist)
-  const staticPath = path.join(resourcesPath, 'dist');
+  // Electron packs the Svelte build at resources/dist; local runs use apps/web/build (adapter-static SPA uses 200.html).
+  const staticDirCandidates = [
+    path.join(resourcesPath, 'dist'),
+    path.join(projectRoot, 'apps', 'web', 'build')
+  ];
+  const staticEntryNames = ['index.html', '200.html'];
   let staticPathValid = false;
-  try {
-    const stats = fs.statSync(staticPath);
-    if (stats.isDirectory() && fs.existsSync(path.join(staticPath, 'index.html'))) {
-      staticPathValid = true;
-      app.use(express.static(staticPath, {
-        index: 'index.html',
-        fallthrough: true,
-        redirect: false
-      }));
-      app.get('*', (req, res) => {
-        res.sendFile(path.join(staticPath, 'index.html'), err => {
-          if (err) {
-            log(`Error serving index.html: ${err.message}`);
-            res.status(500).send('Error serving application');
-          }
-        });
-      });
+  let staticPath = null;
+  let staticEntry = null;
+  for (const dir of staticDirCandidates) {
+    let stats;
+    try {
+      stats = fs.statSync(dir);
+    } catch {
+      continue;
     }
-  } catch (err) {
-    // dist not found - normal when using dev frontend (npm run prod = server + dev)
-    log(`WARNING: Static path not found (${staticPath}). API only. Run 'npm run build' to serve the app from this server.`);
+    if (!stats.isDirectory()) continue;
+    for (const name of staticEntryNames) {
+      if (fs.existsSync(path.join(dir, name))) {
+        staticPath = dir;
+        staticEntry = name;
+        break;
+      }
+    }
+    if (staticPath) break;
+  }
+  if (staticPath && staticEntry) {
+    staticPathValid = true;
+    app.use(express.static(staticPath, {
+      index: staticEntry,
+      fallthrough: true,
+      redirect: false
+    }));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(staticPath, staticEntry), err => {
+        if (err) {
+          log(`Error serving ${staticEntry}: ${err.message}`);
+          res.status(500).send('Error serving application');
+        }
+      });
+    });
+    log(`Serving static frontend from ${staticPath} (entry: ${staticEntry})`);
+  } else {
+    log(`WARNING: No built frontend found (tried: ${staticDirCandidates.join(', ')}). API only. Run 'npm run build' to serve the app from this server.`);
   }
   if (!staticPathValid) {
     app.get('/', (req, res) => {
