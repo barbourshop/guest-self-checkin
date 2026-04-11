@@ -1,8 +1,10 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
+
+const TOKEN_FILENAME = 'square-access-token.txt';
 
 // Enhanced console logging
 console.log('Starting main process...');
@@ -52,6 +54,127 @@ log('Main process starting...');
 log(`Log file: ${logFile}`);
 log(`Process ID: ${process.pid}`);
 
+function getTokenFilePath() {
+  return path.join(app.getPath('userData'), TOKEN_FILENAME);
+}
+
+function readStoredAccessToken() {
+  try {
+    const p = getTokenFilePath();
+    if (fs.existsSync(p)) {
+      return fs.readFileSync(p, 'utf8').trim();
+    }
+  } catch (err) {
+    log(`Could not read stored token: ${err.message}`);
+  }
+  return '';
+}
+
+/** Optional: token pre-placed in resources/.env (e.g. imaging). */
+function readTokenFromBundledEnv() {
+  try {
+    const envPath = path.join(process.resourcesPath, '.env');
+    if (!fs.existsSync(envPath)) return '';
+    const text = fs.readFileSync(envPath, 'utf8');
+    const m = text.match(/^\s*SQUARE_ACCESS_TOKEN\s*=\s*(.*)$/m);
+    if (!m) return '';
+    return m[1].trim().replace(/^["']|["']$/g, '');
+  } catch (err) {
+    return '';
+  }
+}
+
+function getEffectiveAccessToken() {
+  return (
+    readStoredAccessToken() ||
+    readTokenFromBundledEnv() ||
+    String(process.env.SQUARE_ACCESS_TOKEN || '').trim()
+  );
+}
+
+function showAccessTokenSetup() {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    const win = new BrowserWindow({
+      width: 520,
+      height: 340,
+      show: true,
+      resizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+
+    const finishOk = () => {
+      if (finished) return;
+      finished = true;
+      if (!win.isDestroyed()) win.close();
+      resolve();
+    };
+
+    const finishCancel = () => {
+      if (finished) return;
+      finished = true;
+      reject(new Error('Square access token was not provided.'));
+    };
+
+    win.on('closed', () => {
+      if (finished) return;
+      finishCancel();
+    });
+
+    ipcMain.once('square-access-token-saved', (event, raw) => {
+      const token = String(raw || '').trim();
+      if (!token) {
+        dialog.showMessageBox(win, {
+          type: 'warning',
+          title: 'Front Desk App',
+          message: 'Paste your Square access token, then click Continue again.'
+        });
+        return;
+      }
+      try {
+        fs.writeFileSync(getTokenFilePath(), token, { encoding: 'utf8' });
+        log('Square access token saved.');
+        finishOk();
+      } catch (err) {
+        log(`Failed to save token: ${err.message}`);
+        dialog.showErrorBox('Could not save', err.message);
+      }
+    });
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Front Desk App — Setup</title>
+</head>
+<body style="font-family:system-ui,sans-serif;margin:24px;line-height:1.4">
+  <h1 style="font-size:1.25rem;margin:0 0 8px">Welcome</h1>
+  <p style="margin:0 0 16px;color:#444">
+    Paste your <strong>Square access token</strong> (from the Square Developer Dashboard or your administrator). This is saved only on this computer.
+  </p>
+  <label for="t" style="display:block;font-size:0.85rem;margin-bottom:6px">Access token</label>
+  <input id="t" type="password" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px" />
+  <button id="b" type="button" style="margin-top:18px;padding:10px 20px;font-size:14px;border-radius:6px;border:none;background:#0d6efd;color:#fff;cursor:pointer">Continue</button>
+  <script>
+    const { ipcRenderer } = require('electron');
+    document.getElementById('b').onclick = () => {
+      ipcRenderer.send('square-access-token-saved', document.getElementById('t').value);
+    };
+    document.getElementById('t').focus();
+  </script>
+</body>
+</html>`;
+
+    win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+  });
+}
+
 let mainWindow = null;
 let expressProcess = null;
 
@@ -97,7 +220,7 @@ function createWindow() {
 function startServer() {
   log('Starting server...');
   const isDev = !app.isPackaged;
-  const serverPath = isDev 
+  const serverPath = isDev
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
 
@@ -106,6 +229,7 @@ function startServer() {
     return Promise.reject(new Error(`Server file not found at ${serverPath}`));
   }
 
+  const token = getEffectiveAccessToken();
   const serverEnv = {
     ...process.env,
     NODE_ENV: isDev ? 'development' : 'production',
@@ -115,6 +239,9 @@ function startServer() {
     APP_PATH: app.getAppPath(),
     CHECKIN_LOG_DIR: path.join(app.getPath('userData'), 'logs')
   };
+  if (token) {
+    serverEnv.SQUARE_ACCESS_TOKEN = token;
+  }
 
   log('Spawning server process...');
   expressProcess = spawn(process.execPath, [serverPath], {
@@ -161,23 +288,33 @@ function waitForServer(port, timeout = 10000) {
   });
 }
 
-// Create window immediately when app is ready
-app.on('ready', () => {
+app.whenReady().then(async () => {
   log('Starting application...');
+  try {
+    if (app.isPackaged && !getEffectiveAccessToken()) {
+      await showAccessTokenSetup();
+    }
+  } catch (err) {
+    log(`Setup aborted: ${err.message}`);
+    app.quit();
+    return;
+  }
+
   const window = createWindow();
-  startServer().then(port => {
-    waitForServer(port).then(() => {
+  startServer()
+    .then((port) => {
+      return waitForServer(port);
+    })
+    .then(() => {
       const url = `http://localhost:${port}`;
       log(`Loading application at ${url}`);
-      window.loadURL(url).catch(err => {
+      window.loadURL(url).catch((err) => {
         log(`Error loading application: ${err.message}`);
       });
-    }).catch(err => {
+    })
+    .catch((err) => {
       log(`Server failed to start in time: ${err.message}`);
     });
-  }).catch(err => {
-    log(`Server failed to start: ${err.message}`);
-  });
 });
 
 app.on('window-all-closed', () => {

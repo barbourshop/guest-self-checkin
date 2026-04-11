@@ -1,6 +1,8 @@
 /**
- * Square API config — SQUARE_API_URL, SQUARE_ACCESS_TOKEN, SQUARE_API_VERSION, SQUARE_ENVIRONMENT from .env only.
+ * Square API config — token from .env; URL/version default to production if unset (matches bundled installer .env).
  */
+const DEFAULT_SQUARE_API_URL = 'https://connect.squareup.com/v2';
+const DEFAULT_SQUARE_API_VERSION = '2026-01-22';
 
 function env(key, defaultValue = '') {
   const v = process.env[key];
@@ -24,11 +26,11 @@ function cleanEnv(value) {
 
 const SQUARE_API_CONFIG = {
   get baseUrl() {
-    return cleanEnv(process.env.SQUARE_API_URL);
+    return cleanEnv(process.env.SQUARE_API_URL) || DEFAULT_SQUARE_API_URL;
   },
   get headers() {
     const token = cleanEnv(process.env.SQUARE_ACCESS_TOKEN);
-    const version = cleanEnv(process.env.SQUARE_API_VERSION);
+    const version = cleanEnv(process.env.SQUARE_API_VERSION) || DEFAULT_SQUARE_API_VERSION;
     return {
       'Content-Type': 'application/json',
       'Square-Version': version,
@@ -93,9 +95,8 @@ const BULK_REFRESH_RATE_LIMIT_MS = getBulkRefreshRateLimitMs();
 const BULK_REFRESH_REQUEST_DELAY_MS = getBulkRefreshRequestDelayMs();
 const CACHE_REFRESH_AGE_HOURS = getCacheRefreshAgeHours();
 
-const LOT_NUMBER_ATTRIBUTE_KEY = process.env.SQUARE_ENVIRONMENT === 'production'
-  ? 'reference_id'
-  : 'reference_id';
+const squareEnv = (process.env.SQUARE_ENVIRONMENT || 'production').toLowerCase();
+const LOT_NUMBER_ATTRIBUTE_KEY = squareEnv === 'production' ? 'reference_id' : 'reference_id';
 
 module.exports = {
   SQUARE_API_CONFIG,

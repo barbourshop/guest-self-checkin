@@ -30,11 +30,11 @@ if (process.env.USE_MOCK_SQUARE_SERVICE === 'true') {
   log('🏭 Production: Real Square API');
   const u = process.env.SQUARE_API_URL;
   const t = process.env.SQUARE_ACCESS_TOKEN;
+  const v = process.env.SQUARE_API_VERSION;
   log(`   SQUARE_ACCESS_TOKEN set: ${!!t}`);
-  log(`   SQUARE_API_URL: ${u || '(not set — Square will fail)'}`);
-  log(`   SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION || '(not set)'}`);
-  if (!u) log('⚠️  SQUARE_API_URL not set in .env — must match API Explorer (sandbox vs production)');
-  if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env');
+  log(`   SQUARE_API_URL: ${u || 'https://connect.squareup.com/v2 (default production)'}`);
+  log(`   SQUARE_API_VERSION: ${v || '2026-01-22 (default)'}`);
+  if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env — Square API calls will fail until you add a token');
 }
 log('   Database: checkin.db');
 

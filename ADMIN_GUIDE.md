@@ -1,87 +1,65 @@
-# Admin guide — Front Desk App and Square
+# Admin guide — day-to-day
 
-For **supervisors and IT** who support check-in, Square customer data, and the installed **Front Desk App** (Windows / Electron).
+For **supervisors or managers** who support the check-in PC and Square, not for reading code.
 
-Front desk daily steps: [STAFF_GUIDE.md](STAFF_GUIDE.md).
-
----
-
-## 1. Square is the source of truth
-
-- Customer **profiles** (name, phone, email, lot/reference id) live in **Square**.
-- **Who counts as a member** for this app is driven by **Square Customer Directory segments** you configure in the app’s Admin area (see below), not by staff typing overrides at check-in.
-- If a member shows the wrong name, contact info, or membership: fix it in **Square** (and refresh the membership cache if needed).
+- Front desk steps: [STAFF_GUIDE.md](STAFF_GUIDE.md)  
+- First-time install (Square token on first launch): [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
 
 ---
 
-## 2. Opening Admin
+## Square and the app (short version)
 
-1. On the check-in home screen, click the **gear** (settings) icon in the header.
-2. The app navigates to the **Admin** page. Use **Home** in Admin to return to check-in.
-
-Restrict who can use Admin in line with your policies (physical access to the PC, Windows user accounts, etc.). The app does not replace your facility’s access-control policy.
+Customer **names, phones, emails, and lots** live in **Square**. The app decides **member vs non-member** from **customer segments** you maintain in the app’s **Admin** area (which segments count as membership). If something is wrong for a person, it is almost always fixed in **Square** (their profile or which group they are in), then you **refresh the membership cache** in Admin if the app still looks stale.
 
 ---
 
-## 3. Admin tabs (what each is for)
+## Opening Admin
 
-### Membership
+On the check-in home screen, click the **gear** icon. You will leave the home screen; click **Home** when you are done to return to check-in.
 
-- Shows the **membership cache**: customers the app considers members, based on your **Customer Segments** configuration.
-- **Membership cache** section: status (e.g. up to date, stale, empty), **last updated**, and actions to **refresh** or **clear** the cache. Refresh after you change which Square segments count as members, or if check-in search looks wrong for many people.
-- Table: filter/sort, inspect cached rows. The **Card** column (ID card icon) opens the **member card** page to print or show a QR/barcode—useful for replacement cards.
-
-### Customer Segments
-
-- Defines **which Square customer segments** define “member” for search badges and cache refresh.
-- You can **fetch segments from Square** and add the ones your organization uses. After changes, refresh the membership cache on the **Membership** tab.
-
-### Check-ins
-
-- Review recent check-in log rows from the app database.
-- **Export** (e.g. spreadsheet) is available for reporting—use your organization’s retention rules for downloaded files.
-
-### Settings
-
-- Operational hints; **Open card generator** opens `/member-card` when you need to type an order ID manually (also described on this tab).
-- Other options here reflect **server configuration**; production tokens and URLs belong in `.env` / deployment (see [QUICK_START.md](QUICK_START.md) or your internal runbook).
+Only people you trust with member data and exports should use this screen.
 
 ---
 
-## 4. Logs and files (troubleshooting and audit)
+## What each Admin tab is for
 
-### Check-in CSV (metrics)
+**Membership** — See who is in the membership cache, whether the cache is up to date, and **refresh** or **clear** it after you change segments or if many searches look wrong. Use the **Card** (ID icon) on a row to open a printable member card when needed.
 
-The server appends one row per successful check-in to a **daily CSV**:
+**Customer Segments** — Choose which Square **segments** count as members. After any change here, go to **Membership** and refresh the cache.
 
-- **Columns:** `timestamp`, `customerId`, `guestCount`, `firstName`, `lastName`, `lotNumber`
-- **Filename pattern:** `MM-DD-YY-check-ins.csv` (US-style month-day-year in the name).
-- **Directory:** under `checkins/` inside the configured log root. If `CHECKIN_LOG_DIR` is set, files go to `CHECKIN_LOG_DIR/checkins/`. Otherwise the default is `logs/checkins/` relative to the server process working directory.
+**Check-ins** — See recent check-ins and use **export** when you need a file for accounting or reporting.
 
-**Electron (packaged Front Desk App):** `main.js` sets `CHECKIN_LOG_DIR` to the app’s user data **logs** folder, so CSV files typically appear next to other app logs (see below), under a `checkins` subfolder.
-
-### Electron main log
-
-The packaged app writes a rolling text log for the main process and server output, for example:
-
-- Path shape: `%APPDATA%\front-desk-app\logs\app.log` on Windows (exact folder name can vary with `package.json` **name** / build; confirm on the PC if needed).
-
-Use this when the window is blank, the server will not start, or you need raw error text for IT.
+**Settings** — Shortcuts such as opening the **card generator** for manual order IDs; other items depend on how your site configured the app.
 
 ---
 
-## 5. Operational checklist
+## Getting check-in / access records
 
-| Symptom | What to try |
-|--------|-------------|
-| Everyone shows non-member or search is empty | Confirm Square token and environment in `.env`; in Admin **Customer Segments**, confirm segments; **refresh** membership cache. |
-| One person wrong | Fix customer or segment assignment in **Square**; refresh cache or wait for cache TTL depending on your setup. |
-| App won’t load | Restart Front Desk App; check `app.log`; confirm network and that nothing else is blocking `localhost` on the configured port. |
-| Day pass or check-in API errors | Read server log / `app.log`; verify Square and server are reachable. |
+**Easiest:** In Admin, open the **Check-ins** tab and use the **export** control. Save the file somewhere your organization keeps reports.
+
+**Optional — files on the check-in PC:** The app also writes a **daily CSV** of check-ins (one file per calendar day). On a typical Windows install you can open File Explorer, click the address bar, paste:
+
+`%APPDATA%\front-desk-app\logs\checkins`
+
+and press Enter. You should see files named like `04-11-26-check-ins.csv`. If that folder is empty or missing, ask whoever installed the app for the exact data folder for your build.
+
+Those files are mainly for backup or IT; supervisors can rely on the **Check-ins** export for routine reporting.
 
 ---
 
-## 6. Related docs (technical)
+## Common issues (what to try first)
 
-- [docs/square-integration.md](docs/square-integration.md) — Square API behavior and identifiers.
-- [QUICK_START.md](QUICK_START.md) — local run and environment variables (developers / IT).
+| Situation | What to try |
+|-----------|-------------|
+| One person’s name or phone is wrong | Update them in **Square**, then search again. |
+| One person shows the wrong membership | In Square, fix their **segment** (or group) for your program; in Admin **Membership**, **refresh** the cache. |
+| Many people wrong or “empty” | Admin → **Customer Segments** — confirm the right segments are selected; **Membership** — **refresh** cache. If it still fails, call IT (Square or network may be down). |
+| App window blank or won’t open | Fully close the app and reopen. Check that the PC is online. If it persists, call **IT** and tell them the date and time; they can check log files on that PC. |
+| “See the manager on duty” / check-in errors | Note what the guest was doing (search, day pass, scan). Call **IT** if it keeps happening after a restart. |
+
+---
+
+## When to involve IT or your installer
+
+- First-time setup, new PC, or new Square credentials: [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).  
+- Deep Square API or developer topics: [docs/square-integration.md](docs/square-integration.md) (technical).

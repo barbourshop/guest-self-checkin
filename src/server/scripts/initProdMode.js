@@ -18,10 +18,10 @@ function initProdMode() {
   // Expected environment variables for production
   // Defaults match those in src/server/config/square.js
   const expectedVars = [
-    { name: 'SQUARE_ENVIRONMENT', defaultValue: 'production (or sandbox)', required: false },
+    { name: 'SQUARE_ENVIRONMENT', defaultValue: 'production', required: false },
     { name: 'SQUARE_ACCESS_TOKEN', sensitive: true },
-    { name: 'SQUARE_API_URL', defaultValue: '(derived from SQUARE_ENVIRONMENT if not set)', required: false },
-    { name: 'SQUARE_API_VERSION', defaultValue: '2025-10-16', required: false },
+    { name: 'SQUARE_API_URL', defaultValue: 'https://connect.squareup.com/v2', required: false },
+    { name: 'SQUARE_API_VERSION', defaultValue: '2026-01-22', required: false },
     { name: 'MEMBERSHIP_CATALOG_ITEM_ID', defaultValue: '53OFWEDVK453O6GBG52N3CM5', required: false },
     { name: 'MEMBERSHIP_VARIANT_ID', required: false },
     { name: 'CHECKIN_CATALOG_ITEM_ID', required: false },

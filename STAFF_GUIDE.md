@@ -2,7 +2,7 @@
 
 Quick steps for staff using the **Front Desk App** (Windows) at Big Trees Village Rec Center.
 
-Supervisors and IT: see [ADMIN_GUIDE.md](ADMIN_GUIDE.md) for Square, the Admin screen, and logs.
+Supervisors: see [ADMIN_GUIDE.md](ADMIN_GUIDE.md) for day-to-day issues and exports. Install or upgrade: [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).
 
 ---
 
