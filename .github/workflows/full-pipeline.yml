@@ -95,9 +95,14 @@ jobs:
           name: windows-installer
           path: dist/*.exe
 
-  # macOS DMG for QA on Mac hardware. Windows NSIS job above is unchanged; this job only adds artifacts.
+  # Two DMGs: arm64 (Apple Silicon, no Rosetta) and x64 (Intel Mac, or Apple Silicon with Rosetta).
+  # A single "universal" dmg often leaves better-sqlite3 as one architecture only, which breaks under Rosetta.
   build-mac-app:
     needs: build-app
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -115,8 +120,8 @@ jobs:
         with:
           name: app-build
           path: apps/web/build
-      - name: Build Electron (macOS dmg, arm64 + x64)
-        run: npm run dist:mac:ci
+      - name: Build Electron (macOS dmg)
+        run: npm run dist:mac:${{ matrix.arch }}:ci
         timeout-minutes: 45
         env:
           SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
@@ -129,7 +134,7 @@ jobs:
       - name: Upload macOS installer artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mac-dmg
+          name: mac-dmg-${{ matrix.arch }}
           path: dist/*.dmg
 
   smoke-test-windows-app:
