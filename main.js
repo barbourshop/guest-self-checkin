@@ -274,7 +274,7 @@ function waitForServer(port, timeout = 10000) {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     function check() {
-      http.get({ host: 'localhost', port, path: '/' }, (res) => {
+      http.get({ hostname: 'localhost', port, path: '/' }, (res) => {
         resolve();
       }).on('error', (err) => {
         if (Date.now() - start > timeout) {
@@ -302,10 +302,8 @@ app.whenReady().then(async () => {
 
   const window = createWindow();
   startServer()
+    .then((port) => waitForServer(port).then(() => port))
     .then((port) => {
-      return waitForServer(port);
-    })
-    .then(() => {
       const url = `http://localhost:${port}`;
       log(`Loading application at ${url}`);
       window.loadURL(url).catch((err) => {
@@ -313,7 +311,7 @@ app.whenReady().then(async () => {
       });
     })
     .catch((err) => {
-      log(`Server failed to start in time: ${err.message}`);
+      log(`Could not load app UI: ${err.message}`);
     });
 });
 
