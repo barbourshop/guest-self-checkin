@@ -23,6 +23,8 @@
     "pack": "npx electron-builder --dir && npm run verify:electron-pack",
     "dist": "npm run build && npm prune --omit=dev && npx electron-builder --win --x64 && npm run verify:electron-pack",
     "dist:ci": "npm prune --omit=dev && npx electron-builder --win --x64 && npm run verify:electron-pack",
+    "dist:mac": "npm run build && npm prune --omit=dev && npx electron-builder --mac dmg --arm64 --x64 && npm run verify:electron-pack",
+    "dist:mac:ci": "npm prune --omit=dev && npx electron-builder --mac dmg --arm64 --x64 && npm run verify:electron-pack",
     "reset:local": "node src/server/scripts/resetLocalState.js",
     "reset:local-keep-db": "node src/server/scripts/resetLocalState.js --keep-db",
     "release": "semantic-release"
@@ -50,6 +52,10 @@
     "win": {
       "target": "nsis",
       "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.business"
     },
     "extraResources": [
       {
