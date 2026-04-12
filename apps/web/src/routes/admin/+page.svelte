@@ -9,6 +9,7 @@
 
 	let membershipCache: any[] = [];
 	let customerSegments: any[] = [];
+	let checkinQueue: any[] = [];
 	let checkinLog: any[] = [];
 	let isLoading = false;
 	let error: string | null = null;
@@ -60,6 +61,7 @@
 			// Always use latest membership cache from API (it includes stored names/address from DB)
 			membershipCache = Array.isArray(data.membershipCache) ? data.membershipCache : [];
 			customerSegments = data.customerSegments || [];
+			checkinQueue = Array.isArray(data.checkinQueue) ? data.checkinQueue : [];
 			checkinLog = data.checkinLog || [];
 			// Collapse membership cache section by default so the list is visible; expand if no members
 			membershipCacheSectionCollapsed = membershipCache.length > 0;
