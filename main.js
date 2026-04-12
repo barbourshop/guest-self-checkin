@@ -247,6 +247,27 @@ function startServer() {
     serverEnv.SQUARE_ACCESS_TOKEN = token;
   }
 
+  // Packaged app: dependencies live under app.asar.unpacked (per-arch / universal merge).
+  // Do not rely on resources/node_modules from extraResources — a single host copy breaks
+  // Rosetta x64 vs arm64 native modules (e.g. better-sqlite3).
+  if (!isDev) {
+    const unpackedNodeModules = path.join(
+      process.resourcesPath,
+      'app.asar.unpacked',
+      'node_modules'
+    );
+    const legacyNodeModules = path.join(process.resourcesPath, 'node_modules');
+    const nodePathParts = [];
+    if (fs.existsSync(unpackedNodeModules)) nodePathParts.push(unpackedNodeModules);
+    if (fs.existsSync(legacyNodeModules)) nodePathParts.push(legacyNodeModules);
+    if (nodePathParts.length) {
+      const prefix = nodePathParts.join(path.delimiter);
+      serverEnv.NODE_PATH = serverEnv.NODE_PATH
+        ? `${prefix}${path.delimiter}${serverEnv.NODE_PATH}`
+        : prefix;
+    }
+  }
+
   log('Spawning server process...');
   expressProcess = spawn(process.execPath, [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe'],
