@@ -25,6 +25,7 @@
     "dist:ci": "npm prune --omit=dev && npx --yes electron-builder@24.13.0 --win --x64 && npm run verify:electron-pack",
     "dist:mac": "npm run build && npm prune --omit=dev && npx --yes electron-builder@24.13.0 --mac dmg --arm64 --x64 && npm run verify:electron-pack",
     "dist:mac:ci": "npm prune --omit=dev && npx --yes electron-builder@24.13.0 --mac dmg --arm64 --x64 && npm run verify:electron-pack",
+    "docs:docx": "node scripts/build-docs-docx.js",
     "reset:local": "node src/server/scripts/resetLocalState.js",
     "reset:local-keep-db": "node src/server/scripts/resetLocalState.js --keep-db",
     "release": "semantic-release"
