@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const passRoutes = require('./routes/passRoutes');
 const logger = require('./logger');
 const errorHandler = require('./middleware/errorHandler');
+const { apiRequestLog, shouldLog: shouldLogApiRequests } = require('./middleware/apiRequestLog');
 const { SQUARE_API_CONFIG } = require('./config/square');
 
 function log(message) {
@@ -37,6 +38,9 @@ if (process.env.USE_MOCK_SQUARE_SERVICE === 'true') {
   if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env — Square API calls will fail until you add a token');
 }
 log('   Database: checkin.db');
+if (shouldLogApiRequests()) {
+  log('API request logging enabled (Electron child process or API_REQUEST_LOG). See server.log / Electron app.log.');
+}
 
 log('Starting server...');
 
@@ -66,7 +70,19 @@ try {
 
   // Middleware
   app.use(express.json());
-  
+  app.use(apiRequestLog());
+
+  app.get('/api/health', (req, res) => {
+    res.json({
+      ok: true,
+      pid: process.pid,
+      uptime: process.uptime(),
+      cwd: process.cwd(),
+      node: process.version,
+      packaged: process.env.ELECTRON_RUN_AS_NODE === '1'
+    });
+  });
+
   // Routes
   app.use('/api/customers', customerRoutes);
   app.use('/api/admin', adminRoutes);

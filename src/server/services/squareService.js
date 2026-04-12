@@ -295,14 +295,27 @@ class SquareService {
       const url = new URL(`${SQUARE_API_CONFIG.baseUrl}/customers/segments`);
       if (cursor) url.searchParams.set('cursor', cursor);
 
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: SQUARE_API_CONFIG.headers
-      });
+      let response;
+      try {
+        response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: SQUARE_API_CONFIG.headers
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error(
+          `[Square] listCustomerSegments network error: ${msg} (host=${url.host}, hasToken=${!!SQUARE_API_CONFIG.headers.Authorization})`
+        );
+        throw err;
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const detail = errorData.errors?.[0]?.detail || `Square API error: ${response.status}`;
+        const firstErr = errorData.errors?.[0];
+        logger.error(
+          `[Square] listCustomerSegments HTTP ${response.status} ${url.pathname}${url.search} code=${firstErr?.code || 'n/a'} category=${firstErr?.category || 'n/a'} detail=${firstErr?.detail || JSON.stringify(errorData).slice(0, 400)}`
+        );
+        const detail = firstErr?.detail || `Square API error: ${response.status}`;
         throw new Error(detail);
       }
 

@@ -202,7 +202,11 @@ function createWindow() {
     log(`Window failed to load: ${errorDescription} (${errorCode})`);
   });
 
-  if (process.env.NODE_ENV === 'development') {
+  if (
+    process.env.NODE_ENV === 'development' ||
+    process.env.ELECTRON_OPEN_DEVTOOLS === '1' ||
+    process.env.ELECTRON_OPEN_DEVTOOLS === 'true'
+  ) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -261,28 +265,49 @@ function startServer() {
       log(`[server stderr] ${data}`);
     });
   }
+  expressProcess.on('error', (err) => {
+    log(`[server spawn error] ${err.message}`);
+  });
   expressProcess.on('exit', (code, signal) => {
     log(`[server exit] code=${code} signal=${signal}`);
   });
 
-  // No need to wait for a log message or timeout
-  return Promise.resolve(3000); // Assume port 3000
+  return Promise.resolve(3000);
 }
 
 // Wait for the server to be ready before loading the URL
-function waitForServer(port, timeout = 10000) {
+function waitForServer(port, timeout = 15000) {
   const start = Date.now();
+  const healthPath = '/api/health';
   return new Promise((resolve, reject) => {
     function check() {
-      http.get({ hostname: 'localhost', port, path: '/' }, (res) => {
-        resolve();
-      }).on('error', (err) => {
-        if (Date.now() - start > timeout) {
-          reject(new Error('Server did not start in time'));
-        } else {
-          setTimeout(check, 200);
-        }
-      });
+      http
+        .get({ hostname: '127.0.0.1', port, path: healthPath }, (res) => {
+          const chunks = [];
+          res.on('data', (c) => chunks.push(c));
+          res.on('end', () => {
+            const body = Buffer.concat(chunks).toString('utf8').slice(0, 200);
+            log(`Server health: HTTP ${res.statusCode} ${body}`);
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve();
+            } else if (Date.now() - start > timeout) {
+              reject(new Error(`Server health returned ${res.statusCode}`));
+            } else {
+              setTimeout(check, 200);
+            }
+          });
+        })
+        .on('error', (err) => {
+          if (Date.now() - start > timeout) {
+            reject(
+              new Error(
+                `Server did not respond on http://127.0.0.1:${port}${healthPath}: ${err.message}`
+              )
+            );
+          } else {
+            setTimeout(check, 200);
+          }
+        });
     }
     check();
   });
