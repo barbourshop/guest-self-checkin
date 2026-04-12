@@ -102,6 +102,7 @@ jobs:
           path: apps/web/build
       - name: Build Electron (macOS dmg, arm64 + x64)
         run: npm run dist:mac:ci
+        timeout-minutes: 45
         env:
           SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
           SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
