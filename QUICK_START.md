@@ -32,8 +32,10 @@ Tests use the test database and are isolated from production.
 ## Environment Variables
 
 - **Production**: No special variables. Set `SQUARE_ACCESS_TOKEN` and optionally `MEMBERSHIP_SEGMENT_ID` (or configure segments in Admin).
-- **Mock Square (testing)**: `USE_MOCK_SQUARE_SERVICE=true`
+- **Mock Square (testing)**: `USE_MOCK_SQUARE_SERVICE=true` on the **Express** server (`src/server`).
 - **Tests**: `NODE_ENV=test` is set automatically by the test script
+
+The root `VITE_USE_MOCK_API` variable applies only to the **legacy** `src/App.svelte` shell, not the main `apps/web` app.
 
 ## Database
 
