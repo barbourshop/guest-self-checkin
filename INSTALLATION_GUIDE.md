@@ -14,7 +14,7 @@ The token is stored only on that computer (in the app’s user data folder). To 
 
 In **Admin** (gear icon), set **Customer Segments** and **refresh** the membership cache so members show correctly. Details: [ADMIN_GUIDE.md](ADMIN_GUIDE.md).
 
-Front desk use: [STAFF_GUIDE.md](STAFF_GUIDE.md).
+Front desk daily operations (Search, Day pass, End-of-day download/email): [STAFF_GUIDE.md](STAFF_GUIDE.md).
 
 ---
 

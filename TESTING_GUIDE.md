@@ -60,22 +60,31 @@ PORT=3000
 
 ## Testing Scenarios
 
-### 1. QR Code Scanning
+### 1. Front desk search check-in (primary flow)
 
-**Test with USB Scanner:**
-- The input field auto-focuses for scanner input
-- Scan a QR code (or type a valid order ID like `CA1234567890`)
-- The app should:
-  - Detect it as a QR code (10+ alphanumeric characters)
-  - Validate it via API
-  - Show success or error message
+1. Start from the home screen.
+2. Use **Search**.
+3. Search by name/phone/email/lot.
+4. Select a customer.
+5. Set guest count and click **Check In Now**.
+6. Confirm **All Set!** appears.
 
-**Manual Test:**
-- Type a long alphanumeric string (e.g., `ORDER1234567890`) in the search field
-- Press Enter or wait for auto-detection
-- Should trigger QR validation
+### 2. Day pass check-in
 
-### 2. Manual Search
+1. Click **Day pass** on the home screen.
+2. Select guest count.
+3. Click **Check in day pass**.
+4. Confirm **All Set!** appears.
+
+### 3. Optional card scanning flow
+
+**Test with USB scanner:**
+- In the search card, switch to scan mode.
+- Scan a valid card token (or type one manually).
+- Confirm the app finds the customer or prompts for selection.
+- Complete check-in and confirm **All Set!**.
+
+### 4. Manual search behavior
 
 **Test Search Types:**
 - **Name**: Type "John" or "Jane" - should search by name
@@ -90,7 +99,14 @@ PORT=3000
 - Shows "No customers found" if no results
 - Clicking a customer shows detail view
 
-### 3. Customer Check-In Flow
+### 5. End-of-day download flow
+
+1. Click **End of day** in the top action row.
+2. Click **Download Daily Checkins (Excel)**.
+3. Confirm the file downloads with a `.xlsx` extension.
+4. Open the file and verify it contains today's records.
+
+### 6. Customer Check-In Flow
 
 1. **Search for a customer** (or scan QR code)
 2. **Select customer** from list
@@ -104,7 +120,7 @@ PORT=3000
 6. **See confirmation** screen with green checkmark
 7. **Auto-dismisses** after 3 seconds
 
-### 4. Error Handling
+### 7. Error Handling
 
 **Test Error Scenarios:**
 - **Invalid QR Code**: Scan invalid order ID - should show "An issue with check-in, please see the manager on duty"
@@ -112,7 +128,7 @@ PORT=3000
 - **No Results**: Search for non-existent customer - should show "No customers found"
 - **Missing Fields**: Try to check in without selecting guest count - should show error
 
-### 5. Admin Features
+### 8. Admin Features
 
 1. **Select a customer** from search results
 2. **Click Settings icon** (gear icon) in top right
@@ -120,7 +136,7 @@ PORT=3000
    - Customer details (ID, name, email, phone, membership, lot, waiver status)
    - Waiver status update buttons (✓ to sign, ✗ to clear)
 
-### 6. Offline Mode
+### 9. Offline Mode
 
 **Test Offline Queue:**
 1. Start the app normally
@@ -164,12 +180,14 @@ PORT=3000
 ## Testing Checklist
 
 - [ ] App loads without errors
-- [ ] Search input auto-focuses
-- [ ] QR code scanning works (or manual entry)
+- [ ] Search flow works (find, select, check in)
 - [ ] Search by name works
 - [ ] Search by email works
 - [ ] Search by phone works
 - [ ] Search by lot number works
+- [ ] Day pass flow works
+- [ ] End-of-day download works and opens in Excel
+- [ ] Optional scan flow works
 - [ ] Customer list displays correctly
 - [ ] Customer detail view shows
 - [ ] Guest count selection works

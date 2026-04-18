@@ -27,7 +27,7 @@ Only people you trust with member data and exports should use this screen.
 
 **Customer Segments** — Choose which Square **segments** count as members. After any change here, go to **Membership** and refresh the cache.
 
-**Check-ins** — See recent check-ins and use **export** when you need a file for accounting or reporting.
+**Check-ins** — See recent check-ins and use **export** when you need an admin-side historical file.
 
 **Settings** — Shortcuts such as opening the **card generator** for manual order IDs; other items depend on how your site configured the app.
 
@@ -35,7 +35,9 @@ Only people you trust with member data and exports should use this screen.
 
 ## Getting check-in / access records
 
-**Easiest:** In Admin, open the **Check-ins** tab and use the **export** control. Save the file somewhere your organization keeps reports.
+**Front desk daily close-out (recommended):** Use the home screen **End of day** action to download the daily Excel file, then email it to the manager.
+
+**Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use the **export** control when you need additional reporting or historical slices.
 
 **Optional — files on the check-in PC:** The app also writes a **daily CSV** of check-ins (one file per calendar day). On a typical Windows install you can open File Explorer, click the address bar, paste:
 
@@ -43,7 +45,7 @@ Only people you trust with member data and exports should use this screen.
 
 and press Enter. You should see files named like `04-11-26-check-ins.csv`. If that folder is empty or missing, ask whoever installed the app for the exact data folder for your build.
 
-Those files are mainly for backup or IT; supervisors can rely on the **Check-ins** export for routine reporting.
+Those files are mainly for backup or IT; routine daily handoff should use the front desk **End of day** download flow.
 
 ---
 

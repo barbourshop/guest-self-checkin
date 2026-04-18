@@ -15,6 +15,7 @@ dotenv.config({ path: rootEnv }); // cwd loaded first; root fills any missing
 const customerRoutes = require('./routes/customerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const passRoutes = require('./routes/passRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 const logger = require('./logger');
 const errorHandler = require('./middleware/errorHandler');
 const { apiRequestLog, shouldLog: shouldLogApiRequests } = require('./middleware/apiRequestLog');
@@ -87,6 +88,7 @@ try {
   app.use('/api/customers', customerRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/passes', passRoutes);
+  app.use('/api/reports', reportRoutes);
   
   // Static files (optional when running with dev frontend - API still works without dist)
   // Electron packs the Svelte build at resources/dist; local runs use apps/web/build (adapter-static SPA uses 200.html).
