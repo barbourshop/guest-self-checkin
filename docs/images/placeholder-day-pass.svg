@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="360" viewBox="0 0 800 360" role="img" aria-labelledby="title desc">
+  <title id="title">Placeholder image</title>
+  <desc id="desc">Replace with a screenshot of the day pass flow.</desc>
+  <rect width="800" height="360" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="2"/>
+  <text x="400" y="155" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#374151">Placeholder  replace with your screenshot</text>
+  <text x="400" y="195" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="15" fill="#6b7280">Day pass: guest count and Check in day pass</text>
+</svg>

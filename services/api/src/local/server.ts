@@ -65,7 +65,7 @@ app.post('/v1/square/webhooks', async (c) => {
   return c.body(res.body ?? '', res.statusCode, res.headers);
 });
 
-const port = Number(process.env.API_PORT ?? 3001);
+const port = Number(3000);
 serve(
   {
     fetch: app.fetch,

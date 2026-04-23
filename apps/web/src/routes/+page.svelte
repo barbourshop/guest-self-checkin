@@ -1,6 +1,18 @@
 <script lang="ts">
-	import { Check, AlertCircle, Settings, Search, QrCode, Loader2, Ticket, Users, ArrowLeft } from 'lucide-svelte';
+	import {
+		Check,
+		AlertCircle,
+		Settings,
+		Search,
+		QrCode,
+		Loader2,
+		Ticket,
+		Users,
+		ArrowLeft,
+		Download
+	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import * as XLSX from 'xlsx';
 	import { searchCustomers } from '$lib';
 	import type { SearchResult } from '$lib';
 	import CustomerDetail from '$lib/components/CustomerDetail.svelte';
@@ -17,6 +29,10 @@
 	let guestCount = 1;
 	let showDayPassFlow = false;
 	let dayPassGuestCount = 1;
+	let showEndOfDayPanel = false;
+	let isPreparingDailyReport = false;
+	let dailyReportMessage: string | null = null;
+	let dailyReportError: string | null = null;
 
 	function handleResetState() {
 		query = '';
@@ -28,6 +44,7 @@
 		selectedCustomer = null;
 		guestCount = 1;
 		showDayPassFlow = false;
+		showEndOfDayPanel = false;
 		dayPassGuestCount = 1;
 		if (inputElement) {
 			inputElement.focus();
@@ -212,6 +229,84 @@
 	function openAdmin() {
 		goto('/admin');
 	}
+
+	async function handleDownloadDailyCheckins() {
+		isPreparingDailyReport = true;
+		dailyReportError = null;
+		dailyReportMessage = null;
+
+		try {
+			const response = await fetch('/api/admin/database?enrich=true');
+			if (!response.ok) {
+				const body = await response.json().catch(() => ({}));
+				throw new Error(body.error || `Unable to load check-ins (${response.status})`);
+			}
+
+			const data = await response.json();
+			const checkinLog = Array.isArray(data?.checkinLog) ? data.checkinLog : [];
+
+			const now = new Date();
+			const startOfDay = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate(),
+				0,
+				0,
+				0,
+				0
+			);
+			const endOfDay = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate() + 1,
+				0,
+				0,
+				0,
+				0
+			);
+
+			const dailyCheckins = checkinLog.filter((item: any) => {
+				if (!item?.timestamp) return false;
+				const ts = new Date(item.timestamp);
+				if (Number.isNaN(ts.getTime())) return false;
+				return ts >= startOfDay && ts < endOfDay;
+			});
+
+			if (dailyCheckins.length === 0) {
+				throw new Error('No check-ins found for today.');
+			}
+
+			const excelData = dailyCheckins.map((item: any) => ({
+				ID: item.id || '',
+				Type: item.checkin_type === 'daypass' ? 'Day pass' : 'Member',
+				Name:
+					item.checkin_type === 'daypass'
+						? 'Day pass'
+						: `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
+				Email: item.email_address || '-',
+				Phone: item.phone_number || '-',
+				Lot: item.reference_id || '-',
+				'Customer ID': item.customer_id || '-',
+				'Order ID': item.order_id || '-',
+				'Guest Count': item.guest_count || 0,
+				Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
+				'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
+			}));
+
+			const worksheet = XLSX.utils.json_to_sheet(excelData);
+			const workbook = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(workbook, worksheet, 'Daily Check-ins');
+			const dateStr = now.toISOString().split('T')[0];
+			const fileName = `checkin-log-${dateStr}.xlsx`;
+			XLSX.writeFile(workbook, fileName);
+			dailyReportMessage = `Download started: ${fileName}`;
+		} catch (err) {
+			dailyReportError =
+				err instanceof Error ? err.message : 'Failed to download daily check-ins. Please try again.';
+		} finally {
+			isPreparingDailyReport = false;
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50">
@@ -320,18 +415,19 @@
 				onGuestCountChange={(count) => {
 					guestCount = count;
 				}}
-				onCheckIn={() => handleCheckIn(selectedCustomer)}
+				onCheckIn={() => handleCheckIn(selectedCustomer!)}
 				onReset={handleResetState}
 			/>
 		{:else}
 			<div class="space-y-6 mb-6">
-				<!-- Search, Day pass, Scan card – three equal columns (1/3 each) -->
+				<!-- Search, Day pass, End of day – three equal columns (1/3 each) -->
 				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 					<button
 						type="button"
 						on:click={() => {
 							showManualSearch = true;
 							showDayPassFlow = false;
+							showEndOfDayPanel = false;
 							error = null;
 							searchResults = [];
 							selectedCustomer = null;
@@ -348,6 +444,7 @@
 						type="button"
 						on:click={() => {
 							showDayPassFlow = true;
+							showEndOfDayPanel = false;
 							error = null;
 							query = '';
 							searchResults = [];
@@ -363,21 +460,58 @@
 					<button
 						type="button"
 						on:click={() => {
-							showManualSearch = false;
+							showDayPassFlow = false;
+							showEndOfDayPanel = true;
 							query = '';
-							setTimeout(() => inputElement?.focus(), 100);
+							error = null;
+							searchResults = [];
+							selectedCustomer = null;
 						}}
-						class="action-card flex flex-row items-center gap-4 p-4 rounded-xl text-left border-2 border-primary-100 bg-primary-50 hover:bg-primary-100 hover:border-primary-200 transition-colors focus:ring-2 focus:ring-primary-400 focus:ring-offset-2"
+						class="action-card flex flex-row items-center gap-4 p-4 rounded-xl text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition-colors focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
 					>
-						<div class="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center shrink-0">
-							<QrCode class="h-6 w-6 text-primary-700" />
+						<div class="w-12 h-12 rounded-lg bg-indigo-200 flex items-center justify-center shrink-0">
+							<Download class="h-6 w-6 text-indigo-800" />
 						</div>
-						<span class="text-lg font-bold text-primary-900">Scan</span>
+						<span class="text-lg font-bold text-indigo-900">End of day</span>
 					</button>
 				</div>
 
-				<!-- Search for customers – full width prominent card (primary green) -->
-				<div class="rounded-xl border-2 border-primary-200 bg-primary-50 p-6 sm:p-8 shadow-sm">
+				{#if showEndOfDayPanel}
+					<div class="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 sm:p-6 shadow-sm">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+							<div>
+								<h2 class="text-lg font-bold text-indigo-900">End of day</h2>
+							</div>
+							<button
+								type="button"
+								on:click={handleDownloadDailyCheckins}
+								disabled={isPreparingDailyReport}
+								class="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+							>
+								{#if isPreparingDailyReport}
+									<Loader2 class="h-5 w-5 animate-spin" />
+									<span>Preparing…</span>
+								{:else}
+									<Download class="h-5 w-5" />
+									<span>Download Daily Checkins (Excel)</span>
+								{/if}
+							</button>
+						</div>
+						{#if dailyReportMessage}
+							<div class="mt-3 p-3 bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-900 text-sm">
+								{dailyReportMessage}
+							</div>
+						{/if}
+						{#if dailyReportError}
+							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+								<AlertCircle class="h-4 w-4 shrink-0" />
+								<span>{dailyReportError}</span>
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<!-- Search for customers – full width prominent card (primary green) -->
+					<div class="rounded-xl border-2 border-primary-200 bg-primary-50 p-6 sm:p-8 shadow-sm">
 					<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
 						<div class="w-16 h-16 rounded-xl bg-primary-200 flex items-center justify-center shrink-0">
 							<Search class="h-9 w-9 text-primary-800" />
@@ -475,7 +609,8 @@
 							</button>
 						</div>
 					{/if}
-				</div>
+					</div>
+				{/if}
 
 				{#if error}
 					<div

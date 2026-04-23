@@ -7,6 +7,52 @@ const ConfigService = require('../services/configService');
 const SegmentService = require('../services/segmentService');
 
 /**
+ * Map Square list-segments failures to HTTP status + user-facing message.
+ * Distinguishes auth errors from low-level network/TLS failures ("fetch failed" with no HTTP body).
+ * @param {unknown} error
+ * @returns {{ status: number, error: string }}
+ */
+function responseForSquareListFailure(error) {
+  const msg = String(error?.message || error || '');
+  const cause = error && typeof error === 'object' ? error.cause : undefined;
+  const causeCode =
+    cause && typeof cause === 'object' && 'code' in cause ? String(cause.code) : '';
+  const causeMsg =
+    cause && typeof cause === 'object' && 'message' in cause ? String(cause.message) : '';
+  const haystack = `${msg} ${causeCode} ${causeMsg}`.toLowerCase();
+
+  if (msg.includes('401') || haystack.includes('unauthorized')) {
+    return {
+      status: 401,
+      error: msg || 'Square authorization failed. Check SQUARE_ACCESS_TOKEN in Settings or the token file.'
+    };
+  }
+
+  if (
+    msg === 'fetch failed' ||
+    haystack.includes('econnrefused') ||
+    haystack.includes('enotfound') ||
+    haystack.includes('etimedout') ||
+    haystack.includes('eai_again') ||
+    haystack.includes('cert_') ||
+    haystack.includes('ssl') ||
+    haystack.includes('tls') ||
+    haystack.includes('unable_to_verify') ||
+    haystack.includes('socket hang up') ||
+    haystack.includes('network') ||
+    haystack.includes('connecttimeout')
+  ) {
+    return {
+      status: 503,
+      error:
+        'This computer cannot open an HTTPS connection to Square (connect.squareup.com). The app is running, but outbound calls fail (often Windows Firewall, antivirus, VPN, offline Wi‑Fi, or a corporate proxy). Allow this app or Node through the firewall for outbound HTTPS, or set HTTPS_PROXY if your office requires a proxy.'
+    };
+  }
+
+  return { status: 500, error: msg || 'Failed to list Square segments' };
+}
+
+/**
  * Controller handling admin-related operations
  * @class AdminController
  */
@@ -296,8 +342,8 @@ class AdminController {
       res.json({ segments });
     } catch (error) {
       logger.error(`Error listing Square segments: ${error.message}`);
-      res.status(error.message?.includes('401') || error.message?.includes('UNAUTHORIZED') ? 401 : 500)
-        .json({ error: error.message || 'Failed to list Square segments' });
+      const { status, error: clientMessage } = responseForSquareListFailure(error);
+      res.status(status).json({ error: clientMessage });
     }
   }
 

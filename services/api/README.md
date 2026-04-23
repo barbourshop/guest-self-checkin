@@ -1,6 +1,8 @@
 ## API Service Skeleton
 
-This package hosts the AWS Lambda handlers backing the v2 mobile experience.
+This package hosts the AWS Lambda handlers backing the **v2 cloud** API (separate from the **Front Desk** Express server in `src/server`).
+
+The `POST /v1/waiver/hint` route and related types are part of that **cloud** design only; the **desktop** check-in UI does not collect waivers.
 
 ### Scripts
 
@@ -17,7 +19,7 @@ npm test
 
 ### Environment Variables
 
-Reference `docs/local-testing.md` for full details. Minimum required for local dev:
+Set these in a `.env` file in this package (or export them) before `npm run dev`. Adjust IDs for your Square sandbox or environment.
 
 ```
 SQUARE_ENV=sandbox
@@ -32,6 +34,4 @@ CONFIG_TABLE_NAME=local-config
 PASSES_TABLE_NAME=local-passes
 CHECKINS_TABLE_NAME=local-checkins
 ```
-
-Set these in a `.env` file or export them before running `npm run dev`.
 

@@ -37,52 +37,53 @@
 
 ## Testing Modes
 
-### Mock Mode (No Square API Required)
+### Mock Square on the server (no real Square API)
 
-Set in `.env` file:
+Set in `.env` at the **repo root** (used by `src/server`):
+
 ```env
-VITE_USE_MOCK_API=true
+USE_MOCK_SQUARE_SERVICE=true
 ```
 
-This uses mock data from `src/mocks/mockData.ts` - perfect for testing UI and flow without Square credentials.
+This swaps the server’s Square client for a mock implementation so you can exercise flows without Square credentials.
 
-### Real Square API Mode
+### Real Square API
 
-Set in `.env` file:
-```env
-VITE_USE_MOCK_API=false
-SQUARE_ENVIRONMENT=sandbox  # or production
-SQUARE_ACCESS_TOKEN=your_token_here
-SQUARE_API_URL=https://connect.squareup.com/v2
-SQUARE_API_VERSION=2025-10-16
-PORT=3000
-```
+Use a valid `SQUARE_ACCESS_TOKEN` (and usual Square URL/version vars). See [QUICK_START.md](QUICK_START.md) and [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).
 
 ## Testing Scenarios
 
-### 1. QR Code Scanning
+### 1. Front desk search check-in (primary flow)
 
-**Test with USB Scanner:**
-- The input field auto-focuses for scanner input
-- Scan a QR code (or type a valid order ID like `CA1234567890`)
-- The app should:
-  - Detect it as a QR code (10+ alphanumeric characters)
-  - Validate it via API
-  - Show success or error message
+1. Start from the home screen.
+2. Use **Search**.
+3. Search by name/phone/email/lot.
+4. Select a customer.
+5. Set guest count and click **Check In Now**.
+6. Confirm **All Set!** appears.
 
-**Manual Test:**
-- Type a long alphanumeric string (e.g., `ORDER1234567890`) in the search field
-- Press Enter or wait for auto-detection
-- Should trigger QR validation
+### 2. Day pass check-in
 
-### 2. Manual Search
+1. Click **Day pass** on the home screen.
+2. Select guest count.
+3. Click **Check in day pass**.
+4. Confirm **All Set!** appears.
+
+### 3. Optional card scanning flow
+
+**Test with USB scanner:**
+- In the search card, switch to scan mode.
+- Scan a valid card token (or type one manually).
+- Confirm the app finds the customer or prompts for selection.
+- Complete check-in and confirm **All Set!**.
+
+### 4. Manual search behavior
 
 **Test Search Types:**
 - **Name**: Type "John" or "Jane" - should search by name
 - **Email**: Type "john@example.com" - should auto-detect as email
 - **Phone**: Type "5551234567" or "(555) 123-4567" - should auto-detect as phone
 - **Lot Number**: Type short alphanumeric like "LOT123" - should search by lot
-- **Address**: Type "123 Main St" - should search by address
 
 **Expected Behavior:**
 - Shows loading state while searching
@@ -90,21 +91,14 @@ PORT=3000
 - Shows "No customers found" if no results
 - Clicking a customer shows detail view
 
-### 3. Customer Check-In Flow
+### 5. End-of-day download flow
 
-1. **Search for a customer** (or scan QR code)
-2. **Select customer** from list
-3. **Select guest count**:
-   - Use dropdown (1-10 guests)
-   - Or select "Other" and enter custom number
-4. **Check waiver status**:
-   - If no waiver: Shows waiver QR code and "I've already signed" button
-   - If waiver signed: Shows "Waiver Already Signed" message
-5. **Click "Check In Now"** button
-6. **See confirmation** screen with green checkmark
-7. **Auto-dismisses** after 3 seconds
+1. Click **End of day** in the top action row.
+2. Click **Download Daily Checkins (Excel)**.
+3. Confirm the file downloads with a `.xlsx` extension.
+4. Open the file in Excel and verify it contains today’s check-ins.
 
-### 4. Error Handling
+### 6. Error Handling
 
 **Test Error Scenarios:**
 - **Invalid QR Code**: Scan invalid order ID - should show "An issue with check-in, please see the manager on duty"
@@ -112,24 +106,15 @@ PORT=3000
 - **No Results**: Search for non-existent customer - should show "No customers found"
 - **Missing Fields**: Try to check in without selecting guest count - should show error
 
-### 5. Admin Features
+### 7. Admin (supervisor)
 
-1. **Select a customer** from search results
-2. **Click Settings icon** (gear icon) in top right
-3. **Admin View** should open showing:
-   - Customer details (ID, name, email, phone, membership, lot, waiver status)
-   - Waiver status update buttons (✓ to sign, ✗ to clear)
+1. From the home screen, open **Admin** (gear icon).
+2. Confirm tabs load: **Membership**, **Customer Segments**, **Check-ins**, **Settings**.
+3. **Check-ins** tab should still support **Export to Excel** for supervisors (separate from front desk end-of-day download).
 
-### 6. Offline Mode
+### 8. Offline / API down (optional)
 
-**Test Offline Queue:**
-1. Start the app normally
-2. Stop the backend server (`Ctrl+C` in server terminal)
-3. Try to check in a customer
-4. Should queue the check-in
-5. Restart backend server
-6. Check-in should sync automatically (if sync logic is implemented)
-
+If the API is unreachable, check-in may fail with a user-facing error. Behavior depends on network and Square availability; do not assume a silent offline queue unless you have verified it for your build.
 ## Browser DevTools
 
 ### Check Console for Errors
@@ -138,11 +123,12 @@ PORT=3000
 - Check Network tab to see API requests
 
 ### Verify API Calls
-- Network tab should show:
-  - `POST /api/customers/search` - for searches
-  - `POST /api/customers/validate-qr` - for QR validation
-  - `POST /api/customers/check-in` - for check-ins
-  - `GET /api/customers/names` - for initial customer list (if used)
+- Network tab should show (paths are under `/api/customers`):
+  - `POST /api/customers/search` — unified search from the home screen
+  - `POST /api/customers/check-in` — member check-in
+  - `POST /api/customers/check-in/daypass` — day pass
+  - `GET /api/admin/database?enrich=true` — data used for the end-of-day Excel export on the home screen
+  - Optional: `POST /api/customers/validate-qr` — only if you exercise QR/order flows that call it
 
 ## Common Issues
 
@@ -164,16 +150,17 @@ PORT=3000
 ## Testing Checklist
 
 - [ ] App loads without errors
-- [ ] Search input auto-focuses
-- [ ] QR code scanning works (or manual entry)
+- [ ] Search flow works (find, select, check in)
 - [ ] Search by name works
 - [ ] Search by email works
 - [ ] Search by phone works
 - [ ] Search by lot number works
+- [ ] Day pass flow works
+- [ ] End-of-day download works and opens in Excel
+- [ ] Optional scan flow works
 - [ ] Customer list displays correctly
 - [ ] Customer detail view shows
 - [ ] Guest count selection works
-- [ ] Waiver status displays correctly
 - [ ] Check-in button works
 - [ ] Confirmation screen appears
 - [ ] Admin view opens
@@ -182,7 +169,7 @@ PORT=3000
 
 ## Performance Testing
 
-- **Bundle Size**: Check `dist/assets/` after build - should be ~50KB (much smaller than React version)
+- After `npm run build`, inspect `apps/web/build` asset sizes if you care about bundle weight.
 - **Load Time**: App should load quickly in browser
 - **Responsiveness**: UI should be responsive and smooth
 
@@ -190,7 +177,8 @@ PORT=3000
 
 After manual testing passes:
 1. Run automated tests: `npm test`
-2. Run E2E tests: `npm run test:e2e`
-3. Build for production: `npm run build`
-4. Test Electron build: `npm start`
+2. Build for production: `npm run build`
+3. Test Electron build: `npm start`
+
+Note: `npm run test:e2e` is currently a placeholder script in `package.json` (no Playwright suite attached).
 

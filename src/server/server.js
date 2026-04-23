@@ -15,8 +15,10 @@ dotenv.config({ path: rootEnv }); // cwd loaded first; root fills any missing
 const customerRoutes = require('./routes/customerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const passRoutes = require('./routes/passRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 const logger = require('./logger');
 const errorHandler = require('./middleware/errorHandler');
+const { apiRequestLog, shouldLog: shouldLogApiRequests } = require('./middleware/apiRequestLog');
 const { SQUARE_API_CONFIG } = require('./config/square');
 
 function log(message) {
@@ -30,13 +32,16 @@ if (process.env.USE_MOCK_SQUARE_SERVICE === 'true') {
   log('🏭 Production: Real Square API');
   const u = process.env.SQUARE_API_URL;
   const t = process.env.SQUARE_ACCESS_TOKEN;
+  const v = process.env.SQUARE_API_VERSION;
   log(`   SQUARE_ACCESS_TOKEN set: ${!!t}`);
-  log(`   SQUARE_API_URL: ${u || '(not set — Square will fail)'}`);
-  log(`   SQUARE_API_VERSION: ${process.env.SQUARE_API_VERSION || '(not set)'}`);
-  if (!u) log('⚠️  SQUARE_API_URL not set in .env — must match API Explorer (sandbox vs production)');
-  if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env');
+  log(`   SQUARE_API_URL: ${u || 'https://connect.squareup.com/v2 (default production)'}`);
+  log(`   SQUARE_API_VERSION: ${v || '2026-01-22 (default)'}`);
+  if (!t) log('⚠️  SQUARE_ACCESS_TOKEN not set in .env — Square API calls will fail until you add a token');
 }
 log('   Database: checkin.db');
+if (shouldLogApiRequests()) {
+  log('API request logging enabled (Electron child process or API_REQUEST_LOG). See server.log / Electron app.log.');
+}
 
 log('Starting server...');
 
@@ -49,7 +54,7 @@ if (!resourcesPath) {
 
 try {
   const app = express();
-  const port = process.env.PORT || 3000;
+  const port = 3000;
 
   // Enable CORS for all routes
   app.use(cors({
@@ -66,11 +71,24 @@ try {
 
   // Middleware
   app.use(express.json());
-  
+  app.use(apiRequestLog());
+
+  app.get('/api/health', (req, res) => {
+    res.json({
+      ok: true,
+      pid: process.pid,
+      uptime: process.uptime(),
+      cwd: process.cwd(),
+      node: process.version,
+      packaged: process.env.ELECTRON_RUN_AS_NODE === '1'
+    });
+  });
+
   // Routes
   app.use('/api/customers', customerRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/passes', passRoutes);
+  app.use('/api/reports', reportRoutes);
   
   // Static files (optional when running with dev frontend - API still works without dist)
   // Electron packs the Svelte build at resources/dist; local runs use apps/web/build (adapter-static SPA uses 200.html).
