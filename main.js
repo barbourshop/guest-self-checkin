@@ -6,6 +6,28 @@ const http = require('http');
 
 const TOKEN_FILENAME = 'square-access-token.txt';
 
+const STARTING_PAGE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Front Desk App</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 1.25rem;
+      color: #333;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>Starting Front Desk App</body>
+</html>`;
+
 // Enhanced console logging
 console.log('Starting main process...');
 console.log('Current working directory:', process.cwd());
@@ -193,11 +215,16 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
+    backgroundColor: '#ffffff',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
+
+  mainWindow
+    .loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(STARTING_PAGE_HTML))
+    .catch((err) => log(`Error loading starting page: ${err.message}`));
 
   // Add loading and error event handlers
   mainWindow.webContents.on('did-start-loading', () => {
