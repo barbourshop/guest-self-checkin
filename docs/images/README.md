@@ -1,13 +1,21 @@
-# Staff guide images
+# Guide screenshots
 
-Placeholder SVGs are referenced from [STAFF_GUIDE.md](../../STAFF_GUIDE.md). Replace them with your own screenshots if you prefer PNG or JPEG:
+Current screenshot assets used by documentation guides:
 
-| Placeholder file | Suggested replacement |
-|------------------|------------------------|
-| `placeholder-home-actions.svg` | Home screen showing Search, Day pass, End of day |
-| `placeholder-search-checkin.svg` | Search flow: results list and Check In Now |
-| `placeholder-scan-card.svg` | Scan card mode inside the search card |
-| `placeholder-day-pass.svg` | Day pass screen with guest count |
-| `placeholder-end-of-day.svg` | End of day panel and Download Daily Checkins (Excel) |
+## Staff guide (`STAFF_GUIDE.md`)
 
-You can either overwrite the `.svg` files or change the paths in `STAFF_GUIDE.md` to point at files like `staff-guide-home.png`.
+| File | Used for |
+|------|----------|
+| `app-main-page.png` | Main app home screen (Search and Day pass with gear access) |
+| `front-desk-tools.png` | Front Desk Tools screen behind the gear icon, including Download Report |
+| `search-for-customer.png` | Search flow before selecting a customer |
+| `checkin-after-search.png` | Customer details and Check In Now step |
+| `day-pass-checkin.png` | Day pass check-in screen |
+
+## Admin guide (`ADMIN_GUIDE.md`)
+
+| File | Used for |
+|------|----------|
+| `admin-membership-after-refresh-cache.png` | Membership tab after refresh |
+| `admin-membership-segment-list.png` | Customer segments list |
+| `admin-segment-fetch-from-square.png` | Fetch segments from Square action |
