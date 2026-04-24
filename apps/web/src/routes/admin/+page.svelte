@@ -4,7 +4,7 @@
 	import { Search, Download, Home, IdCard, ChevronDown, ChevronUp } from 'lucide-svelte';
 	import * as XLSX from 'xlsx';
 
-	type Tab = 'membership' | 'segments' | 'checkins' | 'settings';
+	type Tab = 'membership' | 'segments' | 'checkins' | 'cards' | 'settings';
 	let activeTab: Tab = 'membership';
 
 	let membershipCache: any[] = [];
@@ -30,11 +30,24 @@
 	let isSavingConfig = false;
 	let configSaveMessage: string | null = null;
 
-	onMount(() => {
-		// Load in background so the page is usable immediately
+	const ADMIN_DASHBOARD_PASSWORD = 'PoolParty';
+	const ADMIN_AUTH_STORAGE_KEY = 'adminDashboardUnlocked';
+	let isAuthenticated = false;
+	let adminPasswordInput = '';
+	let authError: string | null = null;
+
+	function initializeDashboardData() {
 		loadData();
 		loadCacheStatus();
 		loadConfig();
+	}
+
+	onMount(() => {
+		const wasUnlocked = sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY) === 'true';
+		if (wasUnlocked) {
+			isAuthenticated = true;
+			initializeDashboardData();
+		}
 	});
 
 	onDestroy(() => {
@@ -42,6 +55,19 @@
 			clearInterval(progressInterval);
 		}
 	});
+
+	function handleAuthSubmit() {
+		if (adminPasswordInput === ADMIN_DASHBOARD_PASSWORD) {
+			isAuthenticated = true;
+			authError = null;
+			adminPasswordInput = '';
+			sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, 'true');
+			initializeDashboardData();
+			return;
+		}
+
+		authError = 'Incorrect password. Please try again.';
+	}
 
 	async function loadData(opts?: { enrich?: boolean }) {
 		const enrich = opts?.enrich === true;
@@ -607,6 +633,32 @@
 </script>
 
 <main>
+	{#if !isAuthenticated}
+		<div class="auth-container">
+			<section class="auth-card">
+				<h1>Admin Dashboard</h1>
+				<p>Enter the password to continue.</p>
+				<label for="admin-password">Password</label>
+				<input
+					id="admin-password"
+					type="password"
+					placeholder="Enter admin password"
+					bind:value={adminPasswordInput}
+					on:keydown={(event) => event.key === 'Enter' && handleAuthSubmit()}
+				/>
+				{#if authError}
+					<p class="auth-error">{authError}</p>
+				{/if}
+				<div class="auth-actions">
+					<button type="button" on:click={handleAuthSubmit}>Unlock Dashboard</button>
+					<a href="/" class="home-link auth-home-link">
+						<Home class="home-icon" />
+						<span>Home</span>
+					</a>
+				</div>
+			</section>
+		</div>
+	{:else}
 	<div class="header">
 		<div class="header-content">
 			<div>
@@ -1264,6 +1316,7 @@
 			</div>
 		</section>
 	{/if}
+	{/if}
 </main>
 
 <style>
@@ -1271,6 +1324,90 @@
 		max-width: 1400px;
 		margin: 0 auto;
 		padding: 1.5rem;
+	}
+
+	.auth-container {
+		min-height: calc(100vh - 3rem);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.auth-card {
+		width: min(100%, 460px);
+		background: white;
+		border: 1px solid #e5e7eb;
+		border-radius: 16px;
+		padding: 2rem;
+		box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.auth-card h1 {
+		margin: 0;
+		font-size: 1.5rem;
+		color: #111827;
+	}
+
+	.auth-card p {
+		margin: 0;
+		color: #6b7280;
+	}
+
+	.auth-card label {
+		margin-top: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+	}
+
+	.auth-card input {
+		padding: 0.75rem;
+		border: 1px solid #d1d5db;
+		border-radius: 10px;
+		font-size: 1rem;
+	}
+
+	.auth-card input:focus {
+		outline: none;
+		border-color: #2563eb;
+		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+	}
+
+	.auth-error {
+		color: #b91c1c;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 10px;
+		padding: 0.625rem 0.75rem;
+		font-size: 0.875rem;
+	}
+
+	.auth-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 0.5rem;
+	}
+
+	.auth-actions button {
+		padding: 0.7rem 1rem;
+		border: none;
+		border-radius: 10px;
+		background: #2563eb;
+		color: white;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.auth-actions button:hover {
+		background: #1d4ed8;
+	}
+
+	.auth-home-link {
+		padding-inline: 0.9rem;
 	}
 
 	.header {
