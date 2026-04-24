@@ -41,7 +41,7 @@ function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
   console.log(message); // Always log to console
-  if (logStream) {
+  if (logStream && !logStream.destroyed && !logStream.writableEnded) {
     try {
       logStream.write(logMessage);
     } catch (err) {
@@ -177,6 +177,16 @@ function showAccessTokenSetup() {
 
 let mainWindow = null;
 let expressProcess = null;
+
+function detachServerProcessLogging() {
+  if (!expressProcess) return;
+  try {
+    if (expressProcess.stdout) expressProcess.stdout.removeAllListeners('data');
+    if (expressProcess.stderr) expressProcess.stderr.removeAllListeners('data');
+  } catch (_) {
+    /* ignore */
+  }
+}
 
 function createWindow() {
   log('Creating window...');
@@ -370,11 +380,12 @@ app.on('window-all-closed', () => {
 });
 
 app.on('quit', () => {
+  detachServerProcessLogging();
   log('App quitting');
   if (expressProcess) {
     expressProcess.kill();
   }
-  if (logStream) {
+  if (logStream && !logStream.destroyed) {
     logStream.end();
   }
 });
