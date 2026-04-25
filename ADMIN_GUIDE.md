@@ -1,15 +1,10 @@
-# Admin guide — day-to-day
+# Admin guide
 
-For **supervisors or managers** who support the check-in PC and Square, not for reading code.
+Overview and troubleshooting guide for **supervisors or managers** who support the Front Desk Check In App and/or Square account
 
-- Front desk steps: [STAFF_GUIDE.md](STAFF_GUIDE.md)  
-- First-time install (Square token on first launch): [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
+## Square and the app
 
----
-
-## Square and the app (short version)
-
-Customer **names, phones, emails, and lots** live in **Square**. The app decides **member vs non-member** from **customer segments** you maintain in the app’s **Admin** area (which segments count as membership). If something is wrong for a person, it is almost always fixed in **Square** (their profile or which group they are in), then you **refresh the membership cache** in Admin if the app still looks stale.
+Customer **names, phones, emails, and lots** live in **Square**. In Square, you use **Smart Filters** to group customers by membership type; in the Square API these appear as **customer segments**. In this app, Admin is configured with which customer segments count as each membership group for check-in. If there is a membership issue, first run **Refresh Cache** in Admin. If that does not fix it, escalate to a **manager** so they can review the guest in Square and diagnose further.
 
 ---
 
@@ -91,9 +86,3 @@ If segments changed in Square and the app still looks stale, use the segment fet
 
 ![Fetch segments from Square in Admin](docs/images/admin-segment-fetch-from-square.png)
 
----
-
-## When to involve IT or your installer
-
-- First-time setup, new PC, or new Square credentials: [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md).  
-- Deep Square API or developer topics: [docs/square-integration.md](docs/square-integration.md) (technical).
