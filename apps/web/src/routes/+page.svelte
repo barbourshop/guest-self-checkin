@@ -9,7 +9,9 @@
 		Ticket,
 		Users,
 		ArrowLeft,
-		Download
+		Download,
+		RefreshCw,
+		Shield
 	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import * as XLSX from 'xlsx';
@@ -29,10 +31,13 @@
 	let guestCount = 1;
 	let showDayPassFlow = false;
 	let dayPassGuestCount = 1;
-	let showEndOfDayPanel = false;
+	let showSettingsPanel = false;
 	let isPreparingDailyReport = false;
 	let dailyReportMessage: string | null = null;
 	let dailyReportError: string | null = null;
+	let isRefreshingMembershipCache = false;
+	let membershipCacheMessage: string | null = null;
+	let membershipCacheError: string | null = null;
 
 	function handleResetState() {
 		query = '';
@@ -44,7 +49,7 @@
 		selectedCustomer = null;
 		guestCount = 1;
 		showDayPassFlow = false;
-		showEndOfDayPanel = false;
+		showSettingsPanel = false;
 		dayPassGuestCount = 1;
 		if (inputElement) {
 			inputElement.focus();
@@ -227,7 +232,51 @@
 	}
 
 	function openAdmin() {
+		showSettingsPanel = true;
+		showDayPassFlow = false;
+		error = null;
+		query = '';
+		searchResults = [];
+		selectedCustomer = null;
+		dailyReportMessage = null;
+		dailyReportError = null;
+		membershipCacheMessage = null;
+		membershipCacheError = null;
+	}
+
+	function closeSettingsPanel() {
+		showSettingsPanel = false;
+	}
+
+	function goToAdminDashboard() {
 		goto('/admin');
+	}
+
+	async function handleRefreshMembershipCache() {
+		if (isRefreshingMembershipCache) {
+			return;
+		}
+
+		isRefreshingMembershipCache = true;
+		membershipCacheError = null;
+		membershipCacheMessage = null;
+
+		try {
+			const response = await fetch('/api/admin/cache/refresh', {
+				method: 'POST'
+			});
+			if (!response.ok) {
+				const body = await response.json().catch(() => ({}));
+				throw new Error(body.error || `Unable to refresh membership cache (${response.status})`);
+			}
+
+			membershipCacheMessage = 'Membership cache refresh has started.';
+		} catch (err) {
+			membershipCacheError =
+				err instanceof Error ? err.message : 'Failed to refresh membership cache. Please try again.';
+		} finally {
+			isRefreshingMembershipCache = false;
+		}
 	}
 
 	async function handleDownloadDailyCheckins() {
@@ -408,6 +457,116 @@
 					</div>
 				{/if}
 			</div>
+		{:else if showSettingsPanel}
+			<div class="bg-white rounded-lg shadow-md p-6">
+				<div class="flex justify-between items-start mb-6">
+					<div class="flex items-center gap-3">
+						<button
+							on:click={closeSettingsPanel}
+							class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+							aria-label="Back"
+						>
+							<ArrowLeft class="h-5 w-5" />
+						</button>
+						<div class="flex items-center gap-2">
+							<div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+								<Settings class="h-5 w-5 text-slate-700" />
+							</div>
+							<div>
+								<h2 class="text-xl font-bold text-gray-900">Front Desk Tools</h2>
+								<p class="text-sm text-gray-500">Daily closeout, cache refresh, and admin access</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 gap-4">
+					<div class="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 sm:p-6 shadow-sm">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+							<div>
+								<h3 class="text-lg font-bold text-indigo-900">Close Out Day</h3>
+								<p class="text-sm text-indigo-700 mt-1">Download today&apos;s check-in report (Excel)</p>
+							</div>
+							<button
+								type="button"
+								on:click={handleDownloadDailyCheckins}
+								disabled={isPreparingDailyReport}
+								class="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+							>
+								{#if isPreparingDailyReport}
+									<Loader2 class="h-5 w-5 animate-spin" />
+									<span>Preparing…</span>
+								{:else}
+									<Download class="h-5 w-5" />
+									<span>Download Report</span>
+								{/if}
+							</button>
+						</div>
+						{#if dailyReportMessage}
+							<div class="mt-3 p-3 bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-900 text-sm">
+								{dailyReportMessage}
+							</div>
+						{/if}
+						{#if dailyReportError}
+							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+								<AlertCircle class="h-4 w-4 shrink-0" />
+								<span>{dailyReportError}</span>
+							</div>
+						{/if}
+					</div>
+
+					<div class="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5 sm:p-6 shadow-sm">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+							<div>
+								<h3 class="text-lg font-bold text-emerald-900">Membership Cache</h3>
+								<p class="text-sm text-emerald-700 mt-1">Refresh cache so search uses latest membership data</p>
+							</div>
+							<button
+								type="button"
+								on:click={handleRefreshMembershipCache}
+								disabled={isRefreshingMembershipCache}
+								class="px-5 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+							>
+								{#if isRefreshingMembershipCache}
+									<Loader2 class="h-5 w-5 animate-spin" />
+									<span>Refreshing…</span>
+								{:else}
+									<RefreshCw class="h-5 w-5" />
+									<span>Refresh Cache</span>
+								{/if}
+							</button>
+						</div>
+						{#if membershipCacheMessage}
+							<div class="mt-3 p-3 bg-emerald-100 border border-emerald-200 rounded-lg text-emerald-900 text-sm">
+								{membershipCacheMessage}
+							</div>
+						{/if}
+						{#if membershipCacheError}
+							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+								<AlertCircle class="h-4 w-4 shrink-0" />
+								<span>{membershipCacheError}</span>
+							</div>
+						{/if}
+					</div>
+
+					<div class="rounded-xl border-2 border-gray-200 bg-gray-50 p-5 sm:p-6 shadow-sm">
+						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+							<div>
+								<h3 class="text-lg font-bold text-gray-900">Admin Dashboard</h3>
+								<p class="text-sm text-gray-600 mt-1">Open advanced tools and settings (password required)</p>
+							</div>
+							<button
+								type="button"
+								on:click={goToAdminDashboard}
+								class="px-5 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center gap-2 font-medium"
+							>
+								<Shield class="h-5 w-5" />
+								<span>Go to Admin Dashboard</span>
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
 		{:else if selectedCustomer}
 			<CustomerDetail
 				customer={selectedCustomer}
@@ -420,14 +579,14 @@
 			/>
 		{:else}
 			<div class="space-y-6 mb-6">
-				<!-- Search, Day pass, End of day – three equal columns (1/3 each) -->
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+				<!-- Search and Day pass quick actions -->
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<button
 						type="button"
 						on:click={() => {
 							showManualSearch = true;
 							showDayPassFlow = false;
-							showEndOfDayPanel = false;
+							showSettingsPanel = false;
 							error = null;
 							searchResults = [];
 							selectedCustomer = null;
@@ -444,7 +603,7 @@
 						type="button"
 						on:click={() => {
 							showDayPassFlow = true;
-							showEndOfDayPanel = false;
+							showSettingsPanel = false;
 							error = null;
 							query = '';
 							searchResults = [];
@@ -457,61 +616,10 @@
 						</div>
 						<span class="text-lg font-bold text-amber-900">Day pass</span>
 					</button>
-					<button
-						type="button"
-						on:click={() => {
-							showDayPassFlow = false;
-							showEndOfDayPanel = true;
-							query = '';
-							error = null;
-							searchResults = [];
-							selectedCustomer = null;
-						}}
-						class="action-card flex flex-row items-center gap-4 p-4 rounded-xl text-left border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-400 transition-colors focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-					>
-						<div class="w-12 h-12 rounded-lg bg-indigo-200 flex items-center justify-center shrink-0">
-							<Download class="h-6 w-6 text-indigo-800" />
-						</div>
-						<span class="text-lg font-bold text-indigo-900">End of day</span>
-					</button>
 				</div>
 
-				{#if showEndOfDayPanel}
-					<div class="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 sm:p-6 shadow-sm">
-						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-							<div>
-								<h2 class="text-lg font-bold text-indigo-900">End of day</h2>
-							</div>
-							<button
-								type="button"
-								on:click={handleDownloadDailyCheckins}
-								disabled={isPreparingDailyReport}
-								class="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-							>
-								{#if isPreparingDailyReport}
-									<Loader2 class="h-5 w-5 animate-spin" />
-									<span>Preparing…</span>
-								{:else}
-									<Download class="h-5 w-5" />
-									<span>Download Daily Checkins (Excel)</span>
-								{/if}
-							</button>
-						</div>
-						{#if dailyReportMessage}
-							<div class="mt-3 p-3 bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-900 text-sm">
-								{dailyReportMessage}
-							</div>
-						{/if}
-						{#if dailyReportError}
-							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-								<AlertCircle class="h-4 w-4 shrink-0" />
-								<span>{dailyReportError}</span>
-							</div>
-						{/if}
-					</div>
-				{:else}
-					<!-- Search for customers – full width prominent card (primary green) -->
-					<div class="rounded-xl border-2 border-primary-200 bg-primary-50 p-6 sm:p-8 shadow-sm">
+				<!-- Search for customers – full width prominent card (primary green) -->
+				<div class="rounded-xl border-2 border-primary-200 bg-primary-50 p-6 sm:p-8 shadow-sm">
 					<div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
 						<div class="w-16 h-16 rounded-xl bg-primary-200 flex items-center justify-center shrink-0">
 							<Search class="h-9 w-9 text-primary-800" />
@@ -609,8 +717,7 @@
 							</button>
 						</div>
 					{/if}
-					</div>
-				{/if}
+				</div>
 
 				{#if error}
 					<div
@@ -649,9 +756,9 @@
 									<div class="bg-green-50 border-b border-green-200 px-4 py-2.5 flex justify-between items-center gap-2">
 										<span class="text-base font-bold text-gray-900 tracking-tight min-w-0 truncate">{customer.displayName}</span>
 										<span
-											class="px-2 py-0.5 text-xs font-semibold rounded shrink-0 {customer.membership.segmentNames && customer.membership.segmentNames.length > 0
-												? 'bg-green-100 text-green-800'
-												: 'bg-gray-200 text-gray-800'}"
+											class="shrink-0 px-3 py-1 text-sm font-bold rounded-full border-2 shadow-sm max-w-[15rem] truncate {customer.membership.segmentNames && customer.membership.segmentNames.length > 0
+												? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+												: 'bg-gray-200 text-gray-900 border-gray-300'}"
 										>
 											{customer.membership.segmentNames && customer.membership.segmentNames.length > 0
 												? customer.membership.segmentNames.join(', ')

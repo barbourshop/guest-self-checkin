@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build Word (.docx) versions of the three published guides from Markdown.
+ * Build Word (.docx) versions of the published guides from Markdown.
  * Requires Pandoc 2.x+ on PATH: https://pandoc.org/installing.html
  *
  * Usage: node scripts/build-docs-docx.js [output-dir]
@@ -15,11 +15,6 @@ const projectRoot = path.resolve(__dirname, '..');
 const outDir = path.resolve(projectRoot, process.argv[2] || path.join('dist', 'docs'));
 
 const guides = [
-  {
-    source: 'INSTALLATION_GUIDE.md',
-    output: 'Installation-Guide.docx',
-    label: 'Installation'
-  },
   {
     source: 'STAFF_GUIDE.md',
     output: 'Staff-Guide.docx',
