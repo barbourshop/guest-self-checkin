@@ -94,6 +94,22 @@ Use this after changing customer segments in Square or when many member searches
 
 If results still look wrong, verify the guest is assigned to one of the selected Square segments, then use the segment fetch action in **Customer Segments** and refresh cache again.
 
+### Create and download member ID card images
+
+Use this when a member needs a printable or shareable card image.
+
+1. Open **Admin** and go to **Membership**.
+2. Find the member and click the **Card** icon on their row.
+3. On the Member Card page, confirm the member details and barcode/QR setting.
+4. Click **Download ID Card (PNG)** to save the image file.
+
+![Member card page and PNG download button](docs/images/membership-card.png)
+
+You can then use the PNG in several ways:
+- Print at home on standard paper, then trim to size.
+- Print in office (paper or card stock) and laminate for longer use.
+- Keep/send the PNG digitally (email, cloud folder, or phone) when a physical card is not needed.
+
 ### Get check-in / access records
 
 **Front desk daily close-out (recommended):** Use the home screen **End of day** action to download the daily Excel file, then email it to the manager.
