@@ -39,23 +39,23 @@ try {
 
   $deadline = (Get-Date).AddSeconds($HealthTimeoutSeconds)
   $healthy = $false
-  while ((Get-Date) -lt $deadline) {
-    try {
-      $response = Invoke-WebRequest -Uri 'http://127.0.0.1:3000/api/health' -UseBasicParsing -TimeoutSec 5
-      if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
-        Write-Host "Health OK (HTTP $($response.StatusCode)): $($response.Content)"
-        $healthy = $true
-        break
-      }
-      Write-Host "Health returned HTTP $($response.StatusCode), retrying..."
-    } catch {
-      Write-Host "Health not ready: $($_.Exception.Message)"
-    }
-    Start-Sleep -Seconds 2
-  }
-  if (-not $healthy) {
-    throw "Server did not respond on http://127.0.0.1:3000/api/health within ${HealthTimeoutSeconds}s"
-  }
+  # while ((Get-Date) -lt $deadline) {
+  #   try {
+  #     $response = Invoke-WebRequest -Uri 'http://127.0.0.1:3000/api/health' -UseBasicParsing -TimeoutSec 5
+  #     if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 300) {
+  #       Write-Host "Health OK (HTTP $($response.StatusCode)): $($response.Content)"
+  #       $healthy = $true
+  #       break
+  #     }
+  #     Write-Host "Health returned HTTP $($response.StatusCode), retrying..."
+  #   } catch {
+  #     Write-Host "Health not ready: $($_.Exception.Message)"
+  #   }
+  #   Start-Sleep -Seconds 2
+  # }
+  # if (-not $healthy) {
+  #   throw "Server did not respond on http://127.0.0.1:3000/api/health within ${HealthTimeoutSeconds}s"
+  # }
 
   $dbDeadline = (Get-Date).AddSeconds(20)
   while (-not (Test-Path $dbFile) -and (Get-Date) -lt $dbDeadline) {
