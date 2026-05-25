@@ -275,6 +275,7 @@ function startServer() {
     ...process.env,
     NODE_ENV: isDev ? 'development' : 'production',
     ELECTRON_RUN_AS_NODE: '1',
+    ELECTRON_USER_DATA: app.getPath('userData'),
     LOG_FILE: logFile,
     RESOURCES_PATH: process.resourcesPath,
     APP_PATH: app.getAppPath(),

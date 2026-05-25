@@ -5,9 +5,10 @@ This application uses SQLite databases.
 ## Database Types
 
 ### 1. Production Database (`checkin.db`)
-- **Location**: Project root directory
+- **Location (packaged Electron app)**: `%APPDATA%/front-desk-app/checkin.db` (via `ELECTRON_USER_DATA`)
+- **Location (dev / CLI)**: Project root directory
 - **Usage**: Production and development
-- **When Used**: Default when no special environment variables are set
+- **When Used**: Default when no special environment variables are set; Electron sets `ELECTRON_USER_DATA` in `main.js`
 - **Data**: Customer data from Square API (membership cache, segments, check-in log)
 
 ### 2. Test Database (`checkin.test.db` or in-memory)
