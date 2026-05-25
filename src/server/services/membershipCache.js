@@ -512,7 +512,15 @@ class MembershipCache {
 
       if (needsRefresh) {
         logger.info(`Cache refresh needed: ${stats.totalCustomers} customers, ${cacheAgeHours.toFixed(1)} hours old`);
-        
+
+        const segments = this.segmentService.getSegments();
+        if (segments.length === 0) {
+          logger.warn(
+            'Cache refresh skipped on startup: no customer segments configured. Add segments in Admin → Segments.'
+          );
+          return false;
+        }
+
         // Refresh all customers
         await this.refreshAllCustomers();
         return true;
