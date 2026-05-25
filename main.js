@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 
@@ -258,9 +258,55 @@ function createWindow() {
   return mainWindow;
 }
 
+/**
+ * Stop any process already listening on our API port (orphaned dev server, crashed child, etc.).
+ * On macOS, IPv4 and IPv6 can each have a different listener on the same port number, which
+ * breaks health checks to 127.0.0.1 when only the new server bound on ::1.
+ */
+function releaseApiPort(port) {
+  const myPid = process.pid;
+  try {
+    if (process.platform === 'win32') {
+      const out = execSync(`netstat -ano -p tcp | findstr :${port}`, { encoding: 'utf8' });
+      const pids = new Set();
+      for (const line of out.split(/\r?\n/)) {
+        if (!line.includes('LISTENING')) continue;
+        const parts = line.trim().split(/\s+/);
+        const pid = Number(parts[parts.length - 1]);
+        if (pid > 0 && pid !== myPid) pids.add(pid);
+      }
+      for (const pid of pids) {
+        log(`Releasing port ${port}: stopping PID ${pid}`);
+        try {
+          execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+        } catch (_) {
+          /* ignore */
+        }
+      }
+      return;
+    }
+
+    const out = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: 'utf8' }).trim();
+    if (!out) return;
+    for (const pidStr of out.split(/\s+/)) {
+      const pid = Number(pidStr);
+      if (!pid || pid === myPid) continue;
+      log(`Releasing port ${port}: stopping PID ${pid}`);
+      try {
+        process.kill(pid, 'SIGTERM');
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  } catch (_) {
+    /* nothing listening */
+  }
+}
+
 function startServer() {
   log('Starting server...');
   const isDev = !app.isPackaged;
+  releaseApiPort(3000);
   const serverPath = isDev
     ? './src/server/server.js'
     : path.join(process.resourcesPath, 'src/server/server.js');
@@ -367,7 +413,7 @@ function waitForServer(port, expectedPid, timeout = 30000) {
     }
 
     function check() {
-      const req = http.get({ hostname: '127.0.0.1', port, path: healthPath }, (res) => {
+      const req = http.get({ hostname: '127.0.0.1', port, path: healthPath, family: 4 }, (res) => {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {

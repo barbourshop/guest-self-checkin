@@ -151,9 +151,10 @@ try {
     process.exit(1);
   }
 
-  // Start server
-  const server = app.listen(port, async () => {
-    log(`Server is running on http://localhost:${port}`);
+  // Bind loopback only (desktop app). Avoids split IPv4/IPv6 listeners on the same port on macOS.
+  const host = '127.0.0.1';
+  const server = app.listen(port, host, async () => {
+    log(`Server is running on http://${host}:${port}`);
     
     // Check and refresh cache on boot if needed (non-blocking)
     if (process.env.USE_MOCK_SQUARE_SERVICE !== 'true') {
