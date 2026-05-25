@@ -174,12 +174,11 @@ jobs:
         shell: pwsh
       - name: Install app silently with log
         run: |
-          $installDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
-          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+          # NSIS splits /D= on spaces if args are not passed as one token — use a no-space path for CI.
+          $installDir = "$env:LOCALAPPDATA\Programs\FrontDeskApp"
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
           Write-Host "About to run installer: $installer"
           Write-Host "Target directory: $installDir"
-          # /D= must be last (NSIS). Separate args so paths with spaces parse correctly.
           $proc = Start-Process -FilePath $installer -ArgumentList @('/S', '/LOG=install.log', "/D=$installDir") -Wait -PassThru
           Write-Host "Installer exit code: $($proc.ExitCode)"
           if (Test-Path "install.log") { Get-Content "install.log" }
@@ -203,9 +202,12 @@ jobs:
       - name: Find installed app executable
         id: find_exe
         run: |
+          $programs = "$env:LOCALAPPDATA\Programs"
           $searchRoots = @(
-            "$env:LOCALAPPDATA\Programs\Front Desk App",
-            "$env:LOCALAPPDATA\Programs\front-desk-app",
+            "$programs\FrontDeskApp",
+            "$programs\Front Desk App",
+            "$programs\Front",
+            "$programs\front-desk-app",
             "${env:ProgramFiles}\Front Desk App",
             "${env:ProgramFiles}\Rec Center Check-in",
             "${env:ProgramFiles}\Rec Center Check-in\Front Desk App"
@@ -222,11 +224,19 @@ jobs:
             $candidates += Get-ChildItem $root -Filter '*.exe' -Recurse -ErrorAction SilentlyContinue |
               Where-Object { $_.Name -notmatch '^(uninst|Uninstall|Setup|Update)' }
           }
+          # Fallback: prior broken CI installs split /D= at the space -> Programs\Front\...
+          if (-not $candidates -and (Test-Path $programs)) {
+            Write-Host "Fallback search under: $programs"
+            $candidates = Get-ChildItem $programs -Filter 'Front Desk App.exe' -Recurse -ErrorAction SilentlyContinue
+          }
           $exe = $candidates | Where-Object { $_.Name -eq 'Front Desk App.exe' } | Select-Object -First 1
           if (-not $exe) { $exe = $candidates | Select-Object -First 1 }
           if (-not $exe) {
             Write-Host "Programs folder listing:"
-            Get-ChildItem "$env:LOCALAPPDATA\Programs" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+            Get-ChildItem $programs -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+            Write-Host "All .exe under Programs (max 20):"
+            Get-ChildItem $programs -Filter '*.exe' -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 20 | ForEach-Object { Write-Host "  $($_.FullName)" }
             throw "App executable not found. Searched: $($searchRoots -join '; ')"
           }
           Write-Host "Found executable: $($exe.FullName)"
