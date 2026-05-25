@@ -197,9 +197,12 @@ That script (no UI automation, **no localhost HTTP** — GHA cannot reach the in
 - After the app is stopped, `node scripts/verify-appdata-db.js` performs a direct SQLite read/write on that DB (and ensures it is not the legacy `resources\checkin.db` path)
 - `app.log` does **not** contain known regressions (`readonly database`, `SQLITE_CANTOPEN`, `logger.warn is not a function`, etc.)
 
+The smoke job sets `SQUARE_ACCESS_TOKEN` on the step (and seeds `%APPDATA%\front-desk-app\square-access-token.txt` before launch) so the packaged app does not block on the token setup dialog.
+
 To run locally after installing on Windows:
 
 ```powershell
+$env:SQUARE_ACCESS_TOKEN = 'your-token'
 pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "$env:LOCALAPPDATA\Programs\Front Desk App\Front Desk App.exe"
 ```
 

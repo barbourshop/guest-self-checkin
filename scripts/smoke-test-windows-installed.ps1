@@ -48,29 +48,71 @@ function Stop-FrontDeskApp {
   }
 }
 
+function Initialize-SmokeUserData {
+  param([string]$UserDataDir)
+  $logsDir = Join-Path $UserDataDir 'logs'
+  New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
+  $token = $env:SQUARE_ACCESS_TOKEN
+  if ([string]::IsNullOrWhiteSpace($token)) {
+    Write-Warning 'SQUARE_ACCESS_TOKEN is not set in this step — packaged app may block on the token setup dialog.'
+    return
+  }
+  $tokenFile = Join-Path $UserDataDir 'square-access-token.txt'
+  Set-Content -Path $tokenFile -Value $token.Trim() -Encoding utf8NoBOM -NoNewline
+  Write-Host "Seeded Square token for smoke test: $tokenFile"
+}
+
+function Write-StartupDiagnostics {
+  param(
+    [string]$LogPath,
+    [string]$DbPath,
+    [int]$AppPid
+  )
+  $proc = Get-Process -Id $AppPid -ErrorAction SilentlyContinue
+  if ($proc) {
+    Write-Host "Process still running: PID $AppPid ($($proc.ProcessName))"
+  } else {
+    Write-Host "Process not running: PID $AppPid"
+  }
+  Write-Host "DB exists: $(Test-Path $DbPath) — $DbPath"
+  Write-Host "Log exists: $(Test-Path $LogPath) — $LogPath"
+  if (Test-Path $LogPath) {
+    Write-Host '--- app.log (last 40 lines) ---'
+    Get-Content $LogPath -Tail 40 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
+    Write-Host '--- end app.log ---'
+  }
+}
+
+function Test-ServerReadyInLog {
+  param([string[]]$Lines)
+  return $Lines | Select-String -Pattern 'Server is running on http://(127\.0\.0\.1|localhost):' -Quiet
+}
+
 function Wait-ForAppReady {
   param(
     [int]$TimeoutSeconds,
     [string]$LogPath,
     [string]$DbPath,
-    [string]$ProcessName
+    [int]$AppPid
   )
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   while ((Get-Date) -lt $deadline) {
-    $running = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
-    if (-not $running) {
-      throw "App process '$ProcessName' exited before becoming ready"
+    $proc = Get-Process -Id $AppPid -ErrorAction SilentlyContinue
+    if (-not $proc) {
+      Write-StartupDiagnostics -LogPath $LogPath -DbPath $DbPath -AppPid $AppPid
+      throw "App process PID $AppPid exited before becoming ready"
     }
     if ((Test-Path $DbPath) -and (Test-Path $LogPath)) {
-      $tail = Get-Content $LogPath -Tail 200 -ErrorAction SilentlyContinue
-      if ($tail | Select-String -Pattern 'Server is running on http://127\.0\.0\.1:' -Quiet) {
+      $tail = @(Get-Content $LogPath -Tail 200 -ErrorAction SilentlyContinue)
+      if (Test-ServerReadyInLog -Lines $tail) {
         Write-Host "Server ready (app.log + AppData DB present)"
         return
       }
     }
     Start-Sleep -Seconds 2
   }
-  throw "App did not become ready within ${TimeoutSeconds}s (need app.log server line + $DbPath)"
+  Write-StartupDiagnostics -LogPath $LogPath -DbPath $DbPath -AppPid $AppPid
+  throw "App did not become ready within ${TimeoutSeconds}s (need app.log server line + $DbPath). If log stops at 'Starting application', seed SQUARE_ACCESS_TOKEN for CI."
 }
 
 function Assert-NoLogRegressions {
@@ -79,8 +121,8 @@ function Assert-NoLogRegressions {
     throw "App log not found: $Path"
   }
   $lines = Get-Content $Path -Tail 400 -ErrorAction Stop
-  if (-not ($lines | Select-String -Pattern 'Server is running on http://127\.0\.0\.1:' -Quiet)) {
-    throw "Expected 'Server is running on http://127.0.0.1:' in $Path"
+  if (-not (Test-ServerReadyInLog -Lines $lines)) {
+    throw "Expected server started line in $Path"
   }
   Write-Host "Found server started line in app.log"
   foreach ($pattern in $regressionPatterns) {
@@ -120,11 +162,13 @@ try {
   Stop-FrontDeskApp -ProcessName $processName
   Start-Sleep -Seconds 1
 
+  Initialize-SmokeUserData -UserDataDir $userData
+
   $app = Start-Process -FilePath $ExePath -PassThru
   Write-Host "Launched PID $($app.Id); waiting ${InitialWaitSeconds}s..."
   Start-Sleep -Seconds $InitialWaitSeconds
 
-  Wait-ForAppReady -TimeoutSeconds $StartupTimeoutSeconds -LogPath $logFile -DbPath $dbFile -ProcessName $processName
+  Wait-ForAppReady -TimeoutSeconds $StartupTimeoutSeconds -LogPath $logFile -DbPath $dbFile -AppPid $app.Id
 
   if (-not (Test-Path $dbFile)) {
     throw "Database not created under AppData (ELECTRON_USER_DATA): $dbFile"
