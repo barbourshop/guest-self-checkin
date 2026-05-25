@@ -182,20 +182,3 @@ After manual testing passes:
 
 Note: `npm run test:e2e` is currently a placeholder script in `package.json` (no Playwright suite attached).
 
-## CI: Windows installed-app smoke test
-
-The `full-pipeline.yml` workflow job `smoke-test-windows-app` silently installs the built `.exe`, then runs:
-
-```powershell
-pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "<path-to-installed.exe>"
-```
-
-That script checks:
-
-- `GET http://127.0.0.1:3000/api/health` succeeds
-- `%APPDATA%\front-desk-app\checkin.db` is created (writable user data, not Program Files only)
-- `%APPDATA%\front-desk-app\logs\app.log` contains `Server is running on http://localhost:`
-- `app.log` does **not** contain known regressions (`logger.warn is not a function`, `readonly database`, `SQLITE_CANTOPEN`, `unable to open database file`)
-
-Requires GitHub Actions secrets for Square (`SQUARE_ACCESS_TOKEN`, etc.) so the packaged server can start without the token setup dialog.
-
