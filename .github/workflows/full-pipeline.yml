@@ -160,7 +160,11 @@ jobs:
       - name: Find installer
         id: find_installer
         run: |
-          $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
+          $installers = Get-ChildItem -Path ./installer -Filter *.exe -File -ErrorAction SilentlyContinue
+          if (-not $installers) { throw "No installer .exe in ./installer" }
+          $installer = $installers | Where-Object { $_.Name -match 'Setup' } | Select-Object -First 1
+          if (-not $installer) { $installer = $installers | Select-Object -First 1 }
+          Write-Host "Using installer: $($installer.FullName)"
           echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
       - name: (Debug) Print installer path, user, and working directory
         run: |
@@ -170,11 +174,16 @@ jobs:
         shell: pwsh
       - name: Install app silently with log
         run: |
+          $installDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
+          New-Item -ItemType Directory -Force -Path $installDir | Out-Null
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
           Write-Host "About to run installer: $installer"
-          Start-Process -FilePath $installer -ArgumentList "/S /LOG=install.log" -Wait -PassThru | Format-List *
-          Write-Host "Installer process finished."
+          Write-Host "Target directory: $installDir"
+          # /D= must be last (NSIS). Separate args so paths with spaces parse correctly.
+          $proc = Start-Process -FilePath $installer -ArgumentList @('/S', '/LOG=install.log', "/D=$installDir") -Wait -PassThru
+          Write-Host "Installer exit code: $($proc.ExitCode)"
           if (Test-Path "install.log") { Get-Content "install.log" }
+          if ($proc.ExitCode -ne 0) { throw "Installer failed with exit code $($proc.ExitCode)" }
         shell: pwsh
       - name: (Debug) List all files in workspace (max 40)
         run: |
@@ -194,12 +203,33 @@ jobs:
       - name: Find installed app executable
         id: find_exe
         run: |
-          $exe = $null
-          $userDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
-          if (Test-Path $userDir) {
-            $exe = Get-ChildItem $userDir -Filter *.exe -Recurse | Select-Object -First 1
+          $searchRoots = @(
+            "$env:LOCALAPPDATA\Programs\Front Desk App",
+            "$env:LOCALAPPDATA\Programs\front-desk-app",
+            "${env:ProgramFiles}\Front Desk App",
+            "${env:ProgramFiles}\Rec Center Check-in",
+            "${env:ProgramFiles}\Rec Center Check-in\Front Desk App"
+          )
+          $pf86 = ${env:ProgramFiles(x86)}
+          if ($pf86) {
+            $searchRoots += "$pf86\Rec Center Check-in"
+            $searchRoots += "$pf86\Rec Center Check-in\Front Desk App"
           }
-          if (-not $exe) { throw "App executable not found" }
+          $candidates = @()
+          foreach ($root in $searchRoots) {
+            if (-not (Test-Path $root)) { continue }
+            Write-Host "Searching: $root"
+            $candidates += Get-ChildItem $root -Filter '*.exe' -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -notmatch '^(uninst|Uninstall|Setup|Update)' }
+          }
+          $exe = $candidates | Where-Object { $_.Name -eq 'Front Desk App.exe' } | Select-Object -First 1
+          if (-not $exe) { $exe = $candidates | Select-Object -First 1 }
+          if (-not $exe) {
+            Write-Host "Programs folder listing:"
+            Get-ChildItem "$env:LOCALAPPDATA\Programs" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+            throw "App executable not found. Searched: $($searchRoots -join '; ')"
+          }
+          Write-Host "Found executable: $($exe.FullName)"
           echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
         shell: pwsh
       - name: Verify installed bundle (frontend + server next to .exe)
