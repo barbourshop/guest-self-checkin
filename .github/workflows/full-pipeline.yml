@@ -140,6 +140,12 @@ jobs:
   smoke-test-windows-app:
     needs: build-windows-app
     runs-on: windows-latest
+    env:
+      SQUARE_ACCESS_TOKEN: ${{ secrets.SQUARE_ACCESS_TOKEN }}
+      SQUARE_API_URL: ${{ secrets.SQUARE_API_URL }}
+      SQUARE_API_VERSION: ${{ secrets.SQUARE_API_VERSION }}
+      SQUARE_ENVIRONMENT: ${{ secrets.SQUARE_ENVIRONMENT }}
+      CI: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -149,18 +155,14 @@ jobs:
         with:
           name: windows-installer
           path: ./installer
-      - name: Set required environment variables
-        run: |
-          [System.Environment]::SetEnvironmentVariable('SQUARE_ACCESS_TOKEN', '${{ secrets.SQUARE_ACCESS_TOKEN }}', 'User')
-          [System.Environment]::SetEnvironmentVariable('SQUARE_API_URL', '${{ secrets.SQUARE_API_URL }}', 'User')
-          [System.Environment]::SetEnvironmentVariable('SQUARE_API_VERSION', '${{ secrets.SQUARE_API_VERSION }}', 'User')
-          [System.Environment]::SetEnvironmentVariable('SQUARE_ENVIRONMENT', '${{ secrets.SQUARE_ENVIRONMENT }}', 'User')
-          [System.Environment]::SetEnvironmentVariable('VITE_USE_MOCK_API', 'false', 'User')
-        shell: pwsh
       - name: Find installer
         id: find_installer
         run: |
-          $installer = Get-ChildItem -Path ./installer -Filter *.exe | Select-Object -First 1
+          $installers = Get-ChildItem -Path ./installer -Filter *.exe -File -ErrorAction SilentlyContinue
+          if (-not $installers) { throw "No installer .exe in ./installer" }
+          $installer = $installers | Where-Object { $_.Name -match 'Setup' } | Select-Object -First 1
+          if (-not $installer) { $installer = $installers | Select-Object -First 1 }
+          Write-Host "Using installer: $($installer.FullName)"
           echo "installer_path=$($installer.FullName)" >> $env:GITHUB_OUTPUT
       - name: (Debug) Print installer path, user, and working directory
         run: |
@@ -170,11 +172,15 @@ jobs:
         shell: pwsh
       - name: Install app silently with log
         run: |
+          # NSIS splits /D= on spaces if args are not passed as one token — use a no-space path for CI.
+          $installDir = "$env:LOCALAPPDATA\Programs\FrontDeskApp"
           $installer = "${{ steps.find_installer.outputs.installer_path }}"
           Write-Host "About to run installer: $installer"
-          Start-Process -FilePath $installer -ArgumentList "/S /LOG=install.log" -Wait -PassThru | Format-List *
-          Write-Host "Installer process finished."
+          Write-Host "Target directory: $installDir"
+          $proc = Start-Process -FilePath $installer -ArgumentList @('/S', '/LOG=install.log', "/D=$installDir") -Wait -PassThru
+          Write-Host "Installer exit code: $($proc.ExitCode)"
           if (Test-Path "install.log") { Get-Content "install.log" }
+          if ($proc.ExitCode -ne 0) { throw "Installer failed with exit code $($proc.ExitCode)" }
         shell: pwsh
       - name: (Debug) List all files in workspace (max 40)
         run: |
@@ -194,12 +200,44 @@ jobs:
       - name: Find installed app executable
         id: find_exe
         run: |
-          $exe = $null
-          $userDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
-          if (Test-Path $userDir) {
-            $exe = Get-ChildItem $userDir -Filter *.exe -Recurse | Select-Object -First 1
+          $programs = "$env:LOCALAPPDATA\Programs"
+          $searchRoots = @(
+            "$programs\FrontDeskApp",
+            "$programs\Front Desk App",
+            "$programs\Front",
+            "$programs\front-desk-app",
+            "${env:ProgramFiles}\Front Desk App",
+            "${env:ProgramFiles}\Rec Center Check-in",
+            "${env:ProgramFiles}\Rec Center Check-in\Front Desk App"
+          )
+          $pf86 = ${env:ProgramFiles(x86)}
+          if ($pf86) {
+            $searchRoots += "$pf86\Rec Center Check-in"
+            $searchRoots += "$pf86\Rec Center Check-in\Front Desk App"
           }
-          if (-not $exe) { throw "App executable not found" }
+          $candidates = @()
+          foreach ($root in $searchRoots) {
+            if (-not (Test-Path $root)) { continue }
+            Write-Host "Searching: $root"
+            $candidates += Get-ChildItem $root -Filter '*.exe' -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -notmatch '^(uninst|Uninstall|Setup|Update)' }
+          }
+          # Fallback: prior broken CI installs split /D= at the space -> Programs\Front\...
+          if (-not $candidates -and (Test-Path $programs)) {
+            Write-Host "Fallback search under: $programs"
+            $candidates = Get-ChildItem $programs -Filter 'Front Desk App.exe' -Recurse -ErrorAction SilentlyContinue
+          }
+          $exe = $candidates | Where-Object { $_.Name -eq 'Front Desk App.exe' } | Select-Object -First 1
+          if (-not $exe) { $exe = $candidates | Select-Object -First 1 }
+          if (-not $exe) {
+            Write-Host "Programs folder listing:"
+            Get-ChildItem $programs -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  $($_.FullName)" }
+            Write-Host "All .exe under Programs (max 20):"
+            Get-ChildItem $programs -Filter '*.exe' -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 20 | ForEach-Object { Write-Host "  $($_.FullName)" }
+            throw "App executable not found. Searched: $($searchRoots -join '; ')"
+          }
+          Write-Host "Found executable: $($exe.FullName)"
           echo "exe_path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
         shell: pwsh
       - name: Verify installed bundle (frontend + server next to .exe)
@@ -210,49 +248,13 @@ jobs:
           if (-not (Test-Path $resources)) { throw "Resources directory not found: $resources" }
           node src/server/scripts/verifyElectronPack.js --resources $resources
         shell: pwsh
-      - name: Run app and check it starts
+      - name: Install Node deps for AppData DB verification
+        run: npm install
+      - name: Smoke test installed app (log readiness, AppData DB, no HTTP)
         run: |
-          Start-Process -FilePath "${{ steps.find_exe.outputs.exe_path }}"
-          Start-Sleep -Seconds 10
-          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
-          $process = Get-Process $processName -ErrorAction SilentlyContinue
-          if ($null -eq $process) { throw "App did not start" }
+          if (-not $env:SQUARE_ACCESS_TOKEN) { throw 'SQUARE_ACCESS_TOKEN secret is required for smoke test' }
+          pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "${{ steps.find_exe.outputs.exe_path }}"
         shell: pwsh
-      - name: Kill app
-        run: |
-          $processName = [System.IO.Path]::GetFileNameWithoutExtension("${{ steps.find_exe.outputs.exe_path }}")
-          Stop-Process -Name $processName -Force
-        shell: pwsh
-      # - name: Check for 'server is running' log line and absence of fatal errors
-      #   run: |
-      #     $userDir = "$env:LOCALAPPDATA\Programs\Front Desk App"
-      #     # Look for server.log or app.log
-      #     $logFile = Get-ChildItem $userDir -Filter server.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-      #     if (-not $logFile) {
-      #       $logFile = Get-ChildItem $userDir -Filter app.log -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-      #     }
-      #     if (-not $logFile) {
-      #       Write-Host "No server.log or app.log file found in $userDir"
-      #       exit 1
-      #     }
-      #     $logContent = Get-Content $logFile.FullName
-      #     $serverStarted = $logContent | Select-String -Pattern "Server is running on http://localhost:"
-      #     if ($serverStarted) {
-      #       Write-Host "Found server started log line:"
-      #       $serverStarted | ForEach-Object { Write-Host $_ }
-      #     } else {
-      #       Write-Host "'Server is running on http://localhost:' log line not found in $($logFile.FullName)"
-      #       exit 1
-      #     }
-      #     # Check for error patterns
-      #     $errorPatterns = "ERROR:", "Fatal error", "Uncaught Exception", "Unhandled Promise Rejection"
-      #     $errors = $logContent | Select-String -Pattern $errorPatterns
-      #     if ($errors) {
-      #       Write-Host "Found error log lines:"
-      #       $errors | ForEach-Object { Write-Host $_ }
-      #       exit 1
-      #     }
-      #   shell: pwsh
 
   # release:
   #   needs: smoke-test-windows-app

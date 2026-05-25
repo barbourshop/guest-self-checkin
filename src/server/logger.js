@@ -9,7 +9,8 @@ const logStream = fs.createWriteStream(logFile, { flags: 'a' });
 const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
-  ERROR: 2
+  WARN: 2,
+  ERROR: 3
 };
 
 // Current log level based on environment
@@ -42,6 +43,7 @@ function log(level, message) {
 const logger = {
   debug: (message) => log('DEBUG', message),
   info: (message) => log('INFO', message),
+  warn: (message) => log('WARN', message),
   error: (message) => log('ERROR', message),
   metric: (message) => log('INFO', `[METRIC] ${message}`),
   request: (message) => log('DEBUG', `[REQUEST] ${message}`),

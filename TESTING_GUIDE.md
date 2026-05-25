@@ -182,3 +182,27 @@ After manual testing passes:
 
 Note: `npm run test:e2e` is currently a placeholder script in `package.json` (no Playwright suite attached).
 
+## CI: Windows installed-app smoke test
+
+The `full-pipeline.yml` job `smoke-test-windows-app` silently installs the built `.exe`, then runs:
+
+```powershell
+pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "<path-to-installed.exe>"
+```
+
+That script (no UI automation, **no localhost HTTP** — GHA cannot reach the in-app API reliably) checks:
+
+- App process stays up until `%APPDATA%\front-desk-app\logs\app.log` contains `Server is running on http://127.0.0.1:`
+- `%APPDATA%\front-desk-app\checkin.db` exists (writable user data, not Program Files only)
+- After the app is stopped, `node scripts/verify-appdata-db.js` performs a direct SQLite read/write on that DB (and ensures it is not the legacy `resources\checkin.db` path)
+- `app.log` does **not** contain known regressions (`readonly database`, `SQLITE_CANTOPEN`, `logger.warn is not a function`, etc.)
+
+The smoke job sets `SQUARE_ACCESS_TOKEN` on the step (and seeds `%APPDATA%\front-desk-app\square-access-token.txt` before launch) so the packaged app does not block on the token setup dialog.
+
+To run locally after installing on Windows:
+
+```powershell
+$env:SQUARE_ACCESS_TOKEN = 'your-token'
+pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "$env:LOCALAPPDATA\Programs\Front Desk App\Front Desk App.exe"
+```
+

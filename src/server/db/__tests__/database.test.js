@@ -1,4 +1,47 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { createTestDatabase, closeTestDatabase, clearTestDatabase } = require('../../__tests__/helpers/testDatabase');
+const {
+  getDatabasePath,
+  migrateLegacyDatabaseIfNeeded
+} = require('../database');
+
+describe('Database path and migration', () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it('should use ELECTRON_USER_DATA for packaged Electron database path', () => {
+    const userData = path.join(os.tmpdir(), 'electron-user-data-test');
+    process.env.ELECTRON_USER_DATA = userData;
+    delete process.env.DATABASE_PATH;
+    expect(getDatabasePath()).toBe(path.join(userData, 'checkin.db'));
+  });
+
+  it('should migrate legacy database into userData when target is missing', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'db-migrate-'));
+    const legacyDir = path.join(root, 'resources');
+    const userDataDir = path.join(root, 'userData');
+    fs.mkdirSync(legacyDir, { recursive: true });
+    fs.mkdirSync(userDataDir, { recursive: true });
+
+    const legacyDb = path.join(legacyDir, 'checkin.db');
+    const targetDb = path.join(userDataDir, 'checkin.db');
+    fs.writeFileSync(legacyDb, 'legacy-db-marker');
+
+    process.env.RESOURCES_PATH = legacyDir;
+    process.env.ELECTRON_USER_DATA = userDataDir;
+
+    migrateLegacyDatabaseIfNeeded(targetDb);
+
+    expect(fs.existsSync(targetDb)).toBe(true);
+    expect(fs.readFileSync(targetDb, 'utf8')).toBe('legacy-db-marker');
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+});
 
 describe('Database Utilities', () => {
   let db;

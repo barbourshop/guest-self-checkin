@@ -3,19 +3,60 @@ const path = require('path');
 const fs = require('fs');
 
 /**
+ * Legacy locations used before ELECTRON_USER_DATA was passed from the Electron shell.
+ * Packaged apps wrote under Program Files (read-only on Windows after reboot/updates).
+ */
+function getLegacyDatabasePaths() {
+  const candidates = [];
+  if (process.env.RESOURCES_PATH) {
+    candidates.push(path.join(process.env.RESOURCES_PATH, 'checkin.db'));
+  }
+  candidates.push(path.join(process.cwd(), 'checkin.db'));
+  return [...new Set(candidates)];
+}
+
+/**
+ * Copy an existing database from a legacy path into userData on first run after upgrade.
+ */
+function migrateLegacyDatabaseIfNeeded(targetPath) {
+  if (fs.existsSync(targetPath)) {
+    return;
+  }
+
+  for (const legacyPath of getLegacyDatabasePaths()) {
+    if (legacyPath === targetPath || !fs.existsSync(legacyPath)) {
+      continue;
+    }
+    try {
+      fs.copyFileSync(legacyPath, targetPath);
+      for (const suffix of ['-wal', '-shm']) {
+        const legacySidecar = `${legacyPath}${suffix}`;
+        if (fs.existsSync(legacySidecar)) {
+          fs.copyFileSync(legacySidecar, `${targetPath}${suffix}`);
+        }
+      }
+      console.log(`[database] Migrated ${legacyPath} -> ${targetPath}`);
+      return;
+    } catch (err) {
+      console.error(`[database] Failed to migrate ${legacyPath}:`, err.message);
+    }
+  }
+}
+
+/**
  * Get the database path
  * In Electron, use userData directory; otherwise use current directory
  * For tests, use a separate test database file
  */
 function getDatabasePath() {
-  // Try to get Electron app if available
-  if (process.env.ELECTRON_USER_DATA) {
-    return path.join(process.env.ELECTRON_USER_DATA, 'checkin.db');
-  }
-  
   // Use explicit database path if provided
   if (process.env.DATABASE_PATH) {
     return process.env.DATABASE_PATH;
+  }
+
+  // Packaged Electron app: writable per-user AppData directory
+  if (process.env.ELECTRON_USER_DATA) {
+    return path.join(process.env.ELECTRON_USER_DATA, 'checkin.db');
   }
   
   // Test environment: use separate test database
@@ -39,6 +80,10 @@ function initDatabase(dbPath = null) {
   const dir = path.dirname(databasePath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
+  }
+
+  if (process.env.ELECTRON_USER_DATA && !dbPath) {
+    migrateLegacyDatabaseIfNeeded(databasePath);
   }
   
   const db = new Database(databasePath);
@@ -144,6 +189,8 @@ function closeDatabase(db) {
 module.exports = {
   initDatabase,
   closeDatabase,
-  getDatabasePath
+  getDatabasePath,
+  getLegacyDatabasePaths,
+  migrateLegacyDatabaseIfNeeded
 };
 
