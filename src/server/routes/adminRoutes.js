@@ -23,5 +23,7 @@ router.delete('/segments/:segmentId', asyncHandler(adminController.deleteSegment
 router.get('/config', asyncHandler(adminController.getConfig.bind(adminController)));
 router.put('/config', asyncHandler(adminController.updateConfig.bind(adminController)));
 
+router.get('/support-paths', asyncHandler(adminController.getSupportPaths.bind(adminController)));
+
 module.exports = router;
 

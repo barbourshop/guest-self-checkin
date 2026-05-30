@@ -116,7 +116,7 @@ You can then use the PNG in several ways:
 
 **Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use **Export to Excel** to download the **complete** check-in history from this PC’s database (no row limit). Names come from the membership cache on disk.
 
-**Optional — files on the check-in PC:** The app also writes a **daily CSV** backup (one file per calendar day). See the cheat sheet for the folder path and file naming. Those files are mainly for backup or IT; routine daily handoff should use the front desk **End of day** download flow.
+**Optional — files on the check-in PC:** The app also writes a **daily CSV** backup (one file per calendar day). In **Admin → Settings**, use **Copy path** and paste into File Explorer or Finder. See the [cheat sheet](#file-locations-cheat-sheet) for typical locations. Routine daily handoff should still use the front desk **Close Out Day** download.
 
 ---
 

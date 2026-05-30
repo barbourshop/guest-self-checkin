@@ -10,6 +10,7 @@ const {
   loadCheckinQueueForAdmin,
   getCheckinLogCount
 } = require('../services/checkinReportService');
+const { getSupportPaths } = require('../utils/supportPaths');
 
 /**
  * Map Square list-segments failures to HTTP status + user-facing message.
@@ -479,6 +480,14 @@ class AdminController {
       next(error);
     }
   }
+
+  /**
+   * Paths to logs, CSV backups, and database (desktop app user data).
+   */
+  getSupportPaths(req, res) {
+    res.json(getSupportPaths());
+  }
+
 }
 
 module.exports = new AdminController();
