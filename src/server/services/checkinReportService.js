@@ -11,8 +11,7 @@ const REPORT_COLUMNS = [
   'Customer ID',
   'Order ID',
   'Guest Count',
-  'Timestamp',
-  'Synced to Square'
+  'Timestamp'
 ];
 
 const CHECKIN_LOG_SELECT_SQL = `
@@ -108,8 +107,7 @@ function toSpreadsheetRows(entries) {
       'Customer ID': normalized.customer_id || '-',
       'Order ID': normalized.order_id || '-',
       'Guest Count': Number(normalized.guest_count) || 0,
-      Timestamp: normalized.timestamp ? new Date(normalized.timestamp).toLocaleString() : '-',
-      'Synced to Square': Number(normalized.synced_to_square) === 1 ? 'Yes' : 'No'
+      Timestamp: normalized.timestamp ? new Date(normalized.timestamp).toLocaleString() : '-'
     };
   });
 }

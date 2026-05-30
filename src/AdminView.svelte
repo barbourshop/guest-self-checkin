@@ -433,13 +433,12 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest Count</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Synced</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             {#if filteredCheckinLog.length === 0}
               <tr>
-                <td colspan="10" class="px-6 py-4 text-center text-gray-500">No check-in log entries found</td>
+                <td colspan="9" class="px-6 py-4 text-center text-gray-500">No check-in log entries found</td>
               </tr>
             {:else}
               {#each filteredCheckinLog as item}
@@ -477,11 +476,6 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">{item.order_id || 'N/A'}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.guest_count}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.timestamp)}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span class="px-2 py-1 text-xs font-medium rounded {item.synced_to_square ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                      {item.synced_to_square ? 'Yes' : 'No'}
-                    </span>
-                  </td>
                 </tr>
               {/each}
             {/if}

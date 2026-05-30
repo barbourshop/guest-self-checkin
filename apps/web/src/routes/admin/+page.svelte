@@ -588,8 +588,7 @@
 			'Customer ID': item.customer_id || '-',
 			'Order ID': item.order_id || '-',
 			'Guest Count': item.guest_count || 0,
-			Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
-			'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
+			Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-'
 		}));
 
 		const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -1167,13 +1166,12 @@
 								<th>Order ID</th>
 								<th>Guest Count</th>
 								<th>Timestamp</th>
-								<th>Synced</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if memberCheckins.length === 0}
 								<tr>
-									<td colspan="10" class="no-data">No member check-ins</td>
+									<td colspan="9" class="no-data">No member check-ins</td>
 								</tr>
 							{:else}
 								{#each memberCheckins as item}
@@ -1193,11 +1191,6 @@
 										<td class="mono">{item.order_id || 'N/A'}</td>
 										<td>{item.guest_count}</td>
 										<td>{formatDate(item.timestamp)}</td>
-										<td>
-											<span class="badge" class:badge-success={item.synced_to_square === 1} class:badge-warning={item.synced_to_square !== 1}>
-												{item.synced_to_square === 1 ? 'Yes' : 'No'}
-											</span>
-										</td>
 									</tr>
 								{/each}
 							{/if}
@@ -1214,13 +1207,12 @@
 								<th>Name</th>
 								<th>Guest Count</th>
 								<th>Timestamp</th>
-								<th>Synced</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if daypassCheckins.length === 0}
 								<tr>
-									<td colspan="5" class="no-data">No day-pass check-ins</td>
+									<td colspan="4" class="no-data">No day-pass check-ins</td>
 								</tr>
 							{:else}
 								{#each daypassCheckins as item}
@@ -1229,11 +1221,6 @@
 										<td>{item.given_name || 'Day pass'}</td>
 										<td>{item.guest_count}</td>
 										<td>{formatDate(item.timestamp)}</td>
-										<td>
-											<span class="badge" class:badge-success={item.synced_to_square === 1} class:badge-warning={item.synced_to_square !== 1}>
-												{item.synced_to_square === 1 ? 'Yes' : 'No'}
-											</span>
-										</td>
 									</tr>
 								{/each}
 							{/if}
