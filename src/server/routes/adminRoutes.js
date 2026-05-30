@@ -25,5 +25,7 @@ router.put('/config', asyncHandler(adminController.updateConfig.bind(adminContro
 
 router.get('/support-paths', asyncHandler(adminController.getSupportPaths.bind(adminController)));
 
+router.delete('/square-token', asyncHandler(adminController.deleteSquareToken.bind(adminController)));
+
 module.exports = router;
 

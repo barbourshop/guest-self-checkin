@@ -10,7 +10,8 @@ const {
   loadCheckinQueueForAdmin,
   getCheckinLogCount
 } = require('../services/checkinReportService');
-const { getSupportPaths } = require('../utils/supportPaths');
+const fs = require('fs');
+const { getSupportPaths, getSquareTokenFilePath } = require('../utils/supportPaths');
 
 /**
  * Map Square list-segments failures to HTTP status + user-facing message.
@@ -486,6 +487,32 @@ class AdminController {
    */
   getSupportPaths(req, res) {
     res.json(getSupportPaths());
+  }
+
+  /**
+   * Delete the saved Square access token file (user must restart the app to enter a new one).
+   */
+  deleteSquareToken(req, res, next) {
+    try {
+      const tokenPath = getSquareTokenFilePath();
+      if (!tokenPath) {
+        return res.status(400).json({
+          error: 'Square token file is only managed on the installed Front Desk App (user data folder).'
+        });
+      }
+      if (!fs.existsSync(tokenPath)) {
+        return res.status(404).json({ error: 'No saved Square token was found on this computer.' });
+      }
+      fs.unlinkSync(tokenPath);
+      logger.info('Square access token file deleted via admin settings.');
+      res.json({
+        success: true,
+        message: 'Square access token deleted. Close the app completely and reopen it to enter a new token.'
+      });
+    } catch (error) {
+      logger.error(`Error deleting Square token: ${error.message}`);
+      next(error);
+    }
   }
 
 }

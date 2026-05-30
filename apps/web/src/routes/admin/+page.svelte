@@ -34,11 +34,16 @@
 		checkinBackupDir: string | null;
 		appLogFile: string | null;
 		databaseFile: string | null;
+		squareTokenFile: string | null;
+		hasSquareToken: boolean;
 	};
 
 	let supportPaths: SupportPaths | null = null;
 	let supportPathsError: string | null = null;
 	let copyPathMessage: string | null = null;
+	let showDeleteTokenConfirm = false;
+	let isDeletingSquareToken = false;
+	let squareTokenMessage: string | null = null;
 
 	const ADMIN_DASHBOARD_PASSWORD = 'PoolParty';
 	const ADMIN_AUTH_STORAGE_KEY = 'adminDashboardUnlocked';
@@ -268,6 +273,29 @@
 			}, 4000);
 		} catch {
 			copyPathMessage = `Could not copy automatically. Select and copy: ${pathToCopy}`;
+		}
+	}
+
+	async function confirmDeleteSquareToken() {
+		isDeletingSquareToken = true;
+		squareTokenMessage = null;
+		supportPathsError = null;
+		try {
+			const response = await fetch('/api/admin/square-token', { method: 'DELETE' });
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to delete Square token');
+			}
+			showDeleteTokenConfirm = false;
+			squareTokenMessage =
+				data.message ||
+				'Square access token deleted. Close the app completely and reopen it to enter a new token.';
+			await loadSupportPaths();
+		} catch (err) {
+			supportPathsError =
+				err instanceof Error ? err.message : 'Failed to delete Square token';
+		} finally {
+			isDeletingSquareToken = false;
 		}
 	}
 
@@ -1311,6 +1339,64 @@
 					</ul>
 				{/if}
 			</div>
+
+			<div class="settings-section">
+				<h3>Square access token</h3>
+				<p class="setting-help" style="margin-bottom: 1rem;">
+					The token is stored only on this computer. Delete it when you need to sign in with a different
+					Square token (for example after rotation by IT).
+				</p>
+				{#if squareTokenMessage}
+					<div class="config-message">{squareTokenMessage}</div>
+				{/if}
+				{#if showDeleteTokenConfirm}
+					<div class="token-confirm-panel" role="alertdialog" aria-labelledby="delete-token-title">
+						<p id="delete-token-title" class="token-confirm-title">
+							Delete the saved Square access token on this computer?
+						</p>
+						<p class="setting-help">
+							Check-ins and membership sync will fail until a new token is saved. After deleting,
+							<strong>close the Front Desk App completely</strong> (quit from the taskbar if needed),
+							then open it again and paste the new token when prompted.
+						</p>
+						<div class="token-confirm-actions">
+							<button
+								type="button"
+								class="token-delete-confirm-button"
+								disabled={isDeletingSquareToken}
+								on:click={confirmDeleteSquareToken}
+							>
+								{isDeletingSquareToken ? 'Deleting…' : 'Yes, delete token'}
+							</button>
+							<button
+								type="button"
+								class="token-delete-cancel-button"
+								disabled={isDeletingSquareToken}
+								on:click={() => (showDeleteTokenConfirm = false)}
+							>
+								Cancel
+							</button>
+						</div>
+					</div>
+				{:else}
+					<button
+						type="button"
+						class="token-delete-button"
+						disabled={supportPaths !== null && !supportPaths.hasSquareToken}
+						on:click={() => {
+							squareTokenMessage = null;
+							showDeleteTokenConfirm = true;
+						}}
+					>
+						Delete Square token
+					</button>
+					{#if supportPaths && !supportPaths.hasSquareToken}
+						<p class="setting-help" style="margin-top: 0.5rem;">
+							No saved token file on this PC (you may be using a bundled or environment token).
+						</p>
+					{/if}
+				{/if}
+			</div>
 		</section>
 	{/if}
 	{/if}
@@ -2181,6 +2267,78 @@
 	:global(.support-copy-icon) {
 		width: 1rem;
 		height: 1rem;
+	}
+
+	.token-delete-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #b91c1c;
+		background: #fff;
+		border: 1px solid #fca5a5;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-button:hover:not(:disabled) {
+		background: #fef2f2;
+	}
+
+	.token-delete-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.token-confirm-panel {
+		padding: 1rem 1.25rem;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 12px;
+	}
+
+	.token-confirm-title {
+		margin: 0 0 0.5rem;
+		font-weight: 600;
+		color: #991b1b;
+	}
+
+	.token-confirm-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 1rem;
+	}
+
+	.token-delete-confirm-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #fff;
+		background: #dc2626;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-confirm-button:hover:not(:disabled) {
+		background: #b91c1c;
+	}
+
+	.token-delete-cancel-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		background: #fff;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-confirm-button:disabled,
+	.token-delete-cancel-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.settings-section {

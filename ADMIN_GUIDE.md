@@ -48,7 +48,7 @@ Use this when setting up a new front desk PC.
 2. Open **Front Desk App**.
 3. When asked, paste your **Square access token** and click **Continue**.
 
-The token is stored only on that computer — see **[File locations cheat sheet](#file-locations-cheat-sheet)** below. To change the token later, delete `square-access-token.txt` and restart the app to be prompted again.
+The token is stored only on that computer — see **[File locations cheat sheet](#file-locations-cheat-sheet)** below. To change the token later, use **[Replace the Square access token](#replace-the-square-access-token)** (recommended) or delete `square-access-token.txt` manually and restart the app.
 
 ### If installer security warnings appear
 
@@ -117,6 +117,22 @@ You can then use the PNG in several ways:
 **Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use **Export to Excel** to download the **complete** check-in history from this PC’s database (no row limit). Names come from the membership cache on disk.
 
 **Optional — files on the check-in PC:** The app also writes a **daily CSV** backup (one file per calendar day). In **Admin → Settings**, use **Copy path** and paste into File Explorer or Finder. See the [cheat sheet](#file-locations-cheat-sheet) for typical locations. Routine daily handoff should still use the front desk **Close Out Day** download.
+
+### Replace the Square access token
+
+Use this when IT rotates the Square token or you need to sign in with a different production token on the same PC.
+
+1. Open **Admin** (gear on the home screen → **Admin Dashboard**) and sign in.
+2. Go to the **Settings** tab.
+3. Under **Square access token**, click **Delete Square token**.
+4. Read the confirmation message, then click **Yes, delete token**.
+5. **Fully quit** the Front Desk App (close the window and exit from the system tray on Windows if the app is still running).
+6. Open **Front Desk App** again.
+7. When prompted, paste the **new** Square access token and click **Continue**.
+
+Until you complete steps 5–7, check-ins and membership cache refresh will not reach Square (the old token is removed from disk but the running app may still be using it until restart).
+
+**Manual alternative:** Delete `square-access-token.txt` from the user data folder (see cheat sheet below), then quit and reopen the app.
 
 ---
 
