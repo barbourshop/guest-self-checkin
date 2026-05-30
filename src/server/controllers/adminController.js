@@ -5,6 +5,11 @@ const membershipCacheModule = require('../services/membershipCache');
 const MembershipCache = membershipCacheModule;
 const ConfigService = require('../services/configService');
 const SegmentService = require('../services/segmentService');
+const {
+  loadCheckinLogForAdmin,
+  loadCheckinQueueForAdmin,
+  getCheckinLogCount
+} = require('../services/checkinReportService');
 
 /**
  * Map Square list-segments failures to HTTP status + user-facing message.
@@ -167,22 +172,13 @@ class AdminController {
         SELECT id, segment_id, display_name, sort_order FROM customer_segments ORDER BY sort_order ASC, display_name ASC
       `).all();
       
-      const checkinQueue = db.prepare(`
-        SELECT id, customer_id, order_id, guest_count, status, created_at, synced_at
-        FROM checkin_queue
-        ORDER BY created_at DESC
-      `).all();
-      
-      const checkinLog = db.prepare(`
-        SELECT id, customer_id, order_id, guest_count, timestamp, synced_to_square, checkin_type
-        FROM checkin_log
-        ORDER BY timestamp DESC
-        LIMIT 1000
-      `).all();
-      
+      const checkinQueue = loadCheckinQueueForAdmin(db);
+      const checkinLog = loadCheckinLogForAdmin(db);
+      const checkinLogTotal = getCheckinLogCount(db);
+
       db.close();
 
-      // Membership cache already has names/address from refresh; only enrich queue and log when ?enrich=true
+      // Names for queue/log come from membership_cache. ?enrich=true optionally refreshes from Square.
       let finalMembershipCache = membershipCache;
       let finalCheckinQueue = checkinQueue;
       let finalCheckinLog = checkinLog;
@@ -199,33 +195,12 @@ class AdminController {
         }
         return out;
       });
-      const emptyDetails = {
-        given_name: '',
-        family_name: '',
-        email_address: '',
-        phone_number: '',
-        reference_id: '',
-        address_line_1: '',
-        locality: '',
-        postal_code: ''
-      };
-      if (!enrich) {
-        finalCheckinQueue = checkinQueue.map(row => ({ ...row, ...emptyDetails }));
-        finalCheckinLog = checkinLog.map(row => {
-          const out = { ...row, ...emptyDetails };
-          if (row.checkin_type === 'daypass' || row.customer_id === 'DAYPASS') {
-            out.given_name = 'Day pass';
-            out.family_name = '';
-          }
-          return out;
-        });
-      }
-      
       const result = {
         membershipCache: finalMembershipCache,
         customerSegments,
         checkinQueue: finalCheckinQueue,
-        checkinLog: finalCheckinLog
+        checkinLog: finalCheckinLog,
+        checkinLogTotal
       };
       
       res.json(result);

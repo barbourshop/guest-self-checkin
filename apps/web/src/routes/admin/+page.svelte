@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { Search, Download, Home, IdCard, ChevronDown, ChevronUp } from 'lucide-svelte';
 	import * as XLSX from 'xlsx';
+	import { downloadBlob, downloadReportFromApi } from '$lib/downloadFile';
 
 	type Tab = 'membership' | 'segments' | 'checkins' | 'cards' | 'settings';
 	let activeTab: Tab = 'membership';
@@ -11,7 +12,9 @@
 	let customerSegments: any[] = [];
 	let checkinQueue: any[] = [];
 	let checkinLog: any[] = [];
+	let checkinLogTotal = 0;
 	let isLoading = false;
+	let isExportingCheckinLog = false;
 	let error: string | null = null;
 
 	// Filter states
@@ -69,36 +72,25 @@
 		authError = 'Incorrect password. Please try again.';
 	}
 
-	async function loadData(opts?: { enrich?: boolean }) {
-		const enrich = opts?.enrich === true;
-		const isInitialLoad = !enrich;
-		if (isInitialLoad) {
-			isLoading = true;
-			error = null;
-		}
-		const url = `/api/admin/database${enrich ? '?enrich=true' : ''}`;
+	async function loadData() {
+		isLoading = true;
+		error = null;
 		try {
-			const response = await fetch(url);
+			const response = await fetch('/api/admin/database');
 			if (!response.ok) {
 				const body = await response.json().catch(() => ({}));
 				throw new Error(body.error || `Failed to load data (${response.status})`);
 			}
 			const data = await response.json();
-			// Always use latest membership cache from API (it includes stored names/address from DB)
 			membershipCache = Array.isArray(data.membershipCache) ? data.membershipCache : [];
 			customerSegments = data.customerSegments || [];
 			checkinQueue = Array.isArray(data.checkinQueue) ? data.checkinQueue : [];
 			checkinLog = data.checkinLog || [];
-			// Collapse membership cache section by default so the list is visible; expand if no members
+			checkinLogTotal =
+				typeof data.checkinLogTotal === 'number' ? data.checkinLogTotal : checkinLog.length;
 			membershipCacheSectionCollapsed = membershipCache.length > 0;
-			// Collapse customer segments control by default so the segment list is visible; expand if no segments
 			segmentsControlSectionCollapsed = customerSegments.length > 0;
-			// Keep Cache Status section in sync (Total Customers, etc.)
 			await loadCacheStatus();
-			// Load enriched queue/log in background (membership cache already has names/address from DB)
-			if (isInitialLoad && (membershipCache.length > 0 || checkinQueue.length > 0 || checkinLog.length > 0)) {
-				loadData({ enrich: true });
-			}
 		} catch (err) {
 			if (err instanceof Error) {
 				error = err.message;
@@ -107,9 +99,7 @@
 			}
 			console.error('Error loading database contents:', err);
 		} finally {
-			if (isInitialLoad) {
-				isLoading = false;
-			}
+			isLoading = false;
 		}
 	}
 
@@ -578,45 +568,75 @@
 		}
 	}
 
-	function downloadCheckinLogExcel() {
+	function exportFilteredCheckinLogClient() {
+		const dataToExport = filteredCheckinLog;
+		if (dataToExport.length === 0) {
+			alert('No check-in data to export');
+			return;
+		}
+
+		const excelData = dataToExport.map((item) => ({
+			ID: item.id || '',
+			Type: item.checkin_type === 'daypass' ? 'Day pass' : 'Member',
+			Name:
+				item.checkin_type === 'daypass'
+					? 'Day pass'
+					: `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
+			Email: item.email_address || '-',
+			Phone: item.phone_number || '-',
+			Lot: item.reference_id || '-',
+			'Customer ID': item.customer_id || '-',
+			'Order ID': item.order_id || '-',
+			'Guest Count': item.guest_count || 0,
+			Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
+			'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(excelData);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Check-in Log');
+		const now = new Date();
+		const dateStr = [
+			now.getFullYear(),
+			String(now.getMonth() + 1).padStart(2, '0'),
+			String(now.getDate()).padStart(2, '0')
+		].join('-');
+		const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+		downloadBlob(
+			new Blob([buffer], {
+				type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+			}),
+			`checkin-log-filtered-${dateStr}.xlsx`
+		);
+	}
+
+	async function downloadCheckinLogExcel() {
+		if (logFilter.trim()) {
+			exportFilteredCheckinLogClient();
+			return;
+		}
+
+		isExportingCheckinLog = true;
 		try {
-			// Prepare data for Excel - use filtered data if filter is active, otherwise use all data
-			const dataToExport = logFilter ? filteredCheckinLog : checkinLog;
-			
-			if (dataToExport.length === 0) {
-				alert('No check-in data to export');
-				return;
-			}
-
-			// Transform data to Excel-friendly format
-			const excelData = dataToExport.map(item => ({
-				'ID': item.id || '',
-				'Name': `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
-				'Email': item.email_address || '-',
-				'Phone': item.phone_number || '-',
-				'Lot': item.reference_id || '-',
-				'Customer ID': item.customer_id || '-',
-				'Order ID': item.order_id || '-',
-				'Guest Count': item.guest_count || 0,
-				'Timestamp': item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
-				'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
-			}));
-
-			// Create workbook and worksheet
-			const worksheet = XLSX.utils.json_to_sheet(excelData);
-			const workbook = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(workbook, worksheet, 'Check-in Log');
-
-			// Generate filename with current date
 			const now = new Date();
-			const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-			const filename = `checkin-log-${dateStr}.xlsx`;
-
-			// Write file and trigger download
-			XLSX.writeFile(workbook, filename);
+			const dateStr = [
+				now.getFullYear(),
+				String(now.getMonth() + 1).padStart(2, '0'),
+				String(now.getDate()).padStart(2, '0')
+			].join('-');
+			await downloadReportFromApi(
+				'/api/reports/checkin-log/download',
+				`checkin-log-full-${dateStr}.xlsx`
+			);
 		} catch (err) {
 			console.error('Error exporting to Excel:', err);
-			alert('Failed to export check-in data to Excel. Please try again.');
+			alert(
+				err instanceof Error
+					? err.message
+					: 'Failed to export check-in data to Excel. Please try again.'
+			);
+		} finally {
+			isExportingCheckinLog = false;
 		}
 	}
 
@@ -1102,15 +1122,22 @@
 			</button>
 			<div class="collapsible-content" class:collapsed={checkinsSectionCollapsed}>
 				<div class="section-actions" style="margin-top: 0.5rem; margin-bottom: 1rem;">
-					<button on:click={downloadCheckinLogExcel} disabled={isLoading || checkinLog.length === 0} class="download-button">
+					<button
+						on:click={downloadCheckinLogExcel}
+						disabled={isLoading || isExportingCheckinLog || checkinLog.length === 0}
+						class="download-button"
+					>
 						<Download class="button-icon" />
-						Export to Excel
+						{isExportingCheckinLog ? 'Exporting…' : 'Export to Excel'}
 					</button>
 					<button on:click={() => loadData()} disabled={isLoading} class="refresh-button">
 						{isLoading ? 'Loading…' : 'Refresh'}
 					</button>
 				</div>
-				<p class="settings-hint" style="margin-bottom: 1rem;">History of guest check-ins. Last 1000 entries shown. Member check-ins are from search or card scan; day-pass check-ins are anonymous sales.</p>
+				<p class="settings-hint" style="margin-bottom: 1rem;">
+					Full check-in history stored on this computer ({checkinLogTotal} total).
+					Names come from the membership cache. Export downloads the complete log; use the filter to export a subset only.
+				</p>
 				<div class="filter-section">
 					<div class="filter-input-wrapper">
 						<Search class="filter-icon" />
@@ -1121,7 +1148,9 @@
 							class="filter-input"
 						/>
 					</div>
-					<p class="filter-count">Showing {filteredCheckinLog.length} of {checkinLog.length} entries</p>
+					<p class="filter-count">
+						Showing {filteredCheckinLog.length} of {checkinLogTotal} check-ins
+					</p>
 				</div>
 
 				<h3 class="checkins-subheading">Member check-ins</h3>

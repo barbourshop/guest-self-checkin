@@ -93,10 +93,10 @@ Use a valid `SQUARE_ACCESS_TOKEN` (and usual Square URL/version vars). See [QUIC
 
 ### 5. End-of-day download flow
 
-1. Click **End of day** in the top action row.
-2. Click **Download Daily Checkins (Excel)**.
-3. Confirm the file downloads with a `.xlsx` extension.
-4. Open the file in Excel and verify it contains today’s check-ins.
+1. Open **Front Desk Tools** (gear) → **Close Out Day** → **Download Report**.
+2. Confirm the file downloads with a `.xlsx` extension (browser/Electron save to Downloads).
+3. Open the file in Excel and verify it contains today’s check-ins (or headers only if none yet).
+4. Optional: repeat after more check-ins — file should include new rows; DB is not cleared by download.
 
 ### 6. Error Handling
 
@@ -110,7 +110,7 @@ Use a valid `SQUARE_ACCESS_TOKEN` (and usual Square URL/version vars). See [QUIC
 
 1. From the home screen, open **Admin** (gear icon).
 2. Confirm tabs load: **Membership**, **Customer Segments**, **Check-ins**, **Settings**.
-3. **Check-ins** tab should still support **Export to Excel** for supervisors (separate from front desk end-of-day download).
+3. **Check-ins** tab should list the **full** local history (not capped at 1000) and **Export to Excel** should download every row from `checkin.db`.
 
 ### 8. Offline / API down (optional)
 
@@ -127,7 +127,9 @@ If the API is unreachable, check-in may fail with a user-facing error. Behavior 
   - `POST /api/customers/search` — unified search from the home screen
   - `POST /api/customers/check-in` — member check-in
   - `POST /api/customers/check-in/daypass` — day pass
-  - `GET /api/admin/database?enrich=true` — data used for the end-of-day Excel export on the home screen
+  - `GET /api/reports/daily-checkins/download` — front desk end-of-day Excel
+  - `GET /api/reports/checkin-log/download` — admin full history Excel
+  - `GET /api/admin/database` — admin dashboard (full check-in log, names from membership cache)
   - Optional: `POST /api/customers/validate-qr` — only if you exercise QR/order flows that call it
 
 ## Common Issues
@@ -138,6 +140,10 @@ If the API is unreachable, check-in may fail with a user-facing error. Behavior 
 
 ### "Module not found" errors
 - **Fix**: Run `npm install` to ensure all dependencies are installed
+
+### `better-sqlite3` / `NODE_MODULE_VERSION` errors when running tests
+- **Cause**: The native SQLite module was built for a different Node version than the one running `npm test`.
+- **Fix**: Run `npm test` again — `pretest` runs `scripts/ensure-native-modules.js` and rebuilds `better-sqlite3` automatically. Or run `npm rebuild better-sqlite3` manually after switching Node versions.
 
 ### Build errors
 - **Fix**: Run `npm run build` to see detailed error messages

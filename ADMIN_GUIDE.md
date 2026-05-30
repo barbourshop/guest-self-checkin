@@ -114,7 +114,7 @@ You can then use the PNG in several ways:
 
 **Front desk daily close-out (recommended):** Use the home screen **End of day** action to download the daily Excel file, then email it to the manager.
 
-**Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use the **export** control when you need additional reporting or historical slices.
+**Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use **Export to Excel** to download the **complete** check-in history from this PC’s database (no row limit). Names come from the membership cache on disk.
 
 **Optional — files on the check-in PC:** The app also writes a **daily CSV** backup (one file per calendar day). See the cheat sheet for the folder path and file naming. Those files are mainly for backup or IT; routine daily handoff should use the front desk **End of day** download flow.
 
@@ -143,7 +143,7 @@ On **macOS**, in Finder use **Go → Go to Folder** and paste:
 | **Daily check-in CSVs** | `%APPDATA%\front-desk-app\logs\checkins\` | One CSV per calendar day, e.g. `05-24-26-check-ins.csv` (`MM-DD-YY-check-ins.csv`). Backup copy of check-ins; optional if you use **End of day** Excel. |
 | **SQLite database** | `%APPDATA%\front-desk-app\checkin.db` | Membership cache, segments config, check-in history. Sidecar files `checkin.db-wal` and `checkin.db-shm` may appear while the app is running — leave them in place. |
 | **Square access token** | `%APPDATA%\front-desk-app\square-access-token.txt` | Plain-text token for this PC only. Delete to force re-entry on next launch. **Treat as secret** — do not email or share. |
-| **End of day Excel download** | *(user’s Downloads folder)* | **End of day** on the home screen saves a file like `checkin-log-YYYY-MM-DD.xlsx` wherever the browser/Electron download folder is set (often **Downloads**). Not stored automatically in the user data folder. |
+| **End of day Excel download** | *(user’s Downloads folder)* | **Close Out Day → Download Report** saves `checkin-log-YYYY-MM-DD.xlsx` via the browser download (typically **Downloads**). Does not remove data from the database. |
 | **Installed application** | `C:\Program Files\Rec Center Check-in\Front Desk App\` *(or similar)* | Read-only program files. **Do not** edit or copy the database from here on current builds. Installer folder name can vary by site. |
 | **Legacy database (old builds only)** | `<install folder>\resources\checkin.db` | Older installers stored the DB under Program Files; that caused “readonly database” errors. Upgraded apps **migrate** this file into `%APPDATA%\front-desk-app\checkin.db` on first run. If day-one data is missing after upgrade, copy the old `checkin.db` into the user data folder (with the app closed), then restart. |
 
