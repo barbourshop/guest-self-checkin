@@ -20,7 +20,7 @@ The front desk app is how front desk staff :
 |--------|----------------|
 | **Search** | Guest is a known member in the system. |
 | **Day pass** | Guest paid for a day pass and is not in the member list. |
-| **Gear (Front Desk Tools)** | End-of-day report download and manager tools. |
+| **Gear (Front Desk Tools)** | Check-in report downloads, cache refresh, and admin access. |
 
 Most check-ins should start in **Search**. If a guest has a scannable card, scan into the search field instead of typing.
 
@@ -61,14 +61,16 @@ When selling a day pass to a customer it is important to also check them in for 
 4. Confirm the **All Set!** message.
 
 ### End of day
-At the end of the day, you must collect the daily checkins and email to the manager.  To do this:
+At the end of the day, you must collect the daily check-ins and email them to the manager. To do this:
 
 1. Tap the **gear** icon on the home screen to open **Front Desk Tools**.
-![Front Desk Tools - close out day](docs/images/front-desk-tools.png)
-2. In **Close Out Day**, tap **Download Report**.
+![Front Desk Tools - check-in reports](docs/images/front-desk-tools.png)
+2. Under **Check-in Reports**, tap **Today's Check-ins**.
 3. Wait until the report is generated.
-4. Save the downloaded file when prompted.
+4. Save the downloaded Excel file when prompted.
 5. Email the file to the manager as part of end-of-day closeout.
+
+If a manager asks for **all** check-ins stored on this computer (not just today), use **Full History** in the same **Check-in Reports** section. That download includes every check-in on this PC, the same as **Export to Excel** in Admin.
 
 ## Troubleshooting
 
