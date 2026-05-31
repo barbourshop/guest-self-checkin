@@ -13,5 +13,10 @@ router.get(
   asyncHandler(reportController.downloadDailyCheckins.bind(reportController))
 );
 
+router.get(
+  '/checkin-log/download',
+  asyncHandler(reportController.downloadFullCheckinLog.bind(reportController))
+);
+
 module.exports = router;
 

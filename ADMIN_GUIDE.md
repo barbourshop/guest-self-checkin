@@ -34,9 +34,9 @@ Only people you trust with member data and exports should use this screen.
 
 **Customer Segments** — Choose which Square **segments** count as members. After any change here, go to **Membership** and refresh the cache.
 
-**Check-ins** — See recent check-ins and use **export** when you need an admin-side historical file.
+**Check-ins** — Browse recent member and day-pass check-ins on this PC. Use **Export to Excel** to download the **full** check-in history from the local database (no row limit), or filter the list first to export a subset only.
 
-**Settings** — Shortcuts such as opening the **card generator** for manual order IDs; other items depend on how your site configured the app.
+**Settings** — Copy paths to files on this computer for troubleshooting and backups: the **daily check-in CSV backups** folder (one automated file per calendar day), the **app log** (startup, API errors, cache refresh — send to IT when something fails), and the **app data folder** (database, Square token, and logs). Also where you **delete the Square access token** when IT rotates credentials.
 
 ---
 
@@ -48,7 +48,7 @@ Use this when setting up a new front desk PC.
 2. Open **Front Desk App**.
 3. When asked, paste your **Square access token** and click **Continue**.
 
-The token is stored only on that computer — see **[File locations cheat sheet](#file-locations-cheat-sheet)** below. To change the token later, delete `square-access-token.txt` and restart the app to be prompted again.
+The token is stored only on that computer (see **Admin → Settings → All app data** for the folder on this PC). To change the token later, use **[Replace the Square access token](#replace-the-square-access-token)** when IT directs you to do so.
 
 ### If installer security warnings appear
 
@@ -84,6 +84,38 @@ Use this once on a new install (or anytime your program changes which Square gro
 
 ## Common actions
 
+### Get check-in / access records
+
+Besides checking guests in, this is the most common task on the front desk PC. There are two main ways to download check-ins, plus a backup if something goes wrong.
+
+#### Daily check-ins (normal end-of-day handoff)
+
+Use this at the end of each shift or day when you need **today’s** check-ins for your manager.
+
+1. On the check-in home screen, tap the **gear** icon to open **Front Desk Tools**.
+2. Under **Close Out Day**, tap **Download Report**.
+3. Save the Excel file when prompted, then email it to your manager.
+
+#### Full check-in history (managers / supervisors)
+
+Use this when you need **every** check-in stored on this PC — for example, a month-end report or recovering records after a gap.
+
+1. Open **Admin** (gear → **Admin Dashboard**) and sign in.
+2. Go to the **Check-ins** tab.
+3. Click **Export to Excel** to download the complete history (no row limit). To export only part of the list, type in the filter box first, then export.
+
+Names in the export come from the membership cache on this computer.
+
+#### Backup CSV files (if export or the database has trouble)
+
+The app automatically saves a **daily CSV backup** on this PC — one file per calendar day. If **Export to Excel** fails, the admin screen looks wrong, or you suspect a database problem, you can open those files directly:
+
+1. Open **Admin → Settings**.
+2. Next to **Daily check-in CSV backups**, click **Copy path**.
+3. Paste the path into File Explorer (Windows: **Win+R**) or Finder on Mac (**Go → Go to Folder**), then open the CSV for the day you need.
+
+For routine daily handoff, still use **Close Out Day** on the home screen — the CSV folder is mainly a safety net.
+
 ### Refresh membership cache
 
 Use this after changing customer segments in Square or when many member searches look wrong.
@@ -110,65 +142,24 @@ You can then use the PNG in several ways:
 - Print in office (paper or card stock) and laminate for longer use.
 - Keep/send the PNG digitally (email, cloud folder, or phone) when a physical card is not needed.
 
-### Get check-in / access records
+### Replace the Square access token
 
-**Front desk daily close-out (recommended):** Use the home screen **End of day** action to download the daily Excel file, then email it to the manager.
+> [!WARNING]
+> **Do not use this unless IT explicitly asks you to.** Deleting the Square token is a dangerous operation — if done at the wrong time or without a valid replacement token ready, check-ins and membership sync will stop working until the app is fixed.
+>
+> Only perform the steps below when IT has rotated the token or told you to sign in with a different production token on this PC.
 
-**Admin export (supervisor use):** In Admin, open the **Check-ins** tab and use the **export** control when you need additional reporting or historical slices.
+1. Open **Admin** (gear on the home screen → **Admin Dashboard**) and sign in.
+2. Go to the **Settings** tab.
+3. Under **Square access token**, click **Delete Square token**.
+4. Read the confirmation message, then click **Yes, delete token**.
+5. **Fully quit** the Front Desk App (close the window and exit from the system tray on Windows if the app is still running).
+6. Open **Front Desk App** again.
+7. When prompted, paste the **new** Square access token and click **Continue**.
 
-**Optional — files on the check-in PC:** The app also writes a **daily CSV** backup (one file per calendar day). See the cheat sheet for the folder path and file naming. Those files are mainly for backup or IT; routine daily handoff should use the front desk **End of day** download flow.
+Until you complete steps 5–7, check-ins and membership cache refresh will not reach Square (the old token is removed from disk but the running app may still be using it until restart).
 
----
-
-## File locations cheat sheet
-
-Use this when troubleshooting, collecting logs for IT, or recovering data after an upgrade. Paths are for the **packaged Front Desk App** (Electron). The **user data folder** name is always `front-desk-app` (from the app’s internal name, not necessarily the shortcut title on the desktop).
-
-### Open the user data folder quickly (Windows)
-
-1. Press **Win + R** (Run).
-2. Paste: `%APPDATA%\front-desk-app`
-3. Press **Enter**.
-
-On **macOS**, in Finder use **Go → Go to Folder** and paste:
-
-`~/Library/Application Support/front-desk-app`
-
-### Windows paths (typical front desk PC)
-
-| What | Path | Notes |
-|------|------|--------|
-| **User data folder** | `%APPDATA%\front-desk-app` | All writable app data lives here (not under Program Files). Example: `C:\Users\<you>\AppData\Roaming\front-desk-app` |
-| **App log** | `%APPDATA%\front-desk-app\logs\app.log` | Main log for support: Electron startup, server errors, API failures, cache refresh. **Send this file to IT** when check-ins fail. |
-| **Daily check-in CSVs** | `%APPDATA%\front-desk-app\logs\checkins\` | One CSV per calendar day, e.g. `05-24-26-check-ins.csv` (`MM-DD-YY-check-ins.csv`). Backup copy of check-ins; optional if you use **End of day** Excel. |
-| **SQLite database** | `%APPDATA%\front-desk-app\checkin.db` | Membership cache, segments config, check-in history. Sidecar files `checkin.db-wal` and `checkin.db-shm` may appear while the app is running — leave them in place. |
-| **Square access token** | `%APPDATA%\front-desk-app\square-access-token.txt` | Plain-text token for this PC only. Delete to force re-entry on next launch. **Treat as secret** — do not email or share. |
-| **End of day Excel download** | *(user’s Downloads folder)* | **End of day** on the home screen saves a file like `checkin-log-YYYY-MM-DD.xlsx` wherever the browser/Electron download folder is set (often **Downloads**). Not stored automatically in the user data folder. |
-| **Installed application** | `C:\Program Files\Rec Center Check-in\Front Desk App\` *(or similar)* | Read-only program files. **Do not** edit or copy the database from here on current builds. Installer folder name can vary by site. |
-| **Legacy database (old builds only)** | `<install folder>\resources\checkin.db` | Older installers stored the DB under Program Files; that caused “readonly database” errors. Upgraded apps **migrate** this file into `%APPDATA%\front-desk-app\checkin.db` on first run. If day-one data is missing after upgrade, copy the old `checkin.db` into the user data folder (with the app closed), then restart. |
-
-### macOS paths
-
-| What | Path |
-|------|------|
-| **User data folder** | `~/Library/Application Support/front-desk-app` |
-| **App log** | `~/Library/Application Support/front-desk-app/logs/app.log` |
-| **Daily check-in CSVs** | `~/Library/Application Support/front-desk-app/logs/checkins/` |
-| **SQLite database** | `~/Library/Application Support/front-desk-app/checkin.db` |
-| **Square access token** | `~/Library/Application Support/front-desk-app/square-access-token.txt` |
-
-### Other (IT / imaging)
-
-| What | Path | Notes |
-|------|------|--------|
-| **Bundled token (optional)** | `<install folder>\resources\.env` | Some deployments pre-place `SQUARE_ACCESS_TOKEN` here for imaging; normal sites use `square-access-token.txt` instead. |
-| **Development / CLI server log** | `server.log` in the project or server working directory | Only when running `npm run server` outside Electron — not used on packaged front desk PCs. |
-
-### What to collect for IT
-
-1. `logs\app.log` from the time the problem started through the last restart.
-2. Approximate time, guest name or customer ID, and what was on screen (search, check-in, Admin refresh, etc.).
-3. If database issues are suspected: with the **app fully closed**, zip `%APPDATA%\front-desk-app\checkin.db` (and `-wal` / `-shm` if present) — do **not** delete those files on the live PC unless IT instructs you to.
+**Manual alternative (IT-directed only):** In **Admin → Settings**, copy the **All app data** path, delete `square-access-token.txt` from that folder, then quit and reopen the app.
 
 ---
 
@@ -179,8 +170,16 @@ On **macOS**, in Finder use **Go → Go to Folder** and paste:
 | One person’s name or phone is wrong | Update them in **Square**, then search again. |
 | One person shows the wrong membership | In Square, fix their **segment** (or group) for your program; in Admin **Membership**, **refresh** the cache. |
 | Many people wrong or “empty” | Admin → **Customer Segments** — confirm the right segments are selected; **Membership** — **refresh** cache. If it still fails, call IT (Square or network may be down). |
-| App window blank or won’t open | Fully close the app and reopen. Check that the PC is online. If it persists, call **IT** with **`app.log`** from the [cheat sheet](#file-locations-cheat-sheet) and the date/time it failed. |
-| Check-ins fail for everyone / “readonly database” | Fully quit the app. Confirm `checkin.db` exists under `%APPDATA%\front-desk-app` (not only under Program Files). Install the latest build if available; see **Legacy database** in the cheat sheet. Send **`app.log`** to IT. |
+| App window blank or won’t open | Fully close the app and reopen. Check that the PC is online. If it persists, call **IT** with **app.log** (copy the path from **Admin → Settings**) and the date/time it failed. |
+| Check-ins fail for everyone / “readonly database” | Fully quit the app. In **Admin → Settings**, use **Copy path** under **All app data** to confirm the database folder exists on this PC. Send **app.log** to IT. |
 | “See the manager on duty” / check-in errors | Note what the guest was doing (search, day pass, scan). Call **IT** if it keeps happening after a restart. |
 
 For any membership issue, first run **Refresh Cache** in Admin. If that does not fix it, escalate to a **manager** so they can review the guest in Square and diagnose further.
+
+### What to send IT
+
+When escalating a problem, collect:
+
+1. **App log** — In **Admin → Settings**, click **Copy path** next to **App log**, open that file, and send it to IT from the time the problem started through the last restart.
+2. **What happened** — Approximate time, guest name or customer ID, and what was on screen (search, check-in, Admin refresh, etc.).
+3. **Database (if IT asks)** — With the **app fully closed**, zip the files in **All app data** (especially `checkin.db` and any `checkin.db-wal` / `checkin.db-shm` files). Do **not** delete those files on the live PC unless IT instructs you to.

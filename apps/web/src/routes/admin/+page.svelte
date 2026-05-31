@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { Search, Download, Home, IdCard, ChevronDown, ChevronUp } from 'lucide-svelte';
+	import { Search, Download, Home, IdCard, ChevronDown, ChevronUp, Copy } from 'lucide-svelte';
 	import * as XLSX from 'xlsx';
+	import { downloadBlob, downloadReportFromApi } from '$lib/downloadFile';
 
 	type Tab = 'membership' | 'segments' | 'checkins' | 'cards' | 'settings';
 	let activeTab: Tab = 'membership';
@@ -11,7 +12,9 @@
 	let customerSegments: any[] = [];
 	let checkinQueue: any[] = [];
 	let checkinLog: any[] = [];
+	let checkinLogTotal = 0;
 	let isLoading = false;
+	let isExportingCheckinLog = false;
 	let error: string | null = null;
 
 	// Filter states
@@ -25,10 +28,22 @@
 	let refreshProgress: any = null;
 	let progressInterval: any = null;
 
-	// Configuration
-	let appConfig: any = {};
-	let isSavingConfig = false;
-	let configSaveMessage: string | null = null;
+	type SupportPaths = {
+		userDataDir: string | null;
+		logsDir: string | null;
+		checkinBackupDir: string | null;
+		appLogFile: string | null;
+		databaseFile: string | null;
+		squareTokenFile: string | null;
+		hasSquareToken: boolean;
+	};
+
+	let supportPaths: SupportPaths | null = null;
+	let supportPathsError: string | null = null;
+	let copyPathMessage: string | null = null;
+	let showDeleteTokenConfirm = false;
+	let isDeletingSquareToken = false;
+	let squareTokenMessage: string | null = null;
 
 	const ADMIN_DASHBOARD_PASSWORD = 'PoolParty';
 	const ADMIN_AUTH_STORAGE_KEY = 'adminDashboardUnlocked';
@@ -39,7 +54,6 @@
 	function initializeDashboardData() {
 		loadData();
 		loadCacheStatus();
-		loadConfig();
 	}
 
 	onMount(() => {
@@ -69,36 +83,25 @@
 		authError = 'Incorrect password. Please try again.';
 	}
 
-	async function loadData(opts?: { enrich?: boolean }) {
-		const enrich = opts?.enrich === true;
-		const isInitialLoad = !enrich;
-		if (isInitialLoad) {
-			isLoading = true;
-			error = null;
-		}
-		const url = `/api/admin/database${enrich ? '?enrich=true' : ''}`;
+	async function loadData() {
+		isLoading = true;
+		error = null;
 		try {
-			const response = await fetch(url);
+			const response = await fetch('/api/admin/database');
 			if (!response.ok) {
 				const body = await response.json().catch(() => ({}));
 				throw new Error(body.error || `Failed to load data (${response.status})`);
 			}
 			const data = await response.json();
-			// Always use latest membership cache from API (it includes stored names/address from DB)
 			membershipCache = Array.isArray(data.membershipCache) ? data.membershipCache : [];
 			customerSegments = data.customerSegments || [];
 			checkinQueue = Array.isArray(data.checkinQueue) ? data.checkinQueue : [];
 			checkinLog = data.checkinLog || [];
-			// Collapse membership cache section by default so the list is visible; expand if no members
+			checkinLogTotal =
+				typeof data.checkinLogTotal === 'number' ? data.checkinLogTotal : checkinLog.length;
 			membershipCacheSectionCollapsed = membershipCache.length > 0;
-			// Collapse customer segments control by default so the segment list is visible; expand if no segments
 			segmentsControlSectionCollapsed = customerSegments.length > 0;
-			// Keep Cache Status section in sync (Total Customers, etc.)
 			await loadCacheStatus();
-			// Load enriched queue/log in background (membership cache already has names/address from DB)
-			if (isInitialLoad && (membershipCache.length > 0 || checkinQueue.length > 0 || checkinLog.length > 0)) {
-				loadData({ enrich: true });
-			}
 		} catch (err) {
 			if (err instanceof Error) {
 				error = err.message;
@@ -107,9 +110,7 @@
 			}
 			console.error('Error loading database contents:', err);
 		} finally {
-			if (isInitialLoad) {
-				isLoading = false;
-			}
+			isLoading = false;
 		}
 	}
 
@@ -244,57 +245,62 @@
 		}
 	}
 
-	async function loadConfig() {
+	async function loadSupportPaths() {
+		supportPathsError = null;
 		try {
-			const response = await fetch('/api/admin/config');
-			if (!response.ok) throw new Error('Failed to load config');
-			appConfig = await response.json();
+			const response = await fetch('/api/admin/support-paths');
+			if (!response.ok) throw new Error('Failed to load file locations');
+			supportPaths = await response.json();
 		} catch (err) {
-			console.error('Error loading config:', err);
-			appConfig = {};
+			supportPaths = null;
+			supportPathsError =
+				err instanceof Error ? err.message : 'Failed to load file locations';
 		}
 	}
 
-	async function saveConfig(key: string, value: string) {
-		isSavingConfig = true;
-		configSaveMessage = null;
-		
+	async function copySupportPath(pathToCopy: string | null | undefined, label: string) {
+		if (!pathToCopy) {
+			copyPathMessage = `${label} path is not available on this computer.`;
+			return;
+		}
+		copyPathMessage = null;
+		supportPathsError = null;
 		try {
-			const response = await fetch('/api/admin/config', {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ key, value })
-			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || 'Failed to save config');
-			}
-
-			const data = await response.json();
-			configSaveMessage = 'Configuration saved successfully';
-			
-			// Update local config
-			await loadConfig();
-			
-			// Clear message after 3 seconds
+			await navigator.clipboard.writeText(pathToCopy);
+			copyPathMessage = `Copied ${label} path. Paste it into File Explorer (Win+R) or Finder (Go → Go to Folder).`;
 			setTimeout(() => {
-				configSaveMessage = null;
-			}, 3000);
-		} catch (err) {
-			configSaveMessage = err instanceof Error ? err.message : 'Failed to save configuration';
-			console.error('Error saving config:', err);
-		} finally {
-			isSavingConfig = false;
+				copyPathMessage = null;
+			}, 4000);
+		} catch {
+			copyPathMessage = `Could not copy automatically. Select and copy: ${pathToCopy}`;
 		}
 	}
 
-	function getConfigValue(key: string): string {
-		return appConfig[key]?.value || '';
+	async function confirmDeleteSquareToken() {
+		isDeletingSquareToken = true;
+		squareTokenMessage = null;
+		supportPathsError = null;
+		try {
+			const response = await fetch('/api/admin/square-token', { method: 'DELETE' });
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to delete Square token');
+			}
+			showDeleteTokenConfirm = false;
+			squareTokenMessage =
+				data.message ||
+				'Square access token deleted. Close the app completely and reopen it to enter a new token.';
+			await loadSupportPaths();
+		} catch (err) {
+			supportPathsError =
+				err instanceof Error ? err.message : 'Failed to delete Square token';
+		} finally {
+			isDeletingSquareToken = false;
+		}
 	}
 
-	function getConfigSource(key: string): string {
-		return appConfig[key]?.source || 'environment';
+	$: if (isAuthenticated && activeTab === 'settings') {
+		loadSupportPaths();
 	}
 
 	// Segment management
@@ -578,45 +584,74 @@
 		}
 	}
 
-	function downloadCheckinLogExcel() {
+	function exportFilteredCheckinLogClient() {
+		const dataToExport = filteredCheckinLog;
+		if (dataToExport.length === 0) {
+			alert('No check-in data to export');
+			return;
+		}
+
+		const excelData = dataToExport.map((item) => ({
+			ID: item.id || '',
+			Type: item.checkin_type === 'daypass' ? 'Day pass' : 'Member',
+			Name:
+				item.checkin_type === 'daypass'
+					? 'Day pass'
+					: `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
+			Email: item.email_address || '-',
+			Phone: item.phone_number || '-',
+			Lot: item.reference_id || '-',
+			'Customer ID': item.customer_id || '-',
+			'Order ID': item.order_id || '-',
+			'Guest Count': item.guest_count || 0,
+			Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-'
+		}));
+
+		const worksheet = XLSX.utils.json_to_sheet(excelData);
+		const workbook = XLSX.utils.book_new();
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Check-in Log');
+		const now = new Date();
+		const dateStr = [
+			now.getFullYear(),
+			String(now.getMonth() + 1).padStart(2, '0'),
+			String(now.getDate()).padStart(2, '0')
+		].join('-');
+		const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+		downloadBlob(
+			new Blob([buffer], {
+				type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+			}),
+			`checkin-log-filtered-${dateStr}.xlsx`
+		);
+	}
+
+	async function downloadCheckinLogExcel() {
+		if (logFilter.trim()) {
+			exportFilteredCheckinLogClient();
+			return;
+		}
+
+		isExportingCheckinLog = true;
 		try {
-			// Prepare data for Excel - use filtered data if filter is active, otherwise use all data
-			const dataToExport = logFilter ? filteredCheckinLog : checkinLog;
-			
-			if (dataToExport.length === 0) {
-				alert('No check-in data to export');
-				return;
-			}
-
-			// Transform data to Excel-friendly format
-			const excelData = dataToExport.map(item => ({
-				'ID': item.id || '',
-				'Name': `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
-				'Email': item.email_address || '-',
-				'Phone': item.phone_number || '-',
-				'Lot': item.reference_id || '-',
-				'Customer ID': item.customer_id || '-',
-				'Order ID': item.order_id || '-',
-				'Guest Count': item.guest_count || 0,
-				'Timestamp': item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
-				'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
-			}));
-
-			// Create workbook and worksheet
-			const worksheet = XLSX.utils.json_to_sheet(excelData);
-			const workbook = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(workbook, worksheet, 'Check-in Log');
-
-			// Generate filename with current date
 			const now = new Date();
-			const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-			const filename = `checkin-log-${dateStr}.xlsx`;
-
-			// Write file and trigger download
-			XLSX.writeFile(workbook, filename);
+			const dateStr = [
+				now.getFullYear(),
+				String(now.getMonth() + 1).padStart(2, '0'),
+				String(now.getDate()).padStart(2, '0')
+			].join('-');
+			await downloadReportFromApi(
+				'/api/reports/checkin-log/download',
+				`checkin-log-full-${dateStr}.xlsx`
+			);
 		} catch (err) {
 			console.error('Error exporting to Excel:', err);
-			alert('Failed to export check-in data to Excel. Please try again.');
+			alert(
+				err instanceof Error
+					? err.message
+					: 'Failed to export check-in data to Excel. Please try again.'
+			);
+		} finally {
+			isExportingCheckinLog = false;
 		}
 	}
 
@@ -1102,15 +1137,22 @@
 			</button>
 			<div class="collapsible-content" class:collapsed={checkinsSectionCollapsed}>
 				<div class="section-actions" style="margin-top: 0.5rem; margin-bottom: 1rem;">
-					<button on:click={downloadCheckinLogExcel} disabled={isLoading || checkinLog.length === 0} class="download-button">
+					<button
+						on:click={downloadCheckinLogExcel}
+						disabled={isLoading || isExportingCheckinLog || checkinLog.length === 0}
+						class="download-button"
+					>
 						<Download class="button-icon" />
-						Export to Excel
+						{isExportingCheckinLog ? 'Exporting…' : 'Export to Excel'}
 					</button>
 					<button on:click={() => loadData()} disabled={isLoading} class="refresh-button">
 						{isLoading ? 'Loading…' : 'Refresh'}
 					</button>
 				</div>
-				<p class="settings-hint" style="margin-bottom: 1rem;">History of guest check-ins. Last 1000 entries shown. Member check-ins are from search or card scan; day-pass check-ins are anonymous sales.</p>
+				<p class="settings-hint" style="margin-bottom: 1rem;">
+					Full check-in history stored on this computer ({checkinLogTotal} total).
+					Names come from the membership cache. Export downloads the complete log; use the filter to export a subset only.
+				</p>
 				<div class="filter-section">
 					<div class="filter-input-wrapper">
 						<Search class="filter-icon" />
@@ -1121,7 +1163,9 @@
 							class="filter-input"
 						/>
 					</div>
-					<p class="filter-count">Showing {filteredCheckinLog.length} of {checkinLog.length} entries</p>
+					<p class="filter-count">
+						Showing {filteredCheckinLog.length} of {checkinLogTotal} check-ins
+					</p>
 				</div>
 
 				<h3 class="checkins-subheading">Member check-ins</h3>
@@ -1138,13 +1182,12 @@
 								<th>Order ID</th>
 								<th>Guest Count</th>
 								<th>Timestamp</th>
-								<th>Synced</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if memberCheckins.length === 0}
 								<tr>
-									<td colspan="10" class="no-data">No member check-ins</td>
+									<td colspan="9" class="no-data">No member check-ins</td>
 								</tr>
 							{:else}
 								{#each memberCheckins as item}
@@ -1164,11 +1207,6 @@
 										<td class="mono">{item.order_id || 'N/A'}</td>
 										<td>{item.guest_count}</td>
 										<td>{formatDate(item.timestamp)}</td>
-										<td>
-											<span class="badge" class:badge-success={item.synced_to_square === 1} class:badge-warning={item.synced_to_square !== 1}>
-												{item.synced_to_square === 1 ? 'Yes' : 'No'}
-											</span>
-										</td>
 									</tr>
 								{/each}
 							{/if}
@@ -1185,13 +1223,12 @@
 								<th>Name</th>
 								<th>Guest Count</th>
 								<th>Timestamp</th>
-								<th>Synced</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if daypassCheckins.length === 0}
 								<tr>
-									<td colspan="5" class="no-data">No day-pass check-ins</td>
+									<td colspan="4" class="no-data">No day-pass check-ins</td>
 								</tr>
 							{:else}
 								{#each daypassCheckins as item}
@@ -1200,11 +1237,6 @@
 										<td>{item.given_name || 'Day pass'}</td>
 										<td>{item.guest_count}</td>
 										<td>{formatDate(item.timestamp)}</td>
-										<td>
-											<span class="badge" class:badge-success={item.synced_to_square === 1} class:badge-warning={item.synced_to_square !== 1}>
-												{item.synced_to_square === 1 ? 'Yes' : 'No'}
-											</span>
-										</td>
 									</tr>
 								{/each}
 							{/if}
@@ -1225,94 +1257,145 @@
 		<section class="card">
 			<div class="section-header">
 				<h2>Settings</h2>
-				<button on:click={loadConfig} disabled={isSavingConfig} class="refresh-button">
-					{isSavingConfig ? 'Saving…' : 'Refresh'}
-				</button>
 			</div>
-			<p class="settings-hint" style="margin-bottom: 1rem;">API and cache options. Manage segments in the Customer Segments tab.</p>
-			{#if configSaveMessage}
-				<div class="config-message" class:config-error={configSaveMessage.includes('Failed') || configSaveMessage.includes('Error')}>
-					{configSaveMessage}
-				</div>
+			<p class="settings-hint" style="margin-bottom: 1rem;">
+				Quick links for troubleshooting and backups. Membership segments and cache refresh are on the
+				<strong>Membership</strong> and <strong>Customer Segments</strong> tabs.
+			</p>
+
+			{#if copyPathMessage}
+				<div class="config-message">{copyPathMessage}</div>
+			{/if}
+			{#if supportPathsError}
+				<div class="config-message config-error">{supportPathsError}</div>
 			{/if}
 
 			<div class="settings-section">
-				<h3>Cache</h3>
-				<p class="setting-help" style="margin-bottom: 0.5rem;">Refresh the membership cache from the Membership tab. Pacing uses safe defaults.</p>
-				<p class="setting-help" style="margin-bottom: 0.5rem;">Mark cache stale after (hours):</p>
-				<div class="setting-input-group" style="max-width: 12rem;">
-					<input
-						id="cache-refresh-age"
-						type="number"
-						min="1"
-						max="168"
-						value={getConfigValue('CACHE_REFRESH_AGE_HOURS') || '24'}
-						on:input={(e) => appConfig['CACHE_REFRESH_AGE_HOURS'] = { ...appConfig['CACHE_REFRESH_AGE_HOURS'], value: e.currentTarget.value }}
-						class="setting-input"
-						placeholder="24"
-					/>
-					<button
-						on:click={() => saveConfig('CACHE_REFRESH_AGE_HOURS', getConfigValue('CACHE_REFRESH_AGE_HOURS') || '24')}
-						disabled={isSavingConfig}
-						class="setting-save-button"
-					>
-						Save
-					</button>
-				</div>
-				<p class="setting-help" style="margin-top: 0.25rem;">1–168 hours. You can still use the cache when stale; refresh when convenient.</p>
+				<h3>Files on this computer</h3>
+				<p class="setting-help" style="margin-bottom: 1rem;">
+					Copy a path, then paste it into your file browser (Windows: Win+R; Mac: Finder → Go to Folder).
+				</p>
+
+				{#if !supportPaths}
+					<p class="setting-help">Loading file locations…</p>
+				{:else}
+					<ul class="support-path-list">
+						<li class="support-path-item">
+							<div class="support-path-body">
+								<strong>Daily check-in CSV backups</strong>
+								<p class="setting-help">One CSV per day (backup copy of check-ins).</p>
+								{#if supportPaths.checkinBackupDir}
+									<code class="support-path-code">{supportPaths.checkinBackupDir}</code>
+								{/if}
+							</div>
+							<button
+								type="button"
+								class="support-copy-button"
+								disabled={!supportPaths.checkinBackupDir}
+								on:click={() => copySupportPath(supportPaths?.checkinBackupDir, 'check-in backup folder')}
+							>
+								<Copy class="support-copy-icon" aria-hidden="true" />
+								Copy path
+							</button>
+						</li>
+
+						<li class="support-path-item">
+							<div class="support-path-body">
+								<strong>App log</strong>
+								<p class="setting-help">Startup, API errors, and cache refresh messages.</p>
+								{#if supportPaths.appLogFile}
+									<code class="support-path-code">{supportPaths.appLogFile}</code>
+								{/if}
+							</div>
+							<button
+								type="button"
+								class="support-copy-button"
+								disabled={!supportPaths.appLogFile}
+								on:click={() => copySupportPath(supportPaths?.appLogFile, 'app log')}
+							>
+								<Copy class="support-copy-icon" aria-hidden="true" />
+								Copy path
+							</button>
+						</li>
+
+						<li class="support-path-item">
+							<div class="support-path-body">
+								<strong>All app data</strong>
+								<p class="setting-help">Database, Square token, and logs on this PC.</p>
+								{#if supportPaths.userDataDir}
+									<code class="support-path-code">{supportPaths.userDataDir}</code>
+								{/if}
+							</div>
+							<button
+								type="button"
+								class="support-copy-button"
+								disabled={!supportPaths.userDataDir}
+								on:click={() => copySupportPath(supportPaths?.userDataDir, 'app data folder')}
+							>
+								<Copy class="support-copy-icon" aria-hidden="true" />
+								Copy path
+							</button>
+						</li>
+					</ul>
+				{/if}
 			</div>
 
 			<div class="settings-section">
-				<h3>API Configuration</h3>
-				<div class="settings-grid">
-					<div class="setting-item">
-						<label for="square-api-url">
-							Square API URL
-							<span class="setting-source">({getConfigSource('SQUARE_API_URL')})</span>
-						</label>
-						<div class="setting-input-group">
-							<input
-								id="square-api-url"
-								type="text"
-								value={getConfigValue('SQUARE_API_URL') || 'https://connect.squareup.com/v2'}
-								on:input={(e) => appConfig['SQUARE_API_URL'] = { ...appConfig['SQUARE_API_URL'], value: e.currentTarget.value }}
-								class="setting-input"
-								placeholder="https://connect.squareup.com/v2"
-							/>
+				<h3>Square access token</h3>
+				<p class="setting-help" style="margin-bottom: 1rem;">
+					The token is stored only on this computer. Delete it when you need to sign in with a different
+					Square token (for example after rotation by IT).
+				</p>
+				{#if squareTokenMessage}
+					<div class="config-message">{squareTokenMessage}</div>
+				{/if}
+				{#if showDeleteTokenConfirm}
+					<div class="token-confirm-panel" role="alertdialog" aria-labelledby="delete-token-title">
+						<p id="delete-token-title" class="token-confirm-title">
+							Delete the saved Square access token on this computer?
+						</p>
+						<p class="setting-help">
+							Check-ins and membership sync will fail until a new token is saved. After deleting,
+							<strong>close the Front Desk App completely</strong> (quit from the taskbar if needed),
+							then open it again and paste the new token when prompted.
+						</p>
+						<div class="token-confirm-actions">
 							<button
-								on:click={() => saveConfig('SQUARE_API_URL', getConfigValue('SQUARE_API_URL') || 'https://connect.squareup.com/v2')}
-								disabled={isSavingConfig}
-								class="setting-save-button"
+								type="button"
+								class="token-delete-confirm-button"
+								disabled={isDeletingSquareToken}
+								on:click={confirmDeleteSquareToken}
 							>
-								Save
+								{isDeletingSquareToken ? 'Deleting…' : 'Yes, delete token'}
+							</button>
+							<button
+								type="button"
+								class="token-delete-cancel-button"
+								disabled={isDeletingSquareToken}
+								on:click={() => (showDeleteTokenConfirm = false)}
+							>
+								Cancel
 							</button>
 						</div>
 					</div>
-
-					<div class="setting-item">
-						<label for="square-api-version">
-							Square API Version
-							<span class="setting-source">({getConfigSource('SQUARE_API_VERSION')})</span>
-						</label>
-						<div class="setting-input-group">
-							<input
-								id="square-api-version"
-								type="text"
-								value={getConfigValue('SQUARE_API_VERSION') || '2025-10-16'}
-								on:input={(e) => appConfig['SQUARE_API_VERSION'] = { ...appConfig['SQUARE_API_VERSION'], value: e.currentTarget.value }}
-								class="setting-input"
-								placeholder="2025-10-16"
-							/>
-							<button
-								on:click={() => saveConfig('SQUARE_API_VERSION', getConfigValue('SQUARE_API_VERSION') || '2025-10-16')}
-								disabled={isSavingConfig}
-								class="setting-save-button"
-							>
-								Save
-							</button>
-						</div>
-					</div>
-				</div>
+				{:else}
+					<button
+						type="button"
+						class="token-delete-button"
+						disabled={supportPaths !== null && !supportPaths.hasSquareToken}
+						on:click={() => {
+							squareTokenMessage = null;
+							showDeleteTokenConfirm = true;
+						}}
+					>
+						Delete Square token
+					</button>
+					{#if supportPaths && !supportPaths.hasSquareToken}
+						<p class="setting-help" style="margin-top: 0.5rem;">
+							No saved token file on this PC (you may be using a bundled or environment token).
+						</p>
+					{/if}
+				{/if}
 			</div>
 		</section>
 	{/if}
@@ -2112,6 +2195,150 @@
 		.settings-grid {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	.support-path-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.support-path-item {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 1rem;
+		padding: 1rem 1.25rem;
+		background: #f9fafb;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+	}
+
+	.support-path-body {
+		flex: 1;
+		min-width: 12rem;
+	}
+
+	.support-path-body strong {
+		display: block;
+		color: #111827;
+		margin-bottom: 0.25rem;
+	}
+
+	.support-path-code {
+		display: block;
+		margin-top: 0.5rem;
+		padding: 0.35rem 0.5rem;
+		font-size: 0.75rem;
+		word-break: break-all;
+		background: #fff;
+		border: 1px solid #e5e7eb;
+		border-radius: 6px;
+		color: #374151;
+	}
+
+	.support-copy-button {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #1e40af;
+		background: #fff;
+		border: 1px solid #93c5fd;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.support-copy-button:hover:not(:disabled) {
+		background: #eff6ff;
+	}
+
+	.support-copy-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	:global(.support-copy-icon) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.token-delete-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #b91c1c;
+		background: #fff;
+		border: 1px solid #fca5a5;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-button:hover:not(:disabled) {
+		background: #fef2f2;
+	}
+
+	.token-delete-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.token-confirm-panel {
+		padding: 1rem 1.25rem;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 12px;
+	}
+
+	.token-confirm-title {
+		margin: 0 0 0.5rem;
+		font-weight: 600;
+		color: #991b1b;
+	}
+
+	.token-confirm-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 1rem;
+	}
+
+	.token-delete-confirm-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #fff;
+		background: #dc2626;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-confirm-button:hover:not(:disabled) {
+		background: #b91c1c;
+	}
+
+	.token-delete-cancel-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: #374151;
+		background: #fff;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	.token-delete-confirm-button:disabled,
+	.token-delete-cancel-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
 	.settings-section {

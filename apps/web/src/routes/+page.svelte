@@ -14,8 +14,8 @@
 		Shield
 	} from 'lucide-svelte';
 	import { goto } from '$app/navigation';
-	import * as XLSX from 'xlsx';
 	import { searchCustomers } from '$lib';
+	import { downloadReportFromApi } from '$lib/downloadFile';
 	import type { SearchResult } from '$lib';
 	import CustomerDetail from '$lib/components/CustomerDetail.svelte';
 
@@ -285,70 +285,21 @@
 		dailyReportMessage = null;
 
 		try {
-			const response = await fetch('/api/admin/database?enrich=true');
-			if (!response.ok) {
-				const body = await response.json().catch(() => ({}));
-				throw new Error(body.error || `Unable to load check-ins (${response.status})`);
-			}
-
-			const data = await response.json();
-			const checkinLog = Array.isArray(data?.checkinLog) ? data.checkinLog : [];
-
 			const now = new Date();
-			const startOfDay = new Date(
+			const dateStr = [
 				now.getFullYear(),
-				now.getMonth(),
-				now.getDate(),
-				0,
-				0,
-				0,
-				0
+				String(now.getMonth() + 1).padStart(2, '0'),
+				String(now.getDate()).padStart(2, '0')
+			].join('-');
+			const { fileName, rowCount } = await downloadReportFromApi(
+				'/api/reports/daily-checkins/download',
+				`checkin-log-${dateStr}.xlsx`
 			);
-			const endOfDay = new Date(
-				now.getFullYear(),
-				now.getMonth(),
-				now.getDate() + 1,
-				0,
-				0,
-				0,
-				0
-			);
-
-			const dailyCheckins = checkinLog.filter((item: any) => {
-				if (!item?.timestamp) return false;
-				const ts = new Date(item.timestamp);
-				if (Number.isNaN(ts.getTime())) return false;
-				return ts >= startOfDay && ts < endOfDay;
-			});
-
-			if (dailyCheckins.length === 0) {
-				throw new Error('No check-ins found for today.');
-			}
-
-			const excelData = dailyCheckins.map((item: any) => ({
-				ID: item.id || '',
-				Type: item.checkin_type === 'daypass' ? 'Day pass' : 'Member',
-				Name:
-					item.checkin_type === 'daypass'
-						? 'Day pass'
-						: `${item.given_name || ''} ${item.family_name || ''}`.trim() || '-',
-				Email: item.email_address || '-',
-				Phone: item.phone_number || '-',
-				Lot: item.reference_id || '-',
-				'Customer ID': item.customer_id || '-',
-				'Order ID': item.order_id || '-',
-				'Guest Count': item.guest_count || 0,
-				Timestamp: item.timestamp ? new Date(item.timestamp).toLocaleString() : '-',
-				'Synced to Square': item.synced_to_square === 1 ? 'Yes' : 'No'
-			}));
-
-			const worksheet = XLSX.utils.json_to_sheet(excelData);
-			const workbook = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(workbook, worksheet, 'Daily Check-ins');
-			const dateStr = now.toISOString().split('T')[0];
-			const fileName = `checkin-log-${dateStr}.xlsx`;
-			XLSX.writeFile(workbook, fileName);
-			dailyReportMessage = `Download started: ${fileName}`;
+			const countLabel =
+				rowCount === 0
+					? 'no check-ins yet today'
+					: `${rowCount} check-in${rowCount === 1 ? '' : 's'}`;
+			dailyReportMessage = `Download started: ${fileName} (${countLabel})`;
 		} catch (err) {
 			dailyReportError =
 				err instanceof Error ? err.message : 'Failed to download daily check-ins. Please try again.';
