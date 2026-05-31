@@ -35,6 +35,9 @@
 	let isPreparingDailyReport = false;
 	let dailyReportMessage: string | null = null;
 	let dailyReportError: string | null = null;
+	let isExportingFullCheckinLog = false;
+	let fullCheckinLogMessage: string | null = null;
+	let fullCheckinLogError: string | null = null;
 	let isRefreshingMembershipCache = false;
 	let membershipCacheMessage: string | null = null;
 	let membershipCacheError: string | null = null;
@@ -240,6 +243,8 @@
 		selectedCustomer = null;
 		dailyReportMessage = null;
 		dailyReportError = null;
+		fullCheckinLogMessage = null;
+		fullCheckinLogError = null;
 		membershipCacheMessage = null;
 		membershipCacheError = null;
 	}
@@ -305,6 +310,37 @@
 				err instanceof Error ? err.message : 'Failed to download daily check-ins. Please try again.';
 		} finally {
 			isPreparingDailyReport = false;
+		}
+	}
+
+	async function handleDownloadFullCheckinHistory() {
+		isExportingFullCheckinLog = true;
+		fullCheckinLogError = null;
+		fullCheckinLogMessage = null;
+
+		try {
+			const now = new Date();
+			const dateStr = [
+				now.getFullYear(),
+				String(now.getMonth() + 1).padStart(2, '0'),
+				String(now.getDate()).padStart(2, '0')
+			].join('-');
+			const { fileName, rowCount } = await downloadReportFromApi(
+				'/api/reports/checkin-log/download',
+				`checkin-log-full-${dateStr}.xlsx`
+			);
+			const countLabel =
+				rowCount === 0
+					? 'no check-ins'
+					: `${rowCount} check-in${rowCount === 1 ? '' : 's'}`;
+			fullCheckinLogMessage = `Download started: ${fileName} (${countLabel})`;
+		} catch (err) {
+			fullCheckinLogError =
+				err instanceof Error
+					? err.message
+					: 'Failed to download full check-in history. Please try again.';
+		} finally {
+			isExportingFullCheckinLog = false;
 		}
 	}
 </script>
@@ -435,23 +471,41 @@
 					<div class="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5 sm:p-6 shadow-sm">
 						<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 							<div>
-								<h3 class="text-lg font-bold text-indigo-900">Close Out Day</h3>
-								<p class="text-sm text-indigo-700 mt-1">Download today&apos;s check-in report (Excel)</p>
+								<h3 class="text-lg font-bold text-indigo-900">Check-in Reports</h3>
+								<p class="text-sm text-indigo-700 mt-1">
+									Download today&apos;s check-ins or the full history stored on this computer (Excel)
+								</p>
 							</div>
-							<button
-								type="button"
-								on:click={handleDownloadDailyCheckins}
-								disabled={isPreparingDailyReport}
-								class="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
-							>
-								{#if isPreparingDailyReport}
-									<Loader2 class="h-5 w-5 animate-spin" />
-									<span>Preparing…</span>
-								{:else}
-									<Download class="h-5 w-5" />
-									<span>Download Report</span>
-								{/if}
-							</button>
+							<div class="flex flex-col sm:flex-row gap-3 shrink-0">
+								<button
+									type="button"
+									on:click={handleDownloadDailyCheckins}
+									disabled={isPreparingDailyReport || isExportingFullCheckinLog}
+									class="px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+								>
+									{#if isPreparingDailyReport}
+										<Loader2 class="h-5 w-5 animate-spin" />
+										<span>Preparing…</span>
+									{:else}
+										<Download class="h-5 w-5" />
+										<span>Today&apos;s Check-ins</span>
+									{/if}
+								</button>
+								<button
+									type="button"
+									on:click={handleDownloadFullCheckinHistory}
+									disabled={isExportingFullCheckinLog || isPreparingDailyReport}
+									class="px-5 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+								>
+									{#if isExportingFullCheckinLog}
+										<Loader2 class="h-5 w-5 animate-spin" />
+										<span>Exporting…</span>
+									{:else}
+										<Download class="h-5 w-5" />
+										<span>Full History</span>
+									{/if}
+								</button>
+							</div>
 						</div>
 						{#if dailyReportMessage}
 							<div class="mt-3 p-3 bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-900 text-sm">
@@ -462,6 +516,17 @@
 							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
 								<AlertCircle class="h-4 w-4 shrink-0" />
 								<span>{dailyReportError}</span>
+							</div>
+						{/if}
+						{#if fullCheckinLogMessage}
+							<div class="mt-3 p-3 bg-indigo-100 border border-indigo-200 rounded-lg text-indigo-900 text-sm">
+								{fullCheckinLogMessage}
+							</div>
+						{/if}
+						{#if fullCheckinLogError}
+							<div class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+								<AlertCircle class="h-4 w-4 shrink-0" />
+								<span>{fullCheckinLogError}</span>
 							</div>
 						{/if}
 					</div>

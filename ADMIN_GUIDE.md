@@ -34,7 +34,7 @@ Only people you trust with member data and exports should use this screen.
 
 **Customer Segments** — Choose which Square **segments** count as members. After any change here, go to **Membership** and refresh the cache.
 
-**Check-ins** — Browse recent member and day-pass check-ins on this PC. Use **Export to Excel** to download the **full** check-in history from the local database (no row limit), or filter the list first to export a subset only.
+**Check-ins** — Browse recent member and day-pass check-ins on this PC. Use **Export to Excel** to download the **full** check-in history from the local database (no row limit), or filter the list first to export a subset only. The same full-history export is also available from **Front Desk Tools → Check-in Reports → Full History** without opening Admin.
 
 **Settings** — Copy paths to files on this computer for troubleshooting and backups: the **daily check-in CSV backups** folder (one automated file per calendar day), the **app log** (startup, API errors, cache refresh — send to IT when something fails), and the **app data folder** (database, Square token, and logs). Also where you **delete the Square access token** when IT rotates credentials.
 
@@ -93,12 +93,20 @@ Besides checking guests in, this is the most common task on the front desk PC. T
 Use this at the end of each shift or day when you need **today’s** check-ins for your manager.
 
 1. On the check-in home screen, tap the **gear** icon to open **Front Desk Tools**.
-2. Under **Close Out Day**, tap **Download Report**.
+2. Under **Check-in Reports**, tap **Today's Check-ins**.
 3. Save the Excel file when prompted, then email it to your manager.
 
 #### Full check-in history (managers / supervisors)
 
 Use this when you need **every** check-in stored on this PC — for example, a month-end report or recovering records after a gap.
+
+**From Front Desk Tools:**
+
+1. On the check-in home screen, tap the **gear** icon to open **Front Desk Tools**.
+2. Under **Check-in Reports**, tap **Full History**.
+3. Save the Excel file when prompted.
+
+**From Admin (when you also need to browse or filter first):**
 
 1. Open **Admin** (gear → **Admin Dashboard**) and sign in.
 2. Go to the **Check-ins** tab.
@@ -114,7 +122,7 @@ The app automatically saves a **daily CSV backup** on this PC — one file per c
 2. Next to **Daily check-in CSV backups**, click **Copy path**.
 3. Paste the path into File Explorer (Windows: **Win+R**) or Finder on Mac (**Go → Go to Folder**), then open the CSV for the day you need.
 
-For routine daily handoff, still use **Close Out Day** on the home screen — the CSV folder is mainly a safety net.
+For routine daily handoff, still use **Today's Check-ins** under **Check-in Reports** on the home screen — the CSV folder is mainly a safety net.
 
 ### Refresh membership cache
 
