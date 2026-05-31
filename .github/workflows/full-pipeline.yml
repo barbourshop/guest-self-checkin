@@ -2,10 +2,32 @@ name: Full pipeline (Test, Windows App, macOS dmg, Release)
 
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+      release_notes:
+        description: "Optional release notes (markdown). Defaults to auto-generated summary."
+        required: false
+        type: string
 
   pull_request:
-      branches:
-        - main
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   ci-tests:
@@ -256,19 +278,181 @@ jobs:
           pwsh -File scripts/smoke-test-windows-installed.ps1 -ExePath "${{ steps.find_exe.outputs.exe_path }}"
         shell: pwsh
 
-  # release:
-  #   needs: smoke-test-windows-app
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 23
-  #         cache: 'npm'
-  #     - run: npm ci
-  #     - name: Run semantic-release
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-  #       run: npx semantic-release 
+  # Manual dispatch on main only — requires bump/prerelease inputs from the operator.
+  # PRs build and test but never release.
+  release:
+    needs:
+      - smoke-test-windows-app
+      - build-mac-app
+      - build-docs
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUMP: ${{ inputs.bump }}
+      PRERELEASE: ${{ inputs.prerelease }}
+      CUSTOM_NOTES: ${{ inputs.release_notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          set -euo pipefail
+
+          LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName // empty')
+          if [ -z "$LATEST" ]; then
+            LATEST=$(node -p "require('./package.json').version")
+            echo "No existing releases; starting from package.json version ${LATEST}"
+          else
+            echo "Latest release tag: ${LATEST}"
+          fi
+
+          LATEST="${LATEST#v}"
+          IFS='.' read -r YEAR NUM PATCH <<< "$LATEST"
+
+          if [ -z "$YEAR" ] || [ -z "$NUM" ] || [ -z "$PATCH" ]; then
+            echo "Could not parse version '${LATEST}' (expected YYYY.N.P)"
+            exit 1
+          fi
+
+          case "$BUMP" in
+            patch) PATCH=$((PATCH + 1)) ;;
+            minor) NUM=$((NUM + 1)); PATCH=0 ;;
+            major) YEAR=$((YEAR + 1)); NUM=0; PATCH=0 ;;
+            *)
+              echo "Unknown bump type: ${BUMP}"
+              exit 1
+              ;;
+          esac
+
+          VERSION="${YEAR}.${NUM}.${PATCH}"
+          TAG="v${VERSION}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Next version: ${TAG} (${BUMP} bump)"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release assets
+        id: assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+
+          for dir in artifacts/windows-installer artifacts/mac-dmg-arm64 artifacts/mac-dmg-x64 artifacts/guides-docx; do
+            if [ -d "$dir" ]; then
+              find "$dir" -type f \( -name '*.exe' -o -name '*.dmg' -o -name '*.docx' \) -exec cp {} release-assets/ \;
+            fi
+          done
+
+          EXE_COUNT=$(find release-assets -maxdepth 1 -name '*.exe' | wc -l | tr -d ' ')
+          DMG_COUNT=$(find release-assets -maxdepth 1 -name '*.dmg' | wc -l | tr -d ' ')
+          DOCX_COUNT=$(find release-assets -maxdepth 1 -name '*.docx' | wc -l | tr -d ' ')
+
+          if [ "$EXE_COUNT" -eq 0 ] || [ "$DMG_COUNT" -eq 0 ]; then
+            echo "Missing required installers (exe=${EXE_COUNT}, dmg=${DMG_COUNT})"
+            ls -laR artifacts || true
+            exit 1
+          fi
+
+          echo "Collected ${EXE_COUNT} Windows installer(s), ${DMG_COUNT} macOS DMG(s), ${DOCX_COUNT} guide(s)"
+          ls -la release-assets/
+
+          {
+            echo "exe_count=${EXE_COUNT}"
+            echo "dmg_count=${DMG_COUNT}"
+            echo "docx_count=${DOCX_COUNT}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+          EXE_COUNT: ${{ steps.assets.outputs.exe_count }}
+          DMG_COUNT: ${{ steps.assets.outputs.dmg_count }}
+          DOCX_COUNT: ${{ steps.assets.outputs.docx_count }}
+        run: |
+          set -euo pipefail
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          HEAD_MESSAGE=$(git log -1 --format=%B "${HEAD_SHA}")
+
+          if [ -n "$CUSTOM_NOTES" ]; then
+            printf '%s\n' "$CUSTOM_NOTES" > release-notes.md
+          else
+            {
+              echo "## Front Desk App ${TAG}"
+              echo ""
+              echo "**Bump type:** ${BUMP}"
+              echo ""
+              echo "**Pipeline run:** [${RUN_ID}](${RUN_URL})"
+              echo ""
+              echo "**Commit:** [\`${HEAD_SHA:0:7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${HEAD_SHA})"
+              echo ""
+              echo "${HEAD_MESSAGE}"
+              echo ""
+              echo "### Assets"
+              echo ""
+              echo "- Windows installer (${EXE_COUNT})"
+              echo "- macOS DMG — Apple Silicon and Intel (${DMG_COUNT})"
+              echo "- Staff and admin Word guides (${DOCX_COUNT})"
+            } > release-notes.md
+          fi
+
+      - name: Create tag on commit
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$GITHUB_SHA" -m "Release ${TAG}"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            release create "$TAG"
+            --target "$GITHUB_SHA"
+            --title "Front Desk App v${VERSION}"
+            --notes-file release-notes.md
+          )
+          if [ "$PRERELEASE" = "true" ]; then
+            ARGS+=(--prerelease)
+          fi
+          gh "${ARGS[@]}" release-assets/*
+
+      - name: Publish summary
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            echo "## Release published: ${TAG}"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| Bump | \`${BUMP}\` |"
+            echo "| Commit | [\`${GITHUB_SHA:0:7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}) |"
+            echo "| Pipeline run | [${GITHUB_RUN_ID}](${RUN_URL}) |"
+            echo "| Release | [${TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}) |"
+          } >> "$GITHUB_STEP_SUMMARY"
