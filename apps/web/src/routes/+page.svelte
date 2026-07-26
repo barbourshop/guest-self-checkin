@@ -769,17 +769,25 @@
 									}}
 									class="w-full text-left hover:bg-gray-50 transition-colors"
 								>
-									<div class="bg-green-50 border-b border-green-200 px-4 py-2.5 flex justify-between items-center gap-2">
+									<div class="bg-green-50 border-b border-green-200 px-4 py-2.5 flex justify-between items-start gap-2">
 										<span class="text-base font-bold text-gray-900 tracking-tight min-w-0 truncate">{customer.displayName}</span>
-										<span
-											class="shrink-0 px-3 py-1 text-sm font-bold rounded-full border-2 shadow-sm max-w-[15rem] truncate {customer.membership.segmentNames && customer.membership.segmentNames.length > 0
-												? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-												: 'bg-gray-200 text-gray-900 border-gray-300'}"
-										>
-											{customer.membership.segmentNames && customer.membership.segmentNames.length > 0
-												? customer.membership.segmentNames.join(', ')
-												: customer.membership.type}
-										</span>
+										<div class="shrink-0 flex flex-wrap justify-end gap-1.5 max-w-[60%]">
+											{#if customer.membership.segmentNames && customer.membership.segmentNames.length > 0}
+												{#each customer.membership.segmentNames as segmentName}
+													<span
+														class="px-3 py-1 text-sm font-bold rounded-full border-2 shadow-sm bg-emerald-100 text-emerald-900 border-emerald-300"
+													>
+														{segmentName}
+													</span>
+												{/each}
+											{:else}
+												<span
+													class="px-3 py-1 text-sm font-bold rounded-full border-2 shadow-sm bg-gray-200 text-gray-900 border-gray-300"
+												>
+													{customer.membership.type}
+												</span>
+											{/if}
+										</div>
 									</div>
 									<div class="p-4 pt-2">
 										<div class="text-xs text-gray-500">
