@@ -252,5 +252,83 @@ describe('MembershipCache', () => {
       await expect(cache.getMembershipStatus('')).rejects.toThrow('Customer ID is required');
     });
   });
+
+  describe('Multi-segment membership', () => {
+    const SEG_A = 'SEG_AMENITIES';
+    const SEG_B = 'SEG_POOL';
+
+    beforeEach(() => {
+      db.prepare(`
+        INSERT INTO customer_segments (segment_id, display_name, sort_order) VALUES (?, ?, ?)
+      `).run(SEG_A, '2026 Amenities Access', 0);
+      db.prepare(`
+        INSERT INTO customer_segments (segment_id, display_name, sort_order) VALUES (?, ?, ?)
+      `).run(SEG_B, '2026 Pool Pass For 4', 1);
+
+      mockSquareService.addCustomer({
+        id: 'MULTI_SEG_CUSTOMER',
+        given_name: 'Pat',
+        family_name: 'Miller',
+        email_address: 'pat.miller@example.com',
+        phone_number: '+15550001111',
+        reference_id: 'LOT789',
+        segment_ids: [SEG_A, SEG_B]
+      });
+    });
+
+    it('searchCache returns all segment IDs for a multi-group member', () => {
+      cache._updateCache('MULTI_SEG_CUSTOMER', true, [SEG_A, SEG_B], {
+        given_name: 'Pat',
+        family_name: 'Miller',
+        email_address: 'pat.miller@example.com',
+        phone_number: '+15550001111',
+        reference_id: 'LOT789'
+      });
+
+      const rows = cache.searchCache('name', 'Miller', true);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].segment_ids).toEqual([SEG_A, SEG_B]);
+    });
+
+    it('refreshMembership keeps cached groups when GetCustomer returns only one', async () => {
+      cache._updateCache('MULTI_SEG_CUSTOMER', true, [SEG_A, SEG_B], {
+        given_name: 'Pat',
+        family_name: 'Miller'
+      });
+
+      // Simulate Square GetCustomer lagging / returning a partial segment list
+      mockSquareService.addCustomer({
+        id: 'MULTI_SEG_CUSTOMER',
+        given_name: 'Pat',
+        family_name: 'Miller',
+        segment_ids: [SEG_A]
+      });
+
+      const result = await cache.refreshMembership('MULTI_SEG_CUSTOMER');
+      expect(result.hasMembership).toBe(true);
+      expect(result.segmentIds).toEqual([SEG_A, SEG_B]);
+
+      const rows = cache.searchCache('name', 'Miller', true);
+      expect(rows[0].segment_ids).toEqual([SEG_A, SEG_B]);
+    });
+
+    it('refreshMembership clears membership when GetCustomer reports no configured segments', async () => {
+      cache._updateCache('MULTI_SEG_CUSTOMER', true, [SEG_A, SEG_B], {
+        given_name: 'Pat',
+        family_name: 'Miller'
+      });
+
+      mockSquareService.addCustomer({
+        id: 'MULTI_SEG_CUSTOMER',
+        given_name: 'Pat',
+        family_name: 'Miller',
+        segment_ids: []
+      });
+
+      const result = await cache.refreshMembership('MULTI_SEG_CUSTOMER');
+      expect(result.hasMembership).toBe(false);
+      expect(result.segmentIds).toEqual([]);
+    });
+  });
 });
 

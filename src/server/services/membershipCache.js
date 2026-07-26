@@ -47,6 +47,19 @@ class MembershipCache {
   }
 
   /**
+   * Order configured segment IDs by Admin sort_order / display_name.
+   * @private
+   * @param {string[]} segmentIds
+   * @returns {string[]}
+   */
+  _orderConfiguredSegmentIds(segmentIds) {
+    if (!segmentIds || segmentIds.length === 0) return [];
+    const order = this.segmentService.getConfiguredSegmentIds();
+    const idSet = new Set(segmentIds);
+    return order.filter(id => idSet.has(id));
+  }
+
+  /**
    * Get membership status for a customer
    * Checks cache first, refreshes from Square if cache miss or stale
    * @param {string} customerId - Square customer ID
@@ -88,9 +101,18 @@ class MembershipCache {
 
     try {
       const configuredIds = this.segmentService.getConfiguredSegmentIds();
+      const configuredSet = new Set(configuredIds);
       const customer = await squareService.getCustomer(customerId);
-      const customerSegmentIds = customer.segment_ids || [];
-      const segmentIds = customerSegmentIds.filter(id => configuredIds.includes(id));
+      const fromApi = (customer.segment_ids || []).filter(id => configuredSet.has(id));
+      // GetCustomer can lag behind segment search for multi-segment members. If the API
+      // still reports membership, union with cached configured segments so a TTL refresh
+      // does not drop groups that a full segment refresh already discovered. If the API
+      // reports no configured segments, trust that and clear membership.
+      const cached = this._getFromCache(customerId);
+      const fromCache = (cached?.segment_ids || []).filter(id => configuredSet.has(id));
+      const segmentIds = fromApi.length === 0
+        ? []
+        : this._orderConfiguredSegmentIds([...new Set([...fromApi, ...fromCache])]);
       const hasMembership = segmentIds.length > 0;
       const addr = customer.address || (Array.isArray(customer.addresses) && customer.addresses[0]) || {};
       const details = {
@@ -617,7 +639,7 @@ class MembershipCache {
             continue;
           }
           const details = extractDetails(customer);
-          const segmentIds = customerToSegments.get(customerId) || [];
+          const segmentIds = this._orderConfiguredSegmentIds(customerToSegments.get(customerId) || []);
           this._updateCache(customerId, true, segmentIds, details);
           processed += 1;
         } catch (err) {
