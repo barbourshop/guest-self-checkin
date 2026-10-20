@@ -45,6 +45,8 @@ set(SOURCES
     src/services/GoogleSheetsService.cpp
     src/services/SecureStorage.cpp
     src/utils/OAuth2Flow.cpp
+    src/viewmodels/CheckInViewModel.cpp
+    src/viewmodels/AdminViewModel.cpp
     # TODO: Add as they're implemented
     # src/app/Application.cpp
     # src/app/AppSettings.cpp
@@ -72,6 +74,9 @@ set(HEADERS
     src/services/GoogleSheetsService.h
     src/services/SecureStorage.h
     src/utils/OAuth2Flow.h
+    src/viewmodels/BaseViewModel.h
+    src/viewmodels/CheckInViewModel.h
+    src/viewmodels/AdminViewModel.h
     # TODO: Add as they're implemented
     # src/app/Application.h
     # src/app/AppSettings.h
