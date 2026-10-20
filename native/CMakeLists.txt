@@ -42,11 +42,12 @@ set(SOURCES
     src/services/MembershipService.cpp
     src/services/CheckInService.cpp
     src/services/ExportService.cpp
+    src/services/GoogleSheetsService.cpp
+    src/services/SecureStorage.cpp
+    src/utils/OAuth2Flow.cpp
     # TODO: Add as they're implemented
     # src/app/Application.cpp
     # src/app/AppSettings.cpp
-    # src/services/GoogleSheetsService.cpp
-    # src/services/SecureStorage.cpp
     # src/viewmodels/CheckInViewModel.cpp
     # src/viewmodels/AdminViewModel.cpp
     # src/viewmodels/SetupViewModel.cpp
@@ -68,11 +69,12 @@ set(HEADERS
     src/services/MembershipService.h
     src/services/CheckInService.h
     src/services/ExportService.h
+    src/services/GoogleSheetsService.h
+    src/services/SecureStorage.h
+    src/utils/OAuth2Flow.h
     # TODO: Add as they're implemented
     # src/app/Application.h
     # src/app/AppSettings.h
-    # src/services/GoogleSheetsService.h
-    # src/services/SecureStorage.h
     # src/viewmodels/CheckInViewModel.h
     # src/viewmodels/AdminViewModel.h
     # src/viewmodels/SetupViewModel.h

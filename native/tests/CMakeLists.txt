@@ -38,6 +38,8 @@ target_sources(unit_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/services/MembershipService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/CheckInService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/ExportService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/GoogleSheetsService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/SecureStorage.cpp
     ${CMAKE_SOURCE_DIR}/src/models/Customer.cpp
     ${CMAKE_SOURCE_DIR}/src/models/CheckIn.cpp
     ${CMAKE_SOURCE_DIR}/src/models/Segment.cpp
@@ -45,6 +47,7 @@ target_sources(unit_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/utils/ConfigService.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/Logger.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/HttpClient.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/OAuth2Flow.cpp
 )
 
 # Link additional dependencies
