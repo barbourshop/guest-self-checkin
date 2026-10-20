@@ -1,0 +1,13 @@
+{
+  "name": "frontdeskapp",
+  "version": "2026.3.0",
+  "description": "Native Front Desk Check-in Application",
+  "dependencies": [
+    "nlohmann-json",
+    "spdlog",
+    "sqlite3",
+    "xlsxwriter",
+    "gtest"
+  ],
+  "builtin-baseline": "a42af01b72c28a8e1d7b48107b33e4f286a55ef6"
+}
