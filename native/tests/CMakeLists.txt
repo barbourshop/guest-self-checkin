@@ -35,6 +35,9 @@ target_link_libraries(unit_tests PRIVATE
 target_sources(unit_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/services/DatabaseService.cpp
     ${CMAKE_SOURCE_DIR}/src/services/SquareService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/MembershipService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/CheckInService.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/ExportService.cpp
     ${CMAKE_SOURCE_DIR}/src/models/Customer.cpp
     ${CMAKE_SOURCE_DIR}/src/models/CheckIn.cpp
     ${CMAKE_SOURCE_DIR}/src/models/Segment.cpp
@@ -48,11 +51,13 @@ target_sources(unit_tests PRIVATE
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
+find_package(unofficial-xlsxwriter CONFIG REQUIRED)
 
 target_link_libraries(unit_tests PRIVATE
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
+    unofficial::xlsxwriter::xlsxwriter
 )
 
 # Discover tests

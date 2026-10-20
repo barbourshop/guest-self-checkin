@@ -39,12 +39,12 @@ set(SOURCES
     src/utils/Logger.cpp
     src/utils/HttpClient.cpp
     src/services/SquareService.cpp
+    src/services/MembershipService.cpp
+    src/services/CheckInService.cpp
+    src/services/ExportService.cpp
     # TODO: Add as they're implemented
     # src/app/Application.cpp
     # src/app/AppSettings.cpp
-    # src/services/MembershipService.cpp
-    # src/services/CheckInService.cpp
-    # src/services/ExportService.cpp
     # src/services/GoogleSheetsService.cpp
     # src/services/SecureStorage.cpp
     # src/viewmodels/CheckInViewModel.cpp
@@ -65,12 +65,12 @@ set(HEADERS
     src/utils/Result.h
     src/utils/HttpClient.h
     src/services/SquareService.h
+    src/services/MembershipService.h
+    src/services/CheckInService.h
+    src/services/ExportService.h
     # TODO: Add as they're implemented
     # src/app/Application.h
     # src/app/AppSettings.h
-    # src/services/MembershipService.h
-    # src/services/CheckInService.h
-    # src/services/ExportService.h
     # src/services/GoogleSheetsService.h
     # src/services/SecureStorage.h
     # src/viewmodels/CheckInViewModel.h
