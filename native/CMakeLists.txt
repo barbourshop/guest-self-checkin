@@ -47,8 +47,8 @@ set(SOURCES
     src/utils/OAuth2Flow.cpp
     src/viewmodels/CheckInViewModel.cpp
     src/viewmodels/AdminViewModel.cpp
+    src/app/Application.cpp
     # TODO: Add as they're implemented
-    # src/app/Application.cpp
     # src/app/AppSettings.cpp
     # src/viewmodels/CheckInViewModel.cpp
     # src/viewmodels/AdminViewModel.cpp
@@ -77,8 +77,8 @@ set(HEADERS
     src/viewmodels/BaseViewModel.h
     src/viewmodels/CheckInViewModel.h
     src/viewmodels/AdminViewModel.h
+    src/app/Application.h
     # TODO: Add as they're implemented
-    # src/app/Application.h
     # src/app/AppSettings.h
     # src/viewmodels/CheckInViewModel.h
     # src/viewmodels/AdminViewModel.h
