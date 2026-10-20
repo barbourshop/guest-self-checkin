@@ -29,52 +29,54 @@ find_package(unofficial-xlsxwriter CONFIG REQUIRED)
 # Source files
 set(SOURCES
     src/main.cpp
-    src/app/Application.cpp
-    src/app/AppSettings.cpp
-    src/services/SquareService.cpp
     src/services/DatabaseService.cpp
-    src/services/MembershipService.cpp
-    src/services/CheckInService.cpp
-    src/services/ExportService.cpp
-    src/services/GoogleSheetsService.cpp
-    src/services/SecureStorage.cpp
-    src/viewmodels/CheckInViewModel.cpp
-    src/viewmodels/AdminViewModel.cpp
-    src/viewmodels/SetupViewModel.cpp
     src/models/Customer.cpp
     src/models/CheckIn.cpp
     src/models/Segment.cpp
     src/models/Group.cpp
     src/utils/ConfigService.cpp
-    src/utils/HttpClient.cpp
     src/utils/Logger.cpp
-    src/utils/OAuth2Flow.cpp
+    # TODO: Add as they're implemented
+    # src/app/Application.cpp
+    # src/app/AppSettings.cpp
+    # src/services/SquareService.cpp
+    # src/services/MembershipService.cpp
+    # src/services/CheckInService.cpp
+    # src/services/ExportService.cpp
+    # src/services/GoogleSheetsService.cpp
+    # src/services/SecureStorage.cpp
+    # src/viewmodels/CheckInViewModel.cpp
+    # src/viewmodels/AdminViewModel.cpp
+    # src/viewmodels/SetupViewModel.cpp
+    # src/utils/HttpClient.cpp
+    # src/utils/OAuth2Flow.cpp
 )
 
 set(HEADERS
-    src/app/Application.h
-    src/app/AppSettings.h
-    src/services/SquareService.h
     src/services/DatabaseService.h
-    src/services/MembershipService.h
-    src/services/CheckInService.h
-    src/services/ExportService.h
-    src/services/GoogleSheetsService.h
-    src/services/SecureStorage.h
-    src/viewmodels/CheckInViewModel.h
-    src/viewmodels/AdminViewModel.h
-    src/viewmodels/SetupViewModel.h
-    src/viewmodels/BaseViewModel.h
     src/models/Customer.h
     src/models/CheckIn.h
     src/models/Segment.h
     src/models/Group.h
     src/models/MembershipStatus.h
     src/utils/ConfigService.h
-    src/utils/HttpClient.h
     src/utils/Logger.h
-    src/utils/OAuth2Flow.h
     src/utils/Result.h
+    # TODO: Add as they're implemented
+    # src/app/Application.h
+    # src/app/AppSettings.h
+    # src/services/SquareService.h
+    # src/services/MembershipService.h
+    # src/services/CheckInService.h
+    # src/services/ExportService.h
+    # src/services/GoogleSheetsService.h
+    # src/services/SecureStorage.h
+    # src/viewmodels/CheckInViewModel.h
+    # src/viewmodels/AdminViewModel.h
+    # src/viewmodels/SetupViewModel.h
+    # src/viewmodels/BaseViewModel.h
+    # src/utils/HttpClient.h
+    # src/utils/OAuth2Flow.h
 )
 
 # QML resources
