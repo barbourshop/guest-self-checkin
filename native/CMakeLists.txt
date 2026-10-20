@@ -18,6 +18,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     Network 
     Sql
     Widgets
+    Concurrent
 )
 
 # Find vcpkg dependencies
@@ -36,10 +37,11 @@ set(SOURCES
     src/models/Group.cpp
     src/utils/ConfigService.cpp
     src/utils/Logger.cpp
+    src/utils/HttpClient.cpp
+    src/services/SquareService.cpp
     # TODO: Add as they're implemented
     # src/app/Application.cpp
     # src/app/AppSettings.cpp
-    # src/services/SquareService.cpp
     # src/services/MembershipService.cpp
     # src/services/CheckInService.cpp
     # src/services/ExportService.cpp
@@ -48,7 +50,6 @@ set(SOURCES
     # src/viewmodels/CheckInViewModel.cpp
     # src/viewmodels/AdminViewModel.cpp
     # src/viewmodels/SetupViewModel.cpp
-    # src/utils/HttpClient.cpp
     # src/utils/OAuth2Flow.cpp
 )
 
@@ -62,10 +63,11 @@ set(HEADERS
     src/utils/ConfigService.h
     src/utils/Logger.h
     src/utils/Result.h
+    src/utils/HttpClient.h
+    src/services/SquareService.h
     # TODO: Add as they're implemented
     # src/app/Application.h
     # src/app/AppSettings.h
-    # src/services/SquareService.h
     # src/services/MembershipService.h
     # src/services/CheckInService.h
     # src/services/ExportService.h
@@ -75,7 +77,6 @@ set(HEADERS
     # src/viewmodels/AdminViewModel.h
     # src/viewmodels/SetupViewModel.h
     # src/viewmodels/BaseViewModel.h
-    # src/utils/HttpClient.h
     # src/utils/OAuth2Flow.h
 )
 
@@ -107,6 +108,7 @@ target_link_libraries(FrontDeskApp PRIVATE
     Qt6::Network
     Qt6::Sql
     Qt6::Widgets
+    Qt6::Concurrent
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
