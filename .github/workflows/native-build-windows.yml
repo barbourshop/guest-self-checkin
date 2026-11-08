@@ -110,8 +110,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path installer
           Copy-Item FrontDeskApp.exe installer/
           
-          # Copy Qt dependencies
-          & "${{ env.Qt6_DIR }}/bin/windeployqt.exe" --release --qmldir ../src/ui installer/FrontDeskApp.exe
+          # Copy Qt dependencies  
+          $qtPath = "${{ github.workspace }}\Qt\Qt\6.8.1\msvc2022_64\bin\windeployqt.exe"
+          & $qtPath --release --qmldir ../src/ui installer/FrontDeskApp.exe
           
           # Copy config template
           Copy-Item ../config/config.template.json installer/config.json
