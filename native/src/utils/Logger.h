@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/fmt/fmt.h>
+#include <fmt/format.h>
 #include <memory>
 #include <string>
 
@@ -35,35 +35,59 @@ public:
     // Set log level
     static void set_level(Level level);
     
-    // Convenience methods using runtime format strings
+    // Convenience methods - format with fmt::format to avoid spdlog consteval issues
     template<typename... Args>
-    static void trace(const std::string& fmt, Args&&... args) {
-        get()->trace(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void trace(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->trace(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->trace(fmt_str);  // Fallback to unformatted string
+        }
     }
     
     template<typename... Args>
-    static void debug(const std::string& fmt, Args&&... args) {
-        get()->debug(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void debug(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->debug(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->debug(fmt_str);
+        }
     }
     
     template<typename... Args>
-    static void info(const std::string& fmt, Args&&... args) {
-        get()->info(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void info(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->info(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->info(fmt_str);
+        }
     }
     
     template<typename... Args>
-    static void warn(const std::string& fmt, Args&&... args) {
-        get()->warn(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void warn(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->warn(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->warn(fmt_str);
+        }
     }
     
     template<typename... Args>
-    static void error(const std::string& fmt, Args&&... args) {
-        get()->error(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void error(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->error(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->error(fmt_str);
+        }
     }
     
     template<typename... Args>
-    static void critical(const std::string& fmt, Args&&... args) {
-        get()->critical(fmt::runtime(fmt), std::forward<Args>(args)...);
+    static void critical(const std::string& fmt_str, Args&&... args) {
+        try {
+            get()->critical(fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+        } catch (const std::exception& e) {
+            get()->critical(fmt_str);
+        }
     }
     
     // Flush logs to disk
