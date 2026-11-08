@@ -11,14 +11,30 @@ set(CMAKE_AUTOUIC ON)
 # Export compile commands for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# fmt 10 + Apple Clang (Xcode 16/26) rejects spdlog's consteval format checks
-# inside the library headers. Turn those checks into ordinary runtime calls.
-# FMT_CONSTEVAL must be defined empty before fmt's headers see it.
-add_compile_definitions(FMT_USE_CONSTEXPR=0)
-if(MSVC)
-    add_compile_options(/DFMT_CONSTEVAL=)
-else()
+if(APPLE)
+    # fmt 10's consteval format checks are rejected by the Apple Clang on
+    # current GitHub runners. Keep this Apple-only: forcing FMT_USE_CONSTEXPR=0
+    # breaks the same headers under MSVC.
+    add_compile_definitions(FMT_USE_CONSTEXPR=0 SPDLOG_NO_EXCEPTIONS)
     add_compile_options(-DFMT_CONSTEVAL=)
+
+    # Qt 6.8's prebuilt Gui still passes -framework AGL. That framework is gone
+    # from the current macOS SDK, so provide an empty stub for the linker.
+    set(_agl_stub "${CMAKE_BINARY_DIR}/framework-stubs")
+    file(MAKE_DIRECTORY "${_agl_stub}/AGL.framework")
+    file(WRITE "${_agl_stub}/AGL.framework/AGL.tbd"
+"--- !tapi-tbd
+tbd-version:     4
+targets:         [ x86_64-macos, arm64-macos ]
+install-name:    '/System/Library/Frameworks/AGL.framework/Versions/A/AGL'
+current-version: 1
+compatibility-version: 1
+exports:
+  - targets:         [ x86_64-macos, arm64-macos ]
+    symbols:         [ _aglStub ]
+...
+")
+    add_link_options("-F${_agl_stub}")
 endif()
 
 # Find Qt6 packages

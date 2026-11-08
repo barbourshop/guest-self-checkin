@@ -32,7 +32,6 @@ target_compile_definitions(unit_tests PRIVATE
     SPDLOG_COMPILED_LIB
     FMT_ENFORCE_COMPILE_STRING=0
     SPDLOG_FMT_RUNTIME_ACTIVATED
-    $<$<PLATFORM_ID:Darwin>:SPDLOG_NO_EXCEPTIONS>
 )
 
 # Link against libraries
