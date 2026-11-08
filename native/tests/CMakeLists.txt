@@ -18,6 +18,8 @@ add_executable(unit_tests
     unit/ResultTest.cpp
     unit/DatabaseServiceTest.cpp
     unit/SquareServiceTest.cpp
+    # Add mock headers so they get processed by MOC
+    mocks/MockSquareService.h
     # Add more test files as they're created
 )
 
