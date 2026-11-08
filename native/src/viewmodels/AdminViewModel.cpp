@@ -2,6 +2,7 @@
 #include "../utils/Logger.h"
 #include <QDesktopServices>
 #include <QUrl>
+#include <QFutureWatcher>
 
 AdminViewModel::AdminViewModel(
     std::shared_ptr<ExportService> export_service,

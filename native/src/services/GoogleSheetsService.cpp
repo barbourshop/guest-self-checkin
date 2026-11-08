@@ -204,7 +204,7 @@ QFuture<Result<int>> GoogleSheetsService::sync_pending_checkins() {
             for (const auto& item : queue_items) {
                 database_service_->mark_queue_item_failed(
                     item.id, 
-                    QString::fromStdString(append_result.error())
+                    append_result.error()
                 );
             }
             
@@ -376,7 +376,9 @@ std::vector<QString> GoogleSheetsService::checkin_to_row(const CheckIn& checkin)
     }
     
     // Customer Name (always included)
-    row.push_back(QString::fromStdString(checkin.customer_name));
+    row.push_back(checkin.customer_name.has_value()
+                  ? QString::fromStdString(checkin.customer_name.value())
+                  : QString());
     
     // Lot Number
     row.push_back(checkin.lot_number.has_value() 
@@ -384,9 +386,7 @@ std::vector<QString> GoogleSheetsService::checkin_to_row(const CheckIn& checkin)
                   : QString());
     
     // Membership Types
-    row.push_back(checkin.membership_display_names.has_value() 
-                  ? QString::fromStdString(checkin.membership_display_names.value()) 
-                  : QString());
+    row.push_back(QString::fromStdString(checkin.membership_types_string()));
     
     // Guest Count
     row.push_back(QString::number(checkin.guest_count));
@@ -395,7 +395,9 @@ std::vector<QString> GoogleSheetsService::checkin_to_row(const CheckIn& checkin)
     row.push_back(QString::fromStdString(checkin.checkin_type));
     
     // Location
-    row.push_back(QString::fromStdString(checkin.location));
+    row.push_back(checkin.location_id.has_value()
+                  ? QString::fromStdString(checkin.location_id.value())
+                  : QString());
     
     return row;
 }

@@ -58,12 +58,12 @@ QString CheckInViewModel::selectedCustomerLot() const {
 
 bool CheckInViewModel::selectedCustomerIsMember() const {
     return selected_customer_membership_.has_value() && 
-           selected_customer_membership_->is_member();
+           selected_customer_membership_->is_member;
 }
 
 QString CheckInViewModel::selectedCustomerMemberships() const {
     if (!selected_customer_membership_.has_value()) return QString();
-    return QString::fromStdString(selected_customer_membership_->format_display_names());
+    return QString::fromStdString(selected_customer_membership_->display_names_string());
 }
 
 void CheckInViewModel::setSearchQuery(const QString& query) {
@@ -183,7 +183,7 @@ void CheckInViewModel::checkInMember() {
     }
     
     if (!selected_customer_membership_.has_value() || 
-        !selected_customer_membership_->is_member()) {
+        !selected_customer_membership_->is_member) {
         Logger::error("Customer is not a member");
         setError("Customer is not a member");
         return;
@@ -213,9 +213,12 @@ void CheckInViewModel::checkInMember() {
         }
         
         auto checkin = result.value();
-        Logger::info("Member check-in successful: {}", checkin.customer_name);
+        Logger::info("Member check-in successful: {}", 
+                    checkin.customer_name.value_or("Unknown"));
         
-        QString customer_name = QString::fromStdString(checkin.customer_name);
+        QString customer_name = checkin.customer_name.has_value()
+                              ? QString::fromStdString(checkin.customer_name.value())
+                              : QString("Unknown");
         emit checkInSuccess(customer_name, true);
         
         // Reset form
@@ -262,9 +265,12 @@ void CheckInViewModel::checkInDayPass() {
         }
         
         auto checkin = result.value();
-        Logger::info("Day-pass check-in successful: {}", checkin.customer_name);
+        Logger::info("Day-pass check-in successful: {}", 
+                    checkin.customer_name.value_or("Unknown"));
         
-        QString customer_name = QString::fromStdString(checkin.customer_name);
+        QString customer_name = checkin.customer_name.has_value()
+                              ? QString::fromStdString(checkin.customer_name.value())
+                              : QString("Unknown");
         emit checkInSuccess(customer_name, false);
         
         // Reset form

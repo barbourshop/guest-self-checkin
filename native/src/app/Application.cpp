@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QStandardPaths>
 #include <QDir>
+#include <QCoreApplication>
 
 Application::Application(QObject* parent)
     : QObject(parent)
@@ -25,7 +26,7 @@ bool Application::initialize() {
     auto& config = ConfigService::instance();
     QString config_path = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/config.json";
     
-    auto config_result = config.load_from_file(config_path);
+    auto config_result = config.load(config_path.toStdString());
     if (config_result.is_error()) {
         Logger::warn("Failed to load config: {}", config_result.error());
         Logger::info("Using default configuration");
@@ -89,15 +90,15 @@ bool Application::initializeServices() {
     QString data_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QString db_path = data_dir + "/frontdesk.db";
     
-    database_service_ = std::make_shared<DatabaseService>(db_path);
-    auto db_result = database_service_->initialize();
+    database_service_ = std::make_shared<DatabaseService>();
+    auto db_result = database_service_->initialize(db_path.toStdString());
     if (db_result.is_error()) {
         Logger::error("Failed to initialize database: {}", db_result.error());
         return false;
     }
     
     // Square Service
-    auto square_config = config.get_square_config();
+    auto square_config = config.square();
     SquareService::Config sq_config;
     sq_config.access_token = QString::fromStdString(square_config.access_token);
     sq_config.api_url = QString::fromStdString(square_config.api_url);
@@ -117,7 +118,7 @@ bool Application::initializeServices() {
     export_service_ = std::make_shared<ExportService>(database_service_);
     
     // Google Sheets Service
-    auto cloud_sync_config = config.get_cloud_sync_config();
+    auto cloud_sync_config = config.cloud_sync();
     GoogleSheetsService::Config sheets_config;
     sheets_config.client_id = QString::fromStdString(cloud_sync_config.google_client_id);
     sheets_config.client_secret = QString::fromStdString(cloud_sync_config.google_client_secret);
