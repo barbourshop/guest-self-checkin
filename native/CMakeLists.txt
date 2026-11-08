@@ -25,7 +25,7 @@ find_package(Qt6 REQUIRED COMPONENTS
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(unofficial-xlsxwriter CONFIG REQUIRED)
+find_package(xlsxwriter CONFIG REQUIRED)
 
 # Source files
 set(SOURCES
@@ -119,7 +119,7 @@ target_link_libraries(FrontDeskApp PRIVATE
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
-    unofficial::xlsxwriter::xlsxwriter
+    xlsxwriter::xlsxwriter
 )
 
 # Platform-specific settings

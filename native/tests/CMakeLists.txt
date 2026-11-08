@@ -54,13 +54,13 @@ target_sources(unit_tests PRIVATE
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(unofficial-xlsxwriter CONFIG REQUIRED)
+find_package(xlsxwriter CONFIG REQUIRED)
 
 target_link_libraries(unit_tests PRIVATE
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
-    unofficial::xlsxwriter::xlsxwriter
+    xlsxwriter::xlsxwriter
 )
 
 # Discover tests
