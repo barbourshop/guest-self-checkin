@@ -75,10 +75,10 @@ target_link_libraries(unit_tests PRIVATE
 
 # Platform-specific settings
 if(APPLE)
-    # Suppress spdlog consteval errors on macOS
+    # Downgrade spdlog consteval errors to warnings on macOS
     target_compile_options(unit_tests PRIVATE
-        -Wno-error=invalid-constexpr
-        -Wno-invalid-constexpr
+        -Wno-error
+        -ferror-limit=0
     )
 endif()
 

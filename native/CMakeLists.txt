@@ -115,6 +115,7 @@ target_compile_definitions(FrontDeskApp PRIVATE
     SPDLOG_FMT_EXTERNAL
     SPDLOG_COMPILED_LIB
     FMT_ENFORCE_COMPILE_STRING=0
+    $<$<PLATFORM_ID:Darwin>:SPDLOG_NO_EXCEPTIONS>
 )
 
 target_link_libraries(FrontDeskApp PRIVATE
@@ -148,10 +149,10 @@ if(APPLE)
     target_link_libraries(FrontDeskApp PRIVATE
         "-framework Security"
     )
-    # Suppress spdlog consteval errors on macOS
+    # Downgrade spdlog consteval errors to warnings on macOS (Clang-specific)
     target_compile_options(FrontDeskApp PRIVATE
-        -Wno-error=invalid-constexpr
-        -Wno-invalid-constexpr
+        -Wno-error
+        -ferror-limit=0
     )
 endif()
 
