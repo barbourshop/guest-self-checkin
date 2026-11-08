@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(FrontDeskApp VERSION 2026.3.0 LANGUAGES CXX)
+# Qt 6.8.1 Native Desktop Application
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
