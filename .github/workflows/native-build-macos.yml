@@ -106,7 +106,7 @@ jobs:
         working-directory: native/build
         run: |
           # CMake MACOSX_BUNDLE already wrote FrontDeskApp.app
-          $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
+          "$QT_ROOT_DIR/bin/macdeployqt" FrontDeskApp.app -qmldir=../src/ui
           
           # Copy config template
           cp ../config/config.template.json FrontDeskApp.app/Contents/Resources/config.json

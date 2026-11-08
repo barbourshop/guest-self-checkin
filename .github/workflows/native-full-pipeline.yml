@@ -151,7 +151,7 @@ jobs:
           Copy-Item FrontDeskApp.exe installer/
           
           # Deploy Qt dependencies
-          & "$env:Qt6_DIR/bin/windeployqt.exe" --release --qmldir ../src/ui installer/FrontDeskApp.exe
+          & "$env:QT_ROOT_DIR/bin/windeployqt.exe" --release --qmldir ../src/ui installer/FrontDeskApp.exe
           
           # Copy config
           Copy-Item ../config/config.template.json installer/config.json
@@ -230,7 +230,7 @@ jobs:
         working-directory: native/build
         run: |
           # CMake MACOSX_BUNDLE already wrote FrontDeskApp.app
-          $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
+          "$QT_ROOT_DIR/bin/macdeployqt" FrontDeskApp.app -qmldir=../src/ui
           
           # Copy config
           cp ../config/config.template.json FrontDeskApp.app/Contents/Resources/config.json
