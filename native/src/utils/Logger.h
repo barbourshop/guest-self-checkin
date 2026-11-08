@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/fmt/fmt.h>
 #include <memory>
 #include <string>
 
@@ -37,32 +38,32 @@ public:
     // Convenience methods using runtime format strings
     template<typename... Args>
     static void trace(const std::string& fmt, Args&&... args) {
-        get()->trace(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->trace(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     template<typename... Args>
     static void debug(const std::string& fmt, Args&&... args) {
-        get()->debug(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->debug(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     template<typename... Args>
     static void info(const std::string& fmt, Args&&... args) {
-        get()->info(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->info(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     template<typename... Args>
     static void warn(const std::string& fmt, Args&&... args) {
-        get()->warn(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->warn(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     template<typename... Args>
     static void error(const std::string& fmt, Args&&... args) {
-        get()->error(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->error(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     template<typename... Args>
     static void critical(const std::string& fmt, Args&&... args) {
-        get()->critical(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
+        get()->critical(fmt::runtime(fmt), std::forward<Args>(args)...);
     }
     
     // Flush logs to disk

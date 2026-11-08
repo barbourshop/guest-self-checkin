@@ -2,38 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Stats card component (must be defined before use)
-component StatsCard: Rectangle {
-    property string label: ""
-    property int value: 0
-    property color color: "white"
-    
-    width: 120
-    height: 60
-    radius: 8
-    
-    ColumnLayout {
-        anchors.centerIn: parent
-        spacing: 4
-        
-        Text {
-            text: parent.parent.value
-            font.pixelSize: 24
-            font.bold: true
-            color: "white"
-            Layout.alignment: Qt.AlignHCenter
-        }
-        
-        Text {
-            text: parent.parent.label
-            font.pixelSize: 12
-            color: "white"
-            opacity: 0.9
-            Layout.alignment: Qt.AlignHCenter
-        }
-    }
-}
-
 ApplicationWindow {
     id: root
     width: 1024
@@ -70,22 +38,88 @@ ApplicationWindow {
                 RowLayout {
                     spacing: 30
                     
-                    StatsCard {
-                        label: "Members"
-                        value: checkInViewModel ? checkInViewModel.todayMemberCount : 0
+                    Rectangle {
+                        width: 120
+                        height: 60
+                        radius: 8
                         color: "#4CAF50"
+                        
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            
+                            Text {
+                                text: checkInViewModel ? checkInViewModel.todayMemberCount : 0
+                                font.pixelSize: 24
+                                font.bold: true
+                                color: "white"
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Text {
+                                text: "Members"
+                                font.pixelSize: 12
+                                color: "white"
+                                opacity: 0.9
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                        }
                     }
                     
-                    StatsCard {
-                        label: "Day Pass"
-                        value: checkInViewModel ? checkInViewModel.todayDayPassCount : 0
+                    Rectangle {
+                        width: 120
+                        height: 60
+                        radius: 8
                         color: "#FF9800"
+                        
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            
+                            Text {
+                                text: checkInViewModel ? checkInViewModel.todayDayPassCount : 0
+                                font.pixelSize: 24
+                                font.bold: true
+                                color: "white"
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Text {
+                                text: "Day Pass"
+                                font.pixelSize: 12
+                                color: "white"
+                                opacity: 0.9
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                        }
                     }
                     
-                    StatsCard {
-                        label: "Total Guests"
-                        value: checkInViewModel ? checkInViewModel.todayTotalGuests : 0
+                    Rectangle {
+                        width: 120
+                        height: 60
+                        radius: 8
                         color: "#9C27B0"
+                        
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            
+                            Text {
+                                text: checkInViewModel ? checkInViewModel.todayTotalGuests : 0
+                                font.pixelSize: 24
+                                font.bold: true
+                                color: "white"
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                            
+                            Text {
+                                text: "Total Guests"
+                                font.pixelSize: 12
+                                color: "white"
+                                opacity: 0.9
+                                Layout.alignment: Qt.AlignHCenter
+                            }
+                        }
                     }
                 }
             }

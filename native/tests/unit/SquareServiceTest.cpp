@@ -78,11 +78,11 @@ protected:
         QTimer timer;
         timer.setSingleShot(true);
         
-        connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+        QObject::connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
         
         // Use QFutureWatcher to know when future completes
         auto* watcher = new QFutureWatcher<T>();
-        connect(watcher, &QFutureWatcherBase::finished, &loop, &QEventLoop::quit);
+        QObject::connect(watcher, &QFutureWatcherBase::finished, &loop, &QEventLoop::quit);
         watcher->setFuture(future);
         
         timer.start(timeout_ms);
