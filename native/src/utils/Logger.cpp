@@ -1,6 +1,7 @@
 #include "Logger.h"
 #include <filesystem>
 #include <iostream>
+#include <spdlog/fmt/fmt.h>
 
 std::shared_ptr<spdlog::logger> Logger::logger_;
 
@@ -42,13 +43,13 @@ void Logger::initialize(const std::string& log_file_path,
         // Register as default logger
         spdlog::set_default_logger(logger_);
         
-        logger_->info("Logger initialized: {}", log_file_path);
+        logger_->info(fmt::runtime("Logger initialized: {}"), log_file_path);
         
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize logger: " << e.what() << std::endl;
         // Create a basic console logger as fallback
         logger_ = spdlog::stdout_color_mt("frontdesk");
-        logger_->error("Logger initialization failed, using console fallback: {}", e.what());
+        logger_->error(fmt::runtime("Logger initialization failed, using console fallback: {}"), e.what());
     }
 }
 
@@ -56,7 +57,7 @@ std::shared_ptr<spdlog::logger> Logger::get() {
     if (!logger_) {
         // Create default console logger if not initialized
         logger_ = spdlog::stdout_color_mt("frontdesk");
-        logger_->warn("Logger accessed before initialization, using default console logger");
+        logger_->warn(fmt::runtime("Logger accessed before initialization, using default console logger"));
     }
     return logger_;
 }
