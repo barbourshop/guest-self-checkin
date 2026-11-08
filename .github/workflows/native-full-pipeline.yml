@@ -43,8 +43,16 @@ jobs:
       
       - name: Install vcpkg
         run: |
-          git clone https://github.com/Microsoft/vcpkg.git $HOME/vcpkg
-          $HOME/vcpkg/bootstrap-vcpkg.sh
+          if [ ! -d "$HOME/vcpkg" ]; then
+            git clone https://github.com/Microsoft/vcpkg.git $HOME/vcpkg
+            cd $HOME/vcpkg
+            ./bootstrap-vcpkg.sh
+          else
+            cd $HOME/vcpkg
+            git fetch origin
+            git reset --hard origin/master
+            ./bootstrap-vcpkg.sh
+          fi
       
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -99,6 +107,11 @@ jobs:
           if (!(Test-Path "vcpkg")) {
             git clone https://github.com/Microsoft/vcpkg.git
             cd vcpkg
+            .\bootstrap-vcpkg.bat
+          } else {
+            cd vcpkg
+            git fetch origin
+            git reset --hard origin/master
             .\bootstrap-vcpkg.bat
           }
         shell: pwsh
@@ -173,6 +186,11 @@ jobs:
           if [ ! -d "vcpkg" ]; then
             git clone https://github.com/Microsoft/vcpkg.git
             cd vcpkg
+            ./bootstrap-vcpkg.sh
+          else
+            cd vcpkg
+            git fetch origin
+            git reset --hard origin/master
             ./bootstrap-vcpkg.sh
           fi
       

@@ -51,7 +51,9 @@ jobs:
             .\bootstrap-vcpkg.bat
           } else {
             cd $env:VCPKG_ROOT
-            git pull
+            git fetch origin
+            git reset --hard origin/master
+            .\bootstrap-vcpkg.bat
           }
         shell: pwsh
       

@@ -54,7 +54,9 @@ jobs:
             ./bootstrap-vcpkg.sh
           else
             cd $VCPKG_ROOT
-            git pull
+            git fetch origin
+            git reset --hard origin/master
+            ./bootstrap-vcpkg.sh
           fi
       
       - name: Cache Qt
