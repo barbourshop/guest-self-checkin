@@ -107,6 +107,12 @@ set(HEADERS
     # src/utils/OAuth2Flow.h
 )
 
+# Create the executable
+qt_add_executable(FrontDeskApp
+    ${SOURCES}
+    ${HEADERS}
+)
+
 # QML resources
 qt_add_qml_module(FrontDeskApp
     URI com.frontdesk.app
@@ -123,9 +129,6 @@ qt_add_qml_module(FrontDeskApp
         src/ui/dialogs/ErrorDialog.qml
         src/ui/dialogs/ConfirmDialog.qml
         src/ui/styles/AppTheme.qml
-    SOURCES
-        ${SOURCES}
-        ${HEADERS}
 )
 
 target_compile_definitions(FrontDeskApp PRIVATE
