@@ -92,27 +92,38 @@ Result<void> DatabaseService::create_tables() {
     
     Logger::info("Loaded schema file, {} bytes", schema.toStdString().size());
     
+    // Remove comments and normalize whitespace
+    QStringList lines = schema.split('\n');
+    QStringList cleaned_lines;
+    for (const QString& line : lines) {
+        QString trimmed = line.trimmed();
+        if (!trimmed.isEmpty() && !trimmed.startsWith("--")) {
+            cleaned_lines.append(trimmed);
+        }
+    }
+    QString cleaned_schema = cleaned_lines.join(' ');
+    
     // Split into individual statements and execute
-    QStringList statements = schema.split(';', Qt::SkipEmptyParts);
+    QStringList statements = cleaned_schema.split(';', Qt::SkipEmptyParts);
     
     Logger::info("Executing {} SQL statements from schema", statements.size());
     
     int stmt_num = 0;
     for (const QString& stmt : statements) {
         QString trimmed = stmt.trimmed();
-        if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+        if (trimmed.isEmpty()) {
             continue;
         }
         
         stmt_num++;
-        // Log first 50 chars of each statement
-        QString preview = trimmed.left(50);
-        Logger::debug("Executing statement {}: {}...", stmt_num, preview.toStdString());
+        // Log first 80 chars of each statement
+        QString preview = trimmed.left(80).replace('\n', ' ');
+        Logger::info("Executing statement {}: {}...", stmt_num, preview.toStdString());
         
         auto result = execute_sql(trimmed);
         if (result.is_error()) {
             Logger::error("Failed to execute schema statement {}: {}", stmt_num, result.error());
-            Logger::error("Statement was: {}", trimmed.toStdString());
+            Logger::error("Full statement: {}", trimmed.toStdString());
             return result;
         }
     }
