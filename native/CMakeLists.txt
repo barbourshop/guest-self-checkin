@@ -148,6 +148,11 @@ if(APPLE)
     target_link_libraries(FrontDeskApp PRIVATE
         "-framework Security"
     )
+    # Suppress spdlog consteval errors on macOS
+    target_compile_options(FrontDeskApp PRIVATE
+        -Wno-error=invalid-constexpr
+        -Wno-invalid-constexpr
+    )
 endif()
 
 # Install

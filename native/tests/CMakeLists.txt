@@ -73,6 +73,15 @@ target_link_libraries(unit_tests PRIVATE
     PkgConfig::xlsxwriter
 )
 
+# Platform-specific settings
+if(APPLE)
+    # Suppress spdlog consteval errors on macOS
+    target_compile_options(unit_tests PRIVATE
+        -Wno-error=invalid-constexpr
+        -Wno-invalid-constexpr
+    )
+endif()
+
 # Discover tests
 include(GoogleTest)
 gtest_discover_tests(unit_tests)

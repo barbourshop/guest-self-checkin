@@ -4,7 +4,10 @@
   "description": "Native Front Desk Check-in Application",
   "dependencies": [
     "nlohmann-json",
-    "spdlog",
+    {
+      "name": "spdlog",
+      "version>=": "1.11.0"
+    },
     "sqlite3",
     "libxlsxwriter",
     "gtest"
