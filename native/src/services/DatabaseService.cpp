@@ -78,13 +78,19 @@ Result<void> DatabaseService::create_tables() {
     // Read schema SQL file
     QFile schema_file(":/services/schema.sql");
     if (!schema_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        // Fallback: embedded schema
-        Logger::warn("Could not open schema.sql, using embedded schema");
-        // Execute embedded schema (we'll add this as a resource later)
+        Logger::error("Could not open schema.sql resource file");
+        return Result<void>::error("Failed to load database schema");
     }
     
     QString schema = schema_file.readAll();
     schema_file.close();
+    
+    if (schema.isEmpty()) {
+        Logger::error("Schema file is empty");
+        return Result<void>::error("Database schema is empty");
+    }
+    
+    Logger::info("Loaded schema file, {} bytes", schema.toStdString().size());
     
     // Split into individual statements and execute
     QStringList statements = schema.split(';', Qt::SkipEmptyParts);
