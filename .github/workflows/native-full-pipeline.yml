@@ -126,26 +126,35 @@ jobs:
           modules: 'qtnetworkauth'
           cache: true
       
+      - name: Install Ninja
+        run: choco install ninja -y
+        shell: pwsh
+      
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      
       - name: Configure and Build
         working-directory: native
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+          cmake -B build -G "Ninja" `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../vcpkg/scripts/buildsystems/vcpkg.cmake"
-          cmake --build build --config Release --parallel
+          cmake --build build --parallel
         shell: pwsh
       
       - name: Package Windows build
-        working-directory: native/build/Release
+        working-directory: native/build
         run: |
           New-Item -ItemType Directory -Force -Path installer
           Copy-Item FrontDeskApp.exe installer/
           
           # Deploy Qt dependencies
-          & "$env:Qt6_DIR/bin/windeployqt.exe" --release --qmldir ../../src/ui installer/FrontDeskApp.exe
+          & "$env:Qt6_DIR/bin/windeployqt.exe" --release --qmldir ../src/ui installer/FrontDeskApp.exe
           
           # Copy config
-          Copy-Item ../../config/config.template.json installer/config.json
+          Copy-Item ../config/config.template.json installer/config.json
           
           # Create archive
           $version = if ("${{ inputs.version }}") { "${{ inputs.version }}".TrimStart('v') } else { "2026.3.0" }
@@ -156,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-windows
-          path: native/build/Release/*.zip
+          path: native/build/*.zip
 
   # Build for macOS (both architectures)
   build-macos:

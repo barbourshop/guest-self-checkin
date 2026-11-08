@@ -33,6 +33,10 @@ jobs:
         with:
           arch: x64
       
+      - name: Install Ninja
+        run: choco install ninja -y
+        shell: pwsh
+      
       - name: Cache vcpkg
         uses: actions/cache@v4
         with:
@@ -81,7 +85,7 @@ jobs:
         working-directory: native
         run: |
           $vcpkgPath = "${{ github.workspace }}/vcpkg"
-          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+          cmake -B build -G "Ninja" `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$vcpkgPath/scripts/buildsystems/vcpkg.cmake" `
             -DQt6_DIR="${{ env.Qt6_DIR }}/lib/cmake/Qt6"
@@ -90,27 +94,27 @@ jobs:
       - name: Build
         working-directory: native
         run: |
-          cmake --build build --config Release --parallel
+          cmake --build build --parallel
         shell: pwsh
       
       - name: Run Tests
         working-directory: native/build
         run: |
-          ctest -C Release --output-on-failure --verbose
+          ctest --output-on-failure --verbose
         shell: pwsh
         continue-on-error: true
       
       - name: Create installer directory structure
-        working-directory: native/build/Release
+        working-directory: native/build
         run: |
           New-Item -ItemType Directory -Force -Path installer
           Copy-Item FrontDeskApp.exe installer/
           
           # Copy Qt dependencies
-          & "${{ env.Qt6_DIR }}/bin/windeployqt.exe" --release --qmldir ../../src/ui installer/FrontDeskApp.exe
+          & "${{ env.Qt6_DIR }}/bin/windeployqt.exe" --release --qmldir ../src/ui installer/FrontDeskApp.exe
           
           # Copy config template
-          Copy-Item ../../config/config.template.json installer/config.json
+          Copy-Item ../config/config.template.json installer/config.json
           
           # Create README
           @"
@@ -132,7 +136,7 @@ jobs:
         shell: pwsh
       
       - name: Create ZIP archive
-        working-directory: native/build/Release/installer
+        working-directory: native/build/installer
         run: |
           $version = "2026.3.0"
           $zipName = "FrontDeskApp-Native-Windows-$version.zip"
@@ -143,12 +147,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: native-windows-build
-          path: native/build/Release/*.zip
+          path: native/build/*.zip
           retention-days: 30
       
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
           name: native-windows-exe
-          path: native/build/Release/FrontDeskApp.exe
+          path: native/build/FrontDeskApp.exe
           retention-days: 7
