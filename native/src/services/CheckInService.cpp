@@ -127,7 +127,9 @@ QFuture<Result<CheckIn>> CheckInService::record_daypass_checkin(
         checkin.id = result.value();
         
         Logger::info("Day-pass check-in recorded: ID={}, customer={}, guests={}",
-                    checkin.id, checkin.customer_name, checkin.guest_count);
+                    checkin.id, 
+                    checkin.customer_name.value_or("Unknown"), 
+                    checkin.guest_count);
         
         emit checkin_recorded(checkin);
         
