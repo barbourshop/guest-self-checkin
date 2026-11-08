@@ -29,8 +29,22 @@ find_package(SQLite3 REQUIRED)
 # libxlsxwriter - try CMake first (Windows/vcpkg), fall back to PkgConfig (Linux)
 find_package(xlsxwriter CONFIG QUIET)
 if(NOT xlsxwriter_FOUND)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
+    find_package(PkgConfig)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
+    else()
+        # On Windows/vcpkg, find the library manually
+        find_path(XLSXWRITER_INCLUDE_DIR xlsxwriter.h PATH_SUFFIXES include)
+        find_library(XLSXWRITER_LIBRARY NAMES xlsxwriter libxlsxwriter)
+        if(XLSXWRITER_INCLUDE_DIR AND XLSXWRITER_LIBRARY)
+            add_library(xlsxwriter::xlsxwriter UNKNOWN IMPORTED)
+            set_target_properties(xlsxwriter::xlsxwriter PROPERTIES
+                IMPORTED_LOCATION "${XLSXWRITER_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${XLSXWRITER_INCLUDE_DIR}"
+            )
+            set(xlsxwriter_FOUND TRUE)
+        endif()
+    endif()
 endif()
 
 # Source files
