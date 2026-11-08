@@ -229,11 +229,7 @@ jobs:
       - name: Create macOS app bundle and DMG
         working-directory: native/build
         run: |
-          # Create app bundle
-          mkdir -p FrontDeskApp.app/Contents/{MacOS,Resources,Frameworks}
-          cp FrontDeskApp FrontDeskApp.app/Contents/MacOS/
-          
-          # Deploy Qt
+          # CMake MACOSX_BUNDLE already wrote FrontDeskApp.app
           $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
           
           # Copy config

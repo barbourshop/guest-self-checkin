@@ -97,6 +97,7 @@ jobs:
       
       - name: Run Tests
         working-directory: native/build
+        timeout-minutes: 5
         run: |
           ctest -C Release --output-on-failure --verbose
         continue-on-error: true
@@ -104,13 +105,7 @@ jobs:
       - name: Create app bundle
         working-directory: native/build
         run: |
-          # Create .app bundle structure
-          mkdir -p FrontDeskApp.app/Contents/{MacOS,Resources,Frameworks}
-          
-          # Copy executable
-          cp FrontDeskApp FrontDeskApp.app/Contents/MacOS/
-          
-          # Copy Qt frameworks
+          # CMake MACOSX_BUNDLE already wrote FrontDeskApp.app
           $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
           
           # Copy config template

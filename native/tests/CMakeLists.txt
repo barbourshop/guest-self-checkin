@@ -110,6 +110,10 @@ else()
     message(WARNING "xlsxwriter library not found for tests - some tests may fail")
 endif()
 
-# Discover tests
+# Discover tests at ctest time. Build-time discovery runs the test binary,
+# which times out when an arm64 runner has to launch the x86_64 binary.
 include(GoogleTest)
-gtest_discover_tests(unit_tests)
+gtest_discover_tests(unit_tests
+    DISCOVERY_MODE PRE_TEST
+    DISCOVERY_TIMEOUT 60
+)
