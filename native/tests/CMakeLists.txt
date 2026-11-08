@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # Find GTest and Qt Test
 find_package(GTest CONFIG REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Test Core Sql Network Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Test Core Gui Sql Network Concurrent)
 
 # Enable Qt Test integration
 enable_testing()
@@ -30,6 +30,7 @@ target_link_libraries(unit_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     Qt6::Core
+    Qt6::Gui
     Qt6::Sql
     Qt6::Test
     Qt6::Network
