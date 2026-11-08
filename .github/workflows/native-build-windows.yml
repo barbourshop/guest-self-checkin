@@ -45,12 +45,13 @@ jobs:
       
       - name: Install vcpkg
         run: |
-          if (!(Test-Path "$env:VCPKG_ROOT")) {
-            git clone https://github.com/Microsoft/vcpkg.git $env:VCPKG_ROOT
-            cd $env:VCPKG_ROOT
+          $vcpkgPath = "${{ github.workspace }}/vcpkg"
+          if (!(Test-Path $vcpkgPath)) {
+            git clone https://github.com/Microsoft/vcpkg.git $vcpkgPath
+            cd $vcpkgPath
             .\bootstrap-vcpkg.bat
           } else {
-            cd $env:VCPKG_ROOT
+            cd $vcpkgPath
             git fetch origin
             git reset --hard origin/master
             .\bootstrap-vcpkg.bat
@@ -79,9 +80,10 @@ jobs:
       - name: Configure CMake
         working-directory: native
         run: |
+          $vcpkgPath = "${{ github.workspace }}/vcpkg"
           cmake -B build -G "Visual Studio 17 2022" -A x64 `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_TOOLCHAIN_FILE="$vcpkgPath/scripts/buildsystems/vcpkg.cmake" `
             -DQt6_DIR="${{ env.Qt6_DIR }}/lib/cmake/Qt6"
         shell: pwsh
       
