@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="services/schema.sql">src/services/schema.sql</file>
+    </qresource>
+</RCC>

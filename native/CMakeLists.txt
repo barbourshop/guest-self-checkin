@@ -112,6 +112,7 @@ set(HEADERS
 qt_add_executable(FrontDeskApp
     ${SOURCES}
     ${HEADERS}
+    resources.qrc
 )
 
 # QML resources

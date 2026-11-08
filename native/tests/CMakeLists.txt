@@ -20,6 +20,8 @@ add_executable(unit_tests
     unit/SquareServiceTest.cpp
     # Add mock headers so they get processed by MOC
     mocks/MockSquareService.h
+    # Add resources for database schema
+    ../resources.qrc
     # Add more test files as they're created
 )
 
