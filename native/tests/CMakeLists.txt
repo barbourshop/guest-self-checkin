@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Enable Qt MOC for tests (needed for mock Qt objects)
+set(CMAKE_AUTOMOC ON)
+
 # Find GTest and Qt Test
 find_package(GTest CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Test Core Gui Sql Network Concurrent)
