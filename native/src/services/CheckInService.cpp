@@ -6,6 +6,7 @@
 #include <QTextStream>
 #include <QDir>
 #include <QStandardPaths>
+#include <QHostInfo>
 #include <iomanip>
 #include <sstream>
 
@@ -52,13 +53,12 @@ QFuture<Result<CheckIn>> CheckInService::record_member_checkin(
         checkin.customer_id = customer.id;
         checkin.customer_name = customer.display_name();
         checkin.lot_number = customer.reference_id;
-        checkin.membership_display_names = membership.format_display_names();
+        checkin.membership_types = membership.all_display_names();
         checkin.guest_count = guest_count;
         checkin.timestamp = now;
         checkin.checkin_type = "member";
         
-        auto& config = ConfigService::instance();
-        checkin.location = config.get_location_name();
+        checkin.location_id = QHostInfo::localHostName().toStdString();
         
         // Save to database
         auto result = database_service_->create_checkin(checkin);
@@ -107,13 +107,12 @@ QFuture<Result<CheckIn>> CheckInService::record_daypass_checkin(
         checkin.customer_id = customer.id;
         checkin.customer_name = customer.display_name();
         checkin.lot_number = customer.reference_id;
-        checkin.membership_display_names = std::nullopt;
+        checkin.membership_types.clear();  // No membership for day pass
         checkin.guest_count = guest_count;
         checkin.timestamp = now;
         checkin.checkin_type = "daypass";
         
-        auto& config = ConfigService::instance();
-        checkin.location = config.get_location_name();
+        checkin.location_id = QHostInfo::localHostName().toStdString();
         
         // Save to database
         auto result = database_service_->create_checkin(checkin);
@@ -138,15 +137,21 @@ Result<std::pair<bool, int>> CheckInService::check_daily_limit(
     const QString& customer_id,
     const std::chrono::system_clock::time_point& date
 ) const {
-    auto count_result = database_service_->count_checkins_for_date(customer_id, date);
+    auto checkins_result = database_service_->get_checkins_for_date(date);
     
-    if (count_result.is_error()) {
-        return Result<std::pair<bool, int>>::error(count_result.error());
+    if (checkins_result.is_error()) {
+        return Result<std::pair<bool, int>>::error(checkins_result.error());
     }
     
-    int count = count_result.value();
-    bool has_checked_in = count > 0;
+    // Count checkins for this customer
+    int count = 0;
+    for (const auto& checkin : checkins_result.value()) {
+        if (QString::fromStdString(checkin.customer_id) == customer_id) {
+            count++;
+        }
+    }
     
+    bool has_checked_in = count > 0;
     return Result<std::pair<bool, int>>::ok({has_checked_in, count});
 }
 
@@ -160,7 +165,25 @@ Result<std::vector<CheckIn>> CheckInService::get_checkins_for_range(
     const std::chrono::system_clock::time_point& start_date,
     const std::chrono::system_clock::time_point& end_date
 ) const {
-    return database_service_->get_checkins_for_range(start_date, end_date);
+    // Get checkins for each day in the range and combine them
+    std::vector<CheckIn> all_checkins;
+    
+    auto current = std::chrono::time_point_cast<std::chrono::days>(start_date);
+    auto end = std::chrono::time_point_cast<std::chrono::days>(end_date);
+    
+    while (current <= end) {
+        auto result = database_service_->get_checkins_for_date(current);
+        if (result.is_error()) {
+            return result;
+        }
+        
+        auto& checkins = result.value();
+        all_checkins.insert(all_checkins.end(), checkins.begin(), checkins.end());
+        
+        current += std::chrono::hours(24);
+    }
+    
+    return Result<std::vector<CheckIn>>::ok(all_checkins);
 }
 
 Result<QString> CheckInService::generate_daily_backup_csv(
@@ -258,16 +281,18 @@ QString CheckInService::format_csv_row(const CheckIn& checkin) const {
     
     stream << QString::fromStdString(timestamp_stream.str()) << ",";
     stream << QString::fromStdString(checkin.customer_id) << ",";
-    stream << "\"" << QString::fromStdString(checkin.customer_name) << "\",";
+    stream << "\"" << (checkin.customer_name.has_value() 
+                       ? QString::fromStdString(checkin.customer_name.value()) 
+                       : "") << "\",";
     stream << (checkin.lot_number.has_value() 
                ? QString::fromStdString(checkin.lot_number.value()) 
                : "") << ",";
-    stream << (checkin.membership_display_names.has_value() 
-               ? "\"" + QString::fromStdString(checkin.membership_display_names.value()) + "\""
-               : "") << ",";
+    stream << "\"" << QString::fromStdString(checkin.membership_types_string()) << "\",";
     stream << checkin.guest_count << ",";
     stream << QString::fromStdString(checkin.checkin_type) << ",";
-    stream << QString::fromStdString(checkin.location);
+    stream << (checkin.location_id.has_value() 
+               ? QString::fromStdString(checkin.location_id.value()) 
+               : "");
     
     return row;
 }
