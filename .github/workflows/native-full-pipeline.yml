@@ -1,0 +1,296 @@
+name: Native Qt App - Full Pipeline
+
+on:
+  push:
+    branches:
+      - feature/native-qt-app
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-full-pipeline.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'native/**'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Create GitHub release with artifacts"
+        required: false
+        type: boolean
+        default: false
+      version:
+        description: "Version tag (e.g., v2026.3.0-native)"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  # Run tests first
+  test-native:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+      
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git $HOME/vcpkg
+          $HOME/vcpkg/bootstrap-vcpkg.sh
+      
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'linux'
+          target: 'desktop'
+          modules: 'qtnetworkauth'
+          cache: true
+      
+      - name: Configure CMake
+        working-directory: native
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$HOME/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      
+      - name: Build
+        working-directory: native
+        run: |
+          cmake --build build --config Release --parallel
+      
+      - name: Run Tests
+        working-directory: native/build
+        run: |
+          ctest -C Release --output-on-failure --verbose
+
+  # Build for Windows
+  build-windows:
+    needs: test-native
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg
+            native/build/vcpkg_installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('native/vcpkg.json') }}
+      
+      - name: Install vcpkg
+        run: |
+          if (!(Test-Path "vcpkg")) {
+            git clone https://github.com/Microsoft/vcpkg.git
+            cd vcpkg
+            .\bootstrap-vcpkg.bat
+          }
+        shell: pwsh
+      
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtnetworkauth'
+          cache: true
+      
+      - name: Configure and Build
+        working-directory: native
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$PWD/../vcpkg/scripts/buildsystems/vcpkg.cmake"
+          cmake --build build --config Release --parallel
+        shell: pwsh
+      
+      - name: Package Windows build
+        working-directory: native/build/Release
+        run: |
+          New-Item -ItemType Directory -Force -Path installer
+          Copy-Item FrontDeskApp.exe installer/
+          
+          # Deploy Qt dependencies
+          & "$env:Qt6_DIR/bin/windeployqt.exe" --release --qmldir ../../src/ui installer/FrontDeskApp.exe
+          
+          # Copy config
+          Copy-Item ../../config/config.template.json installer/config.json
+          
+          # Create archive
+          $version = if ("${{ inputs.version }}") { "${{ inputs.version }}".TrimStart('v') } else { "2026.3.0" }
+          Compress-Archive -Path installer/* -DestinationPath "FrontDeskApp-Native-Windows-${version}.zip"
+        shell: pwsh
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-windows
+          path: native/build/Release/*.zip
+
+  # Build for macOS (both architectures)
+  build-macos:
+    needs: test-native
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: brew install cmake ninja
+      
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg
+            native/build/vcpkg_installed
+          key: ${{ runner.os }}-${{ matrix.arch }}-vcpkg-${{ hashFiles('native/vcpkg.json') }}
+      
+      - name: Install vcpkg
+        run: |
+          if [ ! -d "vcpkg" ]; then
+            git clone https://github.com/Microsoft/vcpkg.git
+            cd vcpkg
+            ./bootstrap-vcpkg.sh
+          fi
+      
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'mac'
+          target: 'desktop'
+          modules: 'qtnetworkauth'
+          cache: true
+      
+      - name: Configure and Build
+        working-directory: native
+        run: |
+          TRIPLET=${{ matrix.arch == 'arm64' && 'arm64-osx' || 'x64-osx' }}
+          ARCH=${{ matrix.arch }}
+          
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=$ARCH \
+            -DCMAKE_TOOLCHAIN_FILE="$PWD/../vcpkg/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=$TRIPLET
+          
+          cmake --build build --config Release --parallel $(sysctl -n hw.ncpu)
+      
+      - name: Create macOS app bundle and DMG
+        working-directory: native/build
+        run: |
+          # Create app bundle
+          mkdir -p FrontDeskApp.app/Contents/{MacOS,Resources,Frameworks}
+          cp FrontDeskApp FrontDeskApp.app/Contents/MacOS/
+          
+          # Deploy Qt
+          $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
+          
+          # Copy config
+          cp ../config/config.template.json FrontDeskApp.app/Contents/Resources/config.json
+          
+          # Create Info.plist
+          cat > FrontDeskApp.app/Contents/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key><string>FrontDeskApp</string>
+              <key>CFBundleIdentifier</key><string>com.frontdesk.app</string>
+              <key>CFBundleName</key><string>Front Desk App</string>
+              <key>CFBundlePackageType</key><string>APPL</string>
+              <key>CFBundleShortVersionString</key><string>2026.3.0</string>
+              <key>LSMinimumSystemVersion</key><string>11.0</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # Create DMG
+          VERSION=${{ inputs.version != '' && inputs.version || 'v2026.3.0' }}
+          VERSION=${VERSION#v}
+          DMG_NAME="FrontDeskApp-Native-macOS-${{ matrix.arch }}-${VERSION}.dmg"
+          
+          mkdir dmg-temp
+          cp -R FrontDeskApp.app dmg-temp/
+          ln -s /Applications dmg-temp/Applications
+          
+          hdiutil create -volname "Front Desk App" \
+            -srcfolder dmg-temp \
+            -ov -format UDZO \
+            "$DMG_NAME"
+      
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-${{ matrix.arch }}
+          path: native/build/*.dmg
+
+  # Create GitHub release (only on workflow_dispatch with create_release=true)
+  create-release:
+    needs: [build-windows, build-macos]
+    if: github.event_name == 'workflow_dispatch' && inputs.create_release == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name "*.zip" -o -name "*.dmg" \) -exec cp {} release-assets/ \;
+          ls -lh release-assets/
+      
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="v2026.3.0-native-$(date +%Y%m%d)"
+          fi
+          
+          gh release create "$VERSION" \
+            --title "Native Qt App $VERSION" \
+            --notes "Native Qt 6 / C++20 implementation of Front Desk App
+
+          **Platforms:**
+          - Windows x64 (ZIP package)
+          - macOS x86_64 (Intel Mac)
+          - macOS arm64 (Apple Silicon)
+          
+          **Installation:**
+          - Windows: Extract ZIP and run FrontDeskApp.exe
+          - macOS: Mount DMG and copy to Applications
+          
+          **Configuration:**
+          Edit config.json with your Square API credentials and settings." \
+            release-assets/*

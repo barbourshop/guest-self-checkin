@@ -1,0 +1,205 @@
+name: Build Native Qt App - macOS
+
+on:
+  push:
+    branches:
+      - feature/native-qt-app
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-build-macos.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'native/**'
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, arm64]
+    
+    runs-on: macos-latest
+    
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install system dependencies
+        run: |
+          brew install cmake ninja
+      
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            native/build/vcpkg_installed
+          key: ${{ runner.os }}-${{ matrix.arch }}-vcpkg-${{ hashFiles('native/vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-vcpkg-
+      
+      - name: Install vcpkg
+        run: |
+          if [ ! -d "$VCPKG_ROOT" ]; then
+            git clone https://github.com/Microsoft/vcpkg.git $VCPKG_ROOT
+            cd $VCPKG_ROOT
+            ./bootstrap-vcpkg.sh
+          else
+            cd $VCPKG_ROOT
+            git pull
+          fi
+      
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/Qt
+          key: ${{ runner.os }}-Qt-6.8.1-${{ matrix.arch }}
+      
+      - name: Install Qt
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'mac'
+          target: 'desktop'
+          arch: 'clang_64'
+          modules: 'qtnetworkauth'
+          cache: true
+          dir: ${{ github.workspace }}/Qt
+      
+      - name: Set architecture flags
+        id: arch-flags
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            echo "cmake_flags=-DCMAKE_OSX_ARCHITECTURES=arm64" >> $GITHUB_OUTPUT
+            echo "vcpkg_triplet=arm64-osx" >> $GITHUB_OUTPUT
+          else
+            echo "cmake_flags=-DCMAKE_OSX_ARCHITECTURES=x86_64" >> $GITHUB_OUTPUT
+            echo "vcpkg_triplet=x64-osx" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Configure CMake
+        working-directory: native
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_TARGET_TRIPLET=${{ steps.arch-flags.outputs.vcpkg_triplet }} \
+            ${{ steps.arch-flags.outputs.cmake_flags }}
+      
+      - name: Build
+        working-directory: native
+        run: |
+          cmake --build build --config Release --parallel $(sysctl -n hw.ncpu)
+      
+      - name: Run Tests
+        working-directory: native/build
+        run: |
+          ctest -C Release --output-on-failure --verbose
+        continue-on-error: true
+      
+      - name: Create app bundle
+        working-directory: native/build
+        run: |
+          # Create .app bundle structure
+          mkdir -p FrontDeskApp.app/Contents/{MacOS,Resources,Frameworks}
+          
+          # Copy executable
+          cp FrontDeskApp FrontDeskApp.app/Contents/MacOS/
+          
+          # Copy Qt frameworks
+          $Qt6_DIR/bin/macdeployqt FrontDeskApp.app -qmldir=../src/ui
+          
+          # Copy config template
+          cp ../config/config.template.json FrontDeskApp.app/Contents/Resources/config.json
+          
+          # Create Info.plist
+          cat > FrontDeskApp.app/Contents/Info.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>FrontDeskApp</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.frontdesk.app</string>
+              <key>CFBundleName</key>
+              <string>Front Desk App</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>2026.3.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>11.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          
+          # Create README
+          cat > README.txt << 'EOF'
+          # Front Desk App - Native Qt Version
+          
+          ## Installation
+          1. Copy FrontDeskApp.app to /Applications
+          2. Right-click and select Open (first time only to bypass Gatekeeper)
+          3. Edit config.json in the app's Resources folder
+          
+          ## Configuration
+          Edit FrontDeskApp.app/Contents/Resources/config.json to set:
+          - Square API credentials
+          - Membership segments and groups
+          - Google Sheets settings (optional)
+          
+          ## Support
+          For configuration help, see config.template.json
+          EOF
+      
+      - name: Create DMG (macOS 11+)
+        working-directory: native/build
+        run: |
+          VERSION="2026.3.0"
+          ARCH="${{ matrix.arch }}"
+          DMG_NAME="FrontDeskApp-Native-macOS-${ARCH}-${VERSION}.dmg"
+          
+          # Create temporary DMG folder
+          mkdir -p dmg-temp
+          cp -R FrontDeskApp.app dmg-temp/
+          cp README.txt dmg-temp/
+          ln -s /Applications dmg-temp/Applications
+          
+          # Create DMG
+          hdiutil create -volname "Front Desk App" \
+            -srcfolder dmg-temp \
+            -ov -format UDZO \
+            "$DMG_NAME"
+          
+          rm -rf dmg-temp
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-${{ matrix.arch }}-dmg
+          path: native/build/*.dmg
+          retention-days: 30
+      
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-macos-${{ matrix.arch }}-app
+          path: native/build/FrontDeskApp.app
+          retention-days: 7

@@ -1,0 +1,150 @@
+name: Build Native Qt App - Windows
+
+on:
+  push:
+    branches:
+      - feature/native-qt-app
+    paths:
+      - 'native/**'
+      - '.github/workflows/native-build-windows.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'native/**'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      Qt6_DIR: ${{ github.workspace }}/Qt/6.8.1/msvc2022_64
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            native/build/vcpkg_installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('native/vcpkg.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+      
+      - name: Install vcpkg
+        run: |
+          if (!(Test-Path "$env:VCPKG_ROOT")) {
+            git clone https://github.com/Microsoft/vcpkg.git $env:VCPKG_ROOT
+            cd $env:VCPKG_ROOT
+            .\bootstrap-vcpkg.bat
+          } else {
+            cd $env:VCPKG_ROOT
+            git pull
+          }
+        shell: pwsh
+      
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/Qt
+          key: ${{ runner.os }}-Qt-6.8.1-msvc2022_64
+      
+      - name: Install Qt
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtnetworkauth'
+          cache: true
+          dir: ${{ github.workspace }}/Qt
+      
+      - name: Configure CMake
+        working-directory: native
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DQt6_DIR="${{ env.Qt6_DIR }}/lib/cmake/Qt6"
+        shell: pwsh
+      
+      - name: Build
+        working-directory: native
+        run: |
+          cmake --build build --config Release --parallel
+        shell: pwsh
+      
+      - name: Run Tests
+        working-directory: native/build
+        run: |
+          ctest -C Release --output-on-failure --verbose
+        shell: pwsh
+        continue-on-error: true
+      
+      - name: Create installer directory structure
+        working-directory: native/build/Release
+        run: |
+          New-Item -ItemType Directory -Force -Path installer
+          Copy-Item FrontDeskApp.exe installer/
+          
+          # Copy Qt dependencies
+          & "${{ env.Qt6_DIR }}/bin/windeployqt.exe" --release --qmldir ../../src/ui installer/FrontDeskApp.exe
+          
+          # Copy config template
+          Copy-Item ../../config/config.template.json installer/config.json
+          
+          # Create README
+          @"
+          # Front Desk App - Native Qt Version
+          
+          ## Installation
+          1. Extract all files to a folder
+          2. Edit config.json with your settings
+          3. Run FrontDeskApp.exe
+          
+          ## Configuration
+          Edit config.json to set:
+          - Square API credentials
+          - Membership segments and groups
+          - Google Sheets settings (optional)
+          
+          See config.template.json for all available options.
+          "@ | Out-File -FilePath installer/README.txt -Encoding utf8
+        shell: pwsh
+      
+      - name: Create ZIP archive
+        working-directory: native/build/Release/installer
+        run: |
+          $version = "2026.3.0"
+          $zipName = "FrontDeskApp-Native-Windows-$version.zip"
+          Compress-Archive -Path * -DestinationPath "../$zipName"
+        shell: pwsh
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-windows-build
+          path: native/build/Release/*.zip
+          retention-days: 30
+      
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-windows-exe
+          path: native/build/Release/FrontDeskApp.exe
+          retention-days: 7
