@@ -109,8 +109,12 @@ QFuture<Result<QString>> ExportService::export_checkins_to_excel(
                                   checkin.customer_id.c_str(), cell_format);
             
             // Customer Name
-            worksheet_write_string(worksheet, row, 2, 
-                                  checkin.customer_name.c_str(), cell_format);
+            if (checkin.customer_name.has_value()) {
+                worksheet_write_string(worksheet, row, 2, 
+                                      checkin.customer_name.value().c_str(), cell_format);
+            } else {
+                worksheet_write_string(worksheet, row, 2, "", cell_format);
+            }
             
             // Lot Number
             if (checkin.lot_number.has_value()) {
@@ -121,13 +125,10 @@ QFuture<Result<QString>> ExportService::export_checkins_to_excel(
             }
             
             // Membership Types
-            if (checkin.membership_display_names.has_value()) {
-                worksheet_write_string(worksheet, row, 4, 
-                                      checkin.membership_display_names.value().c_str(), 
-                                      cell_format);
-            } else {
-                worksheet_write_string(worksheet, row, 4, "", cell_format);
-            }
+            std::string membership_str = checkin.membership_types_string();
+            worksheet_write_string(worksheet, row, 4, 
+                                  membership_str.c_str(), 
+                                  cell_format);
             
             // Guest Count
             worksheet_write_number(worksheet, row, 5, 
@@ -138,8 +139,12 @@ QFuture<Result<QString>> ExportService::export_checkins_to_excel(
                                   checkin.checkin_type.c_str(), cell_format);
             
             // Location
-            worksheet_write_string(worksheet, row, 7, 
-                                  checkin.location.c_str(), cell_format);
+            if (checkin.location_id.has_value()) {
+                worksheet_write_string(worksheet, row, 7, 
+                                      checkin.location_id.value().c_str(), cell_format);
+            } else {
+                worksheet_write_string(worksheet, row, 7, "", cell_format);
+            }
             
             row++;
         }

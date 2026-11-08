@@ -151,7 +151,7 @@ QFuture<Result<void>> MembershipService::refresh_cache() {
             // Check if segment is enabled in config
             bool enabled = false;
             for (const auto& config_seg : membership_config.segments) {
-                if (config_seg.id == segment.id) {
+                if (config_seg.segment_id == segment.id) {
                     enabled = config_seg.enabled;
                     break;
                 }
@@ -172,7 +172,7 @@ QFuture<Result<void>> MembershipService::refresh_cache() {
             // Check if group is enabled in config
             bool enabled = false;
             for (const auto& config_grp : membership_config.groups) {
-                if (config_grp.id == group.id) {
+                if (config_grp.group_id == group.id) {
                     enabled = config_grp.enabled;
                     break;
                 }
@@ -238,7 +238,7 @@ bool MembershipService::cache_needs_refresh() const {
     auto membership_config = config.membership();
     
     auto age = get_cache_age();
-    return age > std::chrono::hours(membership_config.cache_ttl_hours);
+    return age > membership_config.cache_stale_threshold;
 }
 
 // Private methods
