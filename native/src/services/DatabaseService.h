@@ -68,6 +68,10 @@ public:
     Result<std::vector<CheckIn>> get_checkins_for_date(
         const std::chrono::system_clock::time_point& date
     );
+    Result<std::vector<CheckIn>> get_checkins_for_range(
+        const std::chrono::system_clock::time_point& start_date,
+        const std::chrono::system_clock::time_point& end_date
+    );
     Result<std::vector<CheckIn>> get_all_checkins(
         const std::optional<std::string>& filter = std::nullopt,
         int limit = -1,

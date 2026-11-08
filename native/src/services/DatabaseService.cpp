@@ -281,6 +281,40 @@ Result<std::vector<CheckIn>> DatabaseService::get_checkins_for_date(
     return Result<std::vector<CheckIn>>::ok(checkins);
 }
 
+Result<std::vector<CheckIn>> DatabaseService::get_checkins_for_range(
+    const std::chrono::system_clock::time_point& start_date,
+    const std::chrono::system_clock::time_point& end_date
+) {
+    auto start_of_start = std::chrono::time_point_cast<std::chrono::days>(start_date);
+    auto end_of_end = std::chrono::time_point_cast<std::chrono::days>(end_date) + std::chrono::hours(24);
+    
+    auto query_result = prepare_query(
+        "SELECT * FROM checkin_log "
+        "WHERE timestamp >= ? AND timestamp < ? "
+        "ORDER BY timestamp DESC"
+    );
+    
+    if (query_result.is_error()) {
+        return Result<std::vector<CheckIn>>::error(query_result.error());
+    }
+    
+    QSqlQuery query = query_result.value();
+    query.addBindValue(to_iso_string(start_of_start));
+    query.addBindValue(to_iso_string(end_of_end));
+    
+    if (!query.exec()) {
+        QString error = query.lastError().text();
+        return Result<std::vector<CheckIn>>::error("Query failed: " + error.toStdString());
+    }
+    
+    std::vector<CheckIn> checkins;
+    while (query.next()) {
+        checkins.push_back(checkin_from_query(query));
+    }
+    
+    return Result<std::vector<CheckIn>>::ok(checkins);
+}
+
 Result<std::vector<CheckIn>> DatabaseService::get_all_checkins(
     const std::optional<std::string>& filter,
     int limit,

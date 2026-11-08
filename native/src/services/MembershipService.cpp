@@ -144,15 +144,9 @@ QFuture<Result<void>> MembershipService::refresh_cache() {
         
         // Get enabled segments/groups from config
         auto& config = ConfigService::instance();
-        auto membership_config = config.get_membership_config();
+        auto membership_config = config.membership();
         
-        // Update segments in database
-        auto clear_segments_result = database_service_->clear_all_segments();
-        if (clear_segments_result.is_error()) {
-            Logger::error("Failed to clear segments: {}", clear_segments_result.error());
-            return Result<void>::error(clear_segments_result.error());
-        }
-        
+        // Update segments in database (upsert will replace existing)
         for (const auto& segment : square_segments) {
             // Check if segment is enabled in config
             bool enabled = false;
@@ -173,13 +167,7 @@ QFuture<Result<void>> MembershipService::refresh_cache() {
             }
         }
         
-        // Update groups in database
-        auto clear_groups_result = database_service_->clear_all_groups();
-        if (clear_groups_result.is_error()) {
-            Logger::error("Failed to clear groups: {}", clear_groups_result.error());
-            return Result<void>::error(clear_groups_result.error());
-        }
-        
+        // Update groups in database (upsert will replace existing)
         for (const auto& group : square_groups) {
             // Check if group is enabled in config
             bool enabled = false;
@@ -208,12 +196,12 @@ QFuture<Result<void>> MembershipService::refresh_cache() {
         }
         
         // Reload cache
-        auto reload_segments_result = database_service_->get_all_segments();
+        auto reload_segments_result = database_service_->get_segments();
         if (reload_segments_result.is_ok()) {
             cached_segments_ = reload_segments_result.value();
         }
         
-        auto reload_groups_result = database_service_->get_all_groups();
+        auto reload_groups_result = database_service_->get_groups();
         if (reload_groups_result.is_ok()) {
             cached_groups_ = reload_groups_result.value();
         }
@@ -247,7 +235,7 @@ std::chrono::seconds MembershipService::get_cache_age() const {
 
 bool MembershipService::cache_needs_refresh() const {
     auto& config = ConfigService::instance();
-    auto membership_config = config.get_membership_config();
+    auto membership_config = config.membership();
     
     auto age = get_cache_age();
     return age > std::chrono::hours(membership_config.cache_ttl_hours);
