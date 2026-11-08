@@ -111,6 +111,12 @@ qt_add_qml_module(FrontDeskApp
         ${HEADERS}
 )
 
+target_compile_definitions(FrontDeskApp PRIVATE
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_COMPILED_LIB
+    FMT_ENFORCE_COMPILE_STRING=0
+)
+
 target_link_libraries(FrontDeskApp PRIVATE
     Qt6::Core
     Qt6::Gui

@@ -18,6 +18,13 @@ add_executable(unit_tests
     # Add more test files as they're created
 )
 
+# Compile definitions
+target_compile_definitions(unit_tests PRIVATE
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_COMPILED_LIB
+    FMT_ENFORCE_COMPILE_STRING=0
+)
+
 # Link against libraries
 target_link_libraries(unit_tests PRIVATE
     GTest::gtest
