@@ -17,13 +17,13 @@ MembershipService::MembershipService(
     Logger::info("MembershipService initialized");
     
     // Load cached segments and groups from database
-    auto segments_result = database_service_->get_all_segments();
+    auto segments_result = database_service_->get_segments();
     if (segments_result.is_ok()) {
         cached_segments_ = segments_result.value();
         Logger::info("Loaded {} cached segments", cached_segments_.size());
     }
     
-    auto groups_result = database_service_->get_all_groups();
+    auto groups_result = database_service_->get_groups();
     if (groups_result.is_ok()) {
         cached_groups_ = groups_result.value();
         Logger::info("Loaded {} cached groups", cached_groups_.size());
@@ -31,8 +31,8 @@ MembershipService::MembershipService(
     
     // Get last cache refresh time
     auto time_result = database_service_->get_cache_last_refresh();
-    if (time_result.is_ok()) {
-        last_cache_time_ = time_result.value();
+    if (time_result.is_ok() && time_result.value().has_value()) {
+        last_cache_time_ = time_result.value().value();
     }
 }
 
@@ -66,7 +66,12 @@ QFuture<Result<MembershipStatus>> MembershipService::check_membership(const Cust
             auto it = std::find_if(enabled_segments.begin(), enabled_segments.end(),
                                    [&seg_id](const Segment& s) { return s.id == seg_id; });
             if (it != enabled_segments.end()) {
-                status.add_segment(*it);
+                MembershipStatus::Membership membership;
+                membership.type = MembershipStatus::Membership::Type::Segment;
+                membership.id = it->id;
+                membership.display_name = it->name;
+                membership.sort_order = it->sort_order;
+                status.memberships.push_back(membership);
             }
         }
         
@@ -74,14 +79,25 @@ QFuture<Result<MembershipStatus>> MembershipService::check_membership(const Cust
             auto it = std::find_if(enabled_groups.begin(), enabled_groups.end(),
                                    [&grp_id](const Group& g) { return g.id == grp_id; });
             if (it != enabled_groups.end()) {
-                status.add_group(*it);
+                MembershipStatus::Membership membership;
+                membership.type = MembershipStatus::Membership::Type::Group;
+                membership.id = it->id;
+                membership.display_name = it->name;
+                membership.sort_order = it->sort_order;
+                status.memberships.push_back(membership);
             }
         }
         
-        if (status.is_member()) {
+        // Sort memberships by sort_order
+        std::sort(status.memberships.begin(), status.memberships.end());
+        
+        // Set is_member flag
+        status.is_member = !status.memberships.empty();
+        
+        if (status.is_member) {
             Logger::info("Customer {} is a member: {}", 
                         customer.display_name(),
-                        status.format_display_names());
+                        status.display_names_string());
         } else {
             Logger::info("Customer {} is not a member", customer.display_name());
         }

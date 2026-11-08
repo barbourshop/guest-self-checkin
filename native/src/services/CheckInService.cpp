@@ -71,7 +71,9 @@ QFuture<Result<CheckIn>> CheckInService::record_member_checkin(
         checkin.id = result.value();
         
         Logger::info("Check-in recorded: ID={}, customer={}, guests={}",
-                    checkin.id, checkin.customer_name, checkin.guest_count);
+                    checkin.id, 
+                    checkin.customer_name.value_or("Unknown"), 
+                    checkin.guest_count);
         
         emit checkin_recorded(checkin);
         
@@ -180,7 +182,7 @@ Result<std::vector<CheckIn>> CheckInService::get_checkins_for_range(
         auto& checkins = result.value();
         all_checkins.insert(all_checkins.end(), checkins.begin(), checkins.end());
         
-        current += std::chrono::hours(24);
+        current += std::chrono::days(1);
     }
     
     return Result<std::vector<CheckIn>>::ok(all_checkins);
