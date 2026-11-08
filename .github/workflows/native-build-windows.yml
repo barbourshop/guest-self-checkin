@@ -20,7 +20,7 @@ jobs:
     
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-      Qt6_DIR: ${{ github.workspace }}/Qt/6.8.1/msvc2022_64
+      Qt6_DIR: ${{ github.workspace }}/Qt/Qt/6.8.1/msvc2022_64
       
     steps:
       - name: Checkout repository
