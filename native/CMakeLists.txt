@@ -26,9 +26,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
 
-# libxlsxwriter uses PkgConfig, not CMake config files
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
+# libxlsxwriter - try CMake first (Windows/vcpkg), fall back to PkgConfig (Linux)
+find_package(xlsxwriter CONFIG QUIET)
+if(NOT xlsxwriter_FOUND)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
+endif()
 
 # Source files
 set(SOURCES
@@ -129,8 +132,16 @@ target_link_libraries(FrontDeskApp PRIVATE
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
-    PkgConfig::xlsxwriter
 )
+
+# Link xlsxwriter - different target names depending on how it was found
+if(TARGET xlsxwriter::xlsxwriter)
+    target_link_libraries(FrontDeskApp PRIVATE xlsxwriter::xlsxwriter)
+elseif(TARGET PkgConfig::xlsxwriter)
+    target_link_libraries(FrontDeskApp PRIVATE PkgConfig::xlsxwriter)
+else()
+    message(FATAL_ERROR "xlsxwriter library not found")
+endif()
 
 # Platform-specific settings
 if(WIN32)
