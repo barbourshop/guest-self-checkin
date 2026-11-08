@@ -59,15 +59,7 @@ jobs:
             ./bootstrap-vcpkg.sh
           fi
       
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/Qt
-          key: ${{ runner.os }}-Qt-6.8.1-${{ matrix.arch }}
-      
       - name: Install Qt
-        if: steps.cache-qt.outputs.cache-hit != 'true'
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.1'

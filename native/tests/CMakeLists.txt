@@ -32,6 +32,7 @@ target_compile_definitions(unit_tests PRIVATE
     SPDLOG_COMPILED_LIB
     FMT_ENFORCE_COMPILE_STRING=0
     SPDLOG_FMT_RUNTIME_ACTIVATED
+    $<$<PLATFORM_ID:Darwin>:SPDLOG_NO_EXCEPTIONS>
 )
 
 # Link against libraries
@@ -108,15 +109,6 @@ elseif(TARGET PkgConfig::xlsxwriter)
     target_link_libraries(unit_tests PRIVATE PkgConfig::xlsxwriter)
 else()
     message(WARNING "xlsxwriter library not found for tests - some tests may fail")
-endif()
-
-# Platform-specific settings
-if(APPLE)
-    # Downgrade spdlog consteval errors to warnings on macOS
-    target_compile_options(unit_tests PRIVATE
-        -Wno-error
-        -ferror-limit=0
-    )
 endif()
 
 # Discover tests

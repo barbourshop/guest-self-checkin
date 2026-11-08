@@ -62,15 +62,7 @@ jobs:
           }
         shell: pwsh
       
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/Qt
-          key: ${{ runner.os }}-Qt-6.8.1-msvc2022_64-v2
-      
       - name: Install Qt
-        if: steps.cache-qt.outputs.cache-hit != 'true'
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.1'

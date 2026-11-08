@@ -11,6 +11,16 @@ set(CMAKE_AUTOUIC ON)
 # Export compile commands for IDE integration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# fmt 10 + Apple Clang (Xcode 16/26) rejects spdlog's consteval format checks
+# inside the library headers. Turn those checks into ordinary runtime calls.
+# FMT_CONSTEVAL must be defined empty before fmt's headers see it.
+add_compile_definitions(FMT_USE_CONSTEXPR=0)
+if(MSVC)
+    add_compile_options(/DFMT_CONSTEVAL=)
+else()
+    add_compile_options(-DFMT_CONSTEVAL=)
+endif()
+
 # Find Qt6 packages
 find_package(Qt6 REQUIRED COMPONENTS 
     Core 
@@ -138,7 +148,6 @@ target_compile_definitions(FrontDeskApp PRIVATE
     SPDLOG_COMPILED_LIB
     FMT_ENFORCE_COMPILE_STRING=0
     SPDLOG_FMT_RUNTIME_ACTIVATED
-    $<$<PLATFORM_ID:Darwin>:SPDLOG_NO_EXCEPTIONS>
 )
 
 target_link_libraries(FrontDeskApp PRIVATE
@@ -179,11 +188,6 @@ if(APPLE)
     # macOS-specific frameworks
     target_link_libraries(FrontDeskApp PRIVATE
         "-framework Security"
-    )
-    # Downgrade spdlog consteval errors to warnings on macOS (Clang-specific)
-    target_compile_options(FrontDeskApp PRIVATE
-        -Wno-error
-        -ferror-limit=0
     )
 endif()
 
