@@ -34,35 +34,35 @@ public:
     // Set log level
     static void set_level(Level level);
     
-    // Convenience methods
-    template<typename FormatString, typename... Args>
-    static void trace(const FormatString& fmt, Args&&... args) {
-        get()->trace(fmt, std::forward<Args>(args)...);
+    // Convenience methods using runtime format strings
+    template<typename... Args>
+    static void trace(const std::string& fmt, Args&&... args) {
+        get()->trace(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
-    template<typename FormatString, typename... Args>
-    static void debug(const FormatString& fmt, Args&&... args) {
-        get()->debug(fmt, std::forward<Args>(args)...);
+    template<typename... Args>
+    static void debug(const std::string& fmt, Args&&... args) {
+        get()->debug(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
-    template<typename FormatString, typename... Args>
-    static void info(const FormatString& fmt, Args&&... args) {
-        get()->info(fmt, std::forward<Args>(args)...);
+    template<typename... Args>
+    static void info(const std::string& fmt, Args&&... args) {
+        get()->info(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
-    template<typename FormatString, typename... Args>
-    static void warn(const FormatString& fmt, Args&&... args) {
-        get()->warn(fmt, std::forward<Args>(args)...);
+    template<typename... Args>
+    static void warn(const std::string& fmt, Args&&... args) {
+        get()->warn(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
-    template<typename FormatString, typename... Args>
-    static void error(const FormatString& fmt, Args&&... args) {
-        get()->error(fmt, std::forward<Args>(args)...);
+    template<typename... Args>
+    static void error(const std::string& fmt, Args&&... args) {
+        get()->error(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
-    template<typename FormatString, typename... Args>
-    static void critical(const FormatString& fmt, Args&&... args) {
-        get()->critical(fmt, std::forward<Args>(args)...);
+    template<typename... Args>
+    static void critical(const std::string& fmt, Args&&... args) {
+        get()->critical(spdlog::fmt_runtime(fmt), std::forward<Args>(args)...);
     }
     
     // Flush logs to disk

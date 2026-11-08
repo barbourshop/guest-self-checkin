@@ -2,6 +2,38 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
+// Stats card component (must be defined before use)
+component StatsCard: Rectangle {
+    property string label: ""
+    property int value: 0
+    property color color: "white"
+    
+    width: 120
+    height: 60
+    radius: 8
+    
+    ColumnLayout {
+        anchors.centerIn: parent
+        spacing: 4
+        
+        Text {
+            text: parent.parent.value
+            font.pixelSize: 24
+            font.bold: true
+            color: "white"
+            Layout.alignment: Qt.AlignHCenter
+        }
+        
+        Text {
+            text: parent.parent.label
+            font.pixelSize: 12
+            color: "white"
+            opacity: 0.9
+            Layout.alignment: Qt.AlignHCenter
+        }
+    }
+}
+
 ApplicationWindow {
     id: root
     width: 1024
@@ -90,39 +122,6 @@ ApplicationWindow {
             AdminView {
                 
             }
-        }
-    }
-}
-
-// Stats card component
-component StatsCard: Rectangle {
-    property string label: ""
-    property int value: 0
-    property color color: "white"
-    
-    width: 120
-    height: 60
-    radius: 8
-    color: parent.color
-    
-    ColumnLayout {
-        anchors.centerIn: parent
-        spacing: 4
-        
-        Text {
-            text: parent.parent.value
-            font.pixelSize: 24
-            font.bold: true
-            color: "white"
-            Layout.alignment: Qt.AlignHCenter
-        }
-        
-        Text {
-            text: parent.parent.label
-            font.pixelSize: 12
-            color: "white"
-            opacity: 0.9
-            Layout.alignment: Qt.AlignHCenter
         }
     }
 }

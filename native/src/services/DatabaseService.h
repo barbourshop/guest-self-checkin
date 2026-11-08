@@ -41,14 +41,22 @@ public:
     // Transaction support (RAII)
     class Transaction {
     public:
-        explicit Transaction(DatabaseService& db);
+        explicit Transaction(DatabaseService* db);
         ~Transaction();
+        
+        // Make moveable
+        Transaction(Transaction&& other) noexcept;
+        Transaction& operator=(Transaction&& other) noexcept;
+        
+        // Delete copy
+        Transaction(const Transaction&) = delete;
+        Transaction& operator=(const Transaction&) = delete;
         
         Result<void> commit();
         Result<void> rollback();
         
     private:
-        DatabaseService& db_;
+        DatabaseService* db_;
         bool committed_ = false;
         bool rolled_back_ = false;
     };

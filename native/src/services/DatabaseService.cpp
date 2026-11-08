@@ -125,22 +125,42 @@ Result<void> DatabaseService::set_schema_version(int version) {
 }
 
 // Transaction implementation
-DatabaseService::Transaction::Transaction(DatabaseService& db) 
+DatabaseService::Transaction::Transaction(DatabaseService* db) 
     : db_(db) {
-    if (!db_.db_.transaction()) {
+    if (db_ && !db_->db_.transaction()) {
         Logger::error("Failed to begin transaction");
     }
 }
 
+DatabaseService::Transaction::Transaction(Transaction&& other) noexcept
+    : db_(other.db_)
+    , committed_(other.committed_)
+    , rolled_back_(other.rolled_back_) {
+    other.db_ = nullptr;
+}
+
+DatabaseService::Transaction& DatabaseService::Transaction::operator=(Transaction&& other) noexcept {
+    if (this != &other) {
+        db_ = other.db_;
+        committed_ = other.committed_;
+        rolled_back_ = other.rolled_back_;
+        other.db_ = nullptr;
+    }
+    return *this;
+}
+
 DatabaseService::Transaction::~Transaction() {
-    if (!committed_ && !rolled_back_) {
+    if (db_ && !committed_ && !rolled_back_) {
         // Auto-rollback if not explicitly committed
-        db_.db_.rollback();
+        db_->db_.rollback();
         Logger::warn("Transaction auto-rolled back (not committed)");
     }
 }
 
 Result<void> DatabaseService::Transaction::commit() {
+    if (!db_) {
+        return Result<void>::error("Transaction is invalid");
+    }
     if (committed_) {
         return Result<void>::error("Transaction already committed");
     }
@@ -148,8 +168,8 @@ Result<void> DatabaseService::Transaction::commit() {
         return Result<void>::error("Transaction already rolled back");
     }
     
-    if (!db_.db_.commit()) {
-        QString error = db_.db_.lastError().text();
+    if (!db_->db_.commit()) {
+        QString error = db_->db_.lastError().text();
         return Result<void>::error("Failed to commit transaction: " + error.toStdString());
     }
     
@@ -158,6 +178,9 @@ Result<void> DatabaseService::Transaction::commit() {
 }
 
 Result<void> DatabaseService::Transaction::rollback() {
+    if (!db_) {
+        return Result<void>::error("Transaction is invalid");
+    }
     if (committed_) {
         return Result<void>::error("Transaction already committed");
     }
@@ -165,8 +188,8 @@ Result<void> DatabaseService::Transaction::rollback() {
         return Result<void>::error("Transaction already rolled back");
     }
     
-    if (!db_.db_.rollback()) {
-        QString error = db_.db_.lastError().text();
+    if (!db_->db_.rollback()) {
+        QString error = db_->db_.lastError().text();
         return Result<void>::error("Failed to rollback transaction: " + error.toStdString());
     }
     
@@ -175,7 +198,7 @@ Result<void> DatabaseService::Transaction::rollback() {
 }
 
 Result<DatabaseService::Transaction> DatabaseService::begin_transaction() {
-    return Result<Transaction>::ok(Transaction(*this));
+    return Result<Transaction>::ok(Transaction(this));
 }
 
 // Check-in operations
