@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QTimer>
+#include <QFutureWatcher>
 #include "../mocks/MockSquareService.h"
 #include "../../src/models/Customer.h"
 #include "../../src/models/Segment.h"

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../../src/services/SquareService.h"
+#include <QFuture>
+#include <QtConcurrent>
 #include <map>
 
 /**

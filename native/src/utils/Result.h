@@ -21,12 +21,12 @@ class Result {
 public:
     // Create successful result
     static Result ok(T value) {
-        return Result(std::move(value));
+        return Result(OkTag{}, std::move(value));
     }
     
     // Create error result
     static Result error(E error) {
-        return Result(std::move(error));
+        return Result(ErrorTag{}, std::move(error));
     }
     
     // Check if result is ok
@@ -98,8 +98,11 @@ public:
     }
 
 private:
-    explicit Result(T value) : data_(std::move(value)) {}
-    explicit Result(E error) : data_(std::move(error)) {}
+    struct OkTag {};
+    struct ErrorTag {};
+    
+    Result(OkTag, T value) : data_(std::move(value)) {}
+    Result(ErrorTag, E error) : data_(std::move(error)) {}
     
     std::variant<T, E> data_;
 };

@@ -35,34 +35,34 @@ public:
     static void set_level(Level level);
     
     // Convenience methods
-    template<typename... Args>
-    static void trace(Args&&... args) {
-        get()->trace(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void trace(const FormatString& fmt, Args&&... args) {
+        get()->trace(fmt, std::forward<Args>(args)...);
     }
     
-    template<typename... Args>
-    static void debug(Args&&... args) {
-        get()->debug(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void debug(const FormatString& fmt, Args&&... args) {
+        get()->debug(fmt, std::forward<Args>(args)...);
     }
     
-    template<typename... Args>
-    static void info(Args&&... args) {
-        get()->info(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void info(const FormatString& fmt, Args&&... args) {
+        get()->info(fmt, std::forward<Args>(args)...);
     }
     
-    template<typename... Args>
-    static void warn(Args&&... args) {
-        get()->warn(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void warn(const FormatString& fmt, Args&&... args) {
+        get()->warn(fmt, std::forward<Args>(args)...);
     }
     
-    template<typename... Args>
-    static void error(Args&&... args) {
-        get()->error(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void error(const FormatString& fmt, Args&&... args) {
+        get()->error(fmt, std::forward<Args>(args)...);
     }
     
-    template<typename... Args>
-    static void critical(Args&&... args) {
-        get()->critical(std::forward<Args>(args)...);
+    template<typename FormatString, typename... Args>
+    static void critical(const FormatString& fmt, Args&&... args) {
+        get()->critical(fmt, std::forward<Args>(args)...);
     }
     
     // Flush logs to disk
