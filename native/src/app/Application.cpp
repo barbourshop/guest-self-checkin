@@ -4,6 +4,8 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QCoreApplication>
+#include <QSettings>
+#include <QProcessEnvironment>
 
 Application::Application(QObject* parent)
     : QObject(parent)
@@ -100,8 +102,20 @@ bool Application::initializeServices() {
     // Square Service
     auto square_config = config.square();
     SquareService::Config sq_config;
-    sq_config.access_token = QString::fromStdString(square_config.access_token);
+    
+    // Get access token from environment variable or QSettings
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString access_token = env.value("SQUARE_ACCESS_TOKEN");
+    if (access_token.isEmpty()) {
+        QSettings settings;
+        access_token = settings.value("square/access_token", "").toString();
+    }
+    
+    sq_config.access_token = access_token;
     sq_config.api_url = QString::fromStdString(square_config.api_url);
+    sq_config.api_version = QString::fromStdString(square_config.api_version);
+    sq_config.timeout = square_config.timeout;
+    sq_config.retry_attempts = square_config.retry_attempts;
     
     square_service_ = std::make_shared<SquareService>(sq_config);
     
@@ -119,11 +133,22 @@ bool Application::initializeServices() {
     
     // Google Sheets Service
     auto cloud_sync_config = config.cloud_sync();
+    auto google_sheets_config = cloud_sync_config.google_sheets;
     GoogleSheetsService::Config sheets_config;
-    sheets_config.client_id = QString::fromStdString(cloud_sync_config.google_client_id);
-    sheets_config.client_secret = QString::fromStdString(cloud_sync_config.google_client_secret);
-    sheets_config.spreadsheet_id = QString::fromStdString(cloud_sync_config.google_spreadsheet_id);
-    sheets_config.include_customer_id = cloud_sync_config.include_customer_id;
+    
+    // Get OAuth credentials from environment or QSettings
+    QString client_id = env.value("GOOGLE_CLIENT_ID");
+    QString client_secret = env.value("GOOGLE_CLIENT_SECRET");
+    if (client_id.isEmpty()) {
+        QSettings settings;
+        client_id = settings.value("google/client_id", "").toString();
+        client_secret = settings.value("google/client_secret", "").toString();
+    }
+    
+    sheets_config.client_id = client_id;
+    sheets_config.client_secret = client_secret;
+    sheets_config.spreadsheet_id = QString::fromStdString(google_sheets_config.spreadsheet_id);
+    sheets_config.include_customer_id = google_sheets_config.include_fields.customer_id;
     
     sheets_service_ = std::make_shared<GoogleSheetsService>(
         sheets_config,
