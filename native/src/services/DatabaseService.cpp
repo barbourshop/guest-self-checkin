@@ -92,12 +92,20 @@ Result<void> DatabaseService::create_tables() {
     
     Logger::info("Loaded schema file, {} bytes", schema.toStdString().size());
     
-    // Remove comments and normalize whitespace
+    // Remove comments (both line comments and inline comments) and normalize whitespace
     QStringList lines = schema.split('\n');
     QStringList cleaned_lines;
     for (const QString& line : lines) {
         QString trimmed = line.trimmed();
-        if (!trimmed.isEmpty() && !trimmed.startsWith("--")) {
+        if (trimmed.isEmpty() || trimmed.startsWith("--")) {
+            continue;
+        }
+        // Remove inline comments (-- comments within the line)
+        int comment_pos = trimmed.indexOf("--");
+        if (comment_pos >= 0) {
+            trimmed = trimmed.left(comment_pos).trimmed();
+        }
+        if (!trimmed.isEmpty()) {
             cleaned_lines.append(trimmed);
         }
     }
