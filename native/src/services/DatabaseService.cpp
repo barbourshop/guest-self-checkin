@@ -95,15 +95,24 @@ Result<void> DatabaseService::create_tables() {
     // Split into individual statements and execute
     QStringList statements = schema.split(';', Qt::SkipEmptyParts);
     
+    Logger::info("Executing {} SQL statements from schema", statements.size());
+    
+    int stmt_num = 0;
     for (const QString& stmt : statements) {
         QString trimmed = stmt.trimmed();
         if (trimmed.isEmpty() || trimmed.startsWith("--")) {
             continue;
         }
         
+        stmt_num++;
+        // Log first 50 chars of each statement
+        QString preview = trimmed.left(50);
+        Logger::debug("Executing statement {}: {}...", stmt_num, preview.toStdString());
+        
         auto result = execute_sql(trimmed);
         if (result.is_error()) {
-            Logger::error("Failed to execute schema statement: {}", result.error());
+            Logger::error("Failed to execute schema statement {}: {}", stmt_num, result.error());
+            Logger::error("Statement was: {}", trimmed.toStdString());
             return result;
         }
     }
