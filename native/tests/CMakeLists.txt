@@ -15,6 +15,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 # Unit test executable
 add_executable(unit_tests
+    main.cpp
     unit/ResultTest.cpp
     unit/DatabaseServiceTest.cpp
     unit/SquareServiceTest.cpp
@@ -36,7 +37,6 @@ target_compile_definitions(unit_tests PRIVATE
 # Link against libraries
 target_link_libraries(unit_tests PRIVATE
     GTest::gtest
-    GTest::gtest_main
     Qt6::Core
     Qt6::Gui
     Qt6::Sql
