@@ -25,7 +25,10 @@ find_package(Qt6 REQUIRED COMPONENTS
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(xlsxwriter CONFIG REQUIRED)
+
+# libxlsxwriter uses PkgConfig, not CMake config files
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(xlsxwriter REQUIRED IMPORTED_TARGET xlsxwriter)
 
 # Source files
 set(SOURCES
@@ -119,7 +122,7 @@ target_link_libraries(FrontDeskApp PRIVATE
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     SQLite::SQLite3
-    xlsxwriter::xlsxwriter
+    PkgConfig::xlsxwriter
 )
 
 # Platform-specific settings
