@@ -28,6 +28,7 @@ target_compile_definitions(unit_tests PRIVATE
     SPDLOG_FMT_EXTERNAL
     SPDLOG_COMPILED_LIB
     FMT_ENFORCE_COMPILE_STRING=0
+    SPDLOG_FMT_RUNTIME_ACTIVATED
 )
 
 # Link against libraries
