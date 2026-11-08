@@ -428,10 +428,3 @@ TEST_F(DatabaseServiceTest, GetStatistics) {
     EXPECT_EQ(stats.daypass_checkins, 1);
     EXPECT_EQ(stats.cached_customers, 1);
 }
-
-// Main function for Qt application
-int main(int argc, char** argv) {
-    QCoreApplication app(argc, argv);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
