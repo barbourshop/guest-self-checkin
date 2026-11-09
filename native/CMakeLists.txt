@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
+# The GitHub macOS runners are on macOS 26. Without this, the app is marked
+# as requiring macOS 26 and Sonoma refuses to open it. Qt 6.8 itself supports
+# macOS 12 and later.
+if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version")
+endif()
 project(FrontDeskApp VERSION 2026.3.0 LANGUAGES CXX)
 # Qt 6.8.1 Native Desktop Application
 

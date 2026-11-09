@@ -168,6 +168,8 @@ jobs:
       matrix:
         arch: [x86_64, arm64]
     runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
     
     steps:
       - name: Checkout repository
@@ -182,7 +184,7 @@ jobs:
           path: |
             vcpkg
             native/build/vcpkg_installed
-          key: ${{ runner.os }}-${{ matrix.arch }}-vcpkg-${{ hashFiles('native/vcpkg.json') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-vcpkg-macos12-${{ hashFiles('native/vcpkg.json') }}
       
       - name: Install vcpkg
         run: |
@@ -208,12 +210,16 @@ jobs:
       
       - name: Configure and Build
         working-directory: native
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
         run: |
           TRIPLET=${{ matrix.arch == 'arm64' && 'arm64-osx' || 'x64-osx' }}
           ARCH=${{ matrix.arch }}
           
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DVCPKG_OSX_DEPLOYMENT_TARGET=12.0 \
             -DCMAKE_OSX_ARCHITECTURES=$ARCH \
             -DCMAKE_TOOLCHAIN_FILE="$PWD/../vcpkg/scripts/buildsystems/vcpkg.cmake" \
             -DVCPKG_TARGET_TRIPLET=$TRIPLET
@@ -240,7 +246,7 @@ jobs:
               <key>CFBundleName</key><string>Front Desk App</string>
               <key>CFBundlePackageType</key><string>APPL</string>
               <key>CFBundleShortVersionString</key><string>2026.3.0</string>
-              <key>LSMinimumSystemVersion</key><string>11.0</string>
+              <key>LSMinimumSystemVersion</key><string>12.0</string>
           </dict>
           </plist>
           EOF
