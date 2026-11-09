@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+# Git Bash rewrites arguments that start with / into Windows paths.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL='*'
+
 artifact_name="${1:?artifact name required}"
 file="${2:?file required}"
 
@@ -69,10 +73,10 @@ delete_named_artifacts() {
   local exclude_current="$2"
   local ids
   if [[ "$exclude_current" == "yes" ]]; then
-    ids="$(gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" \
+    ids="$(gh api --paginate "repos/${repo}/actions/artifacts?per_page=100" \
       --jq ".artifacts[] | select(.name==\"${name}\" and .expired==false and .workflow_run.id != ${run_id}) | .id")"
   else
-    ids="$(gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" \
+    ids="$(gh api --paginate "repos/${repo}/actions/artifacts?per_page=100" \
       --jq ".artifacts[] | select(.name==\"${name}\" and .expired==false) | .id")"
   fi
   if [[ -z "$ids" ]]; then
@@ -81,7 +85,7 @@ delete_named_artifacts() {
   while IFS= read -r id; do
     [[ -z "$id" ]] && continue
     echo "Deleting Actions artifact ${name} (${id})"
-    gh api -X DELETE "/repos/${repo}/actions/artifacts/${id}" >/dev/null
+    gh api --method DELETE "repos/${repo}/actions/artifacts/${id}" >/dev/null
   done <<<"$ids"
 }
 

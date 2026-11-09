@@ -11,6 +11,7 @@ on:
     paths:
       - 'native/**'
       - '.github/workflows/native-build-macos.yml'
+      - '.github/workflows/scripts/publish-native-snapshot.sh'
   pull_request:
     branches:
       - main
