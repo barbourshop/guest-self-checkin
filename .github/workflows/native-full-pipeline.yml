@@ -251,6 +251,9 @@ jobs:
           </plist>
           EOF
           
+          codesign --force --deep --sign - FrontDeskApp.app
+          codesign --verify --deep --strict FrontDeskApp.app
+
           # Create DMG
           VERSION=${{ inputs.version != '' && inputs.version || 'v2026.3.0' }}
           VERSION=${VERSION#v}

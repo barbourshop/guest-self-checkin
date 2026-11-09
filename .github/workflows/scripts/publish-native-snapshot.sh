@@ -29,8 +29,8 @@ notes="$(cat <<EOF
 Latest installable snapshot of the native Qt app. This release is replaced on each build; older snapshots are not kept.
 
 - FrontDeskApp-Windows.zip — unzip the folder and run FrontDeskApp.exe
-- FrontDeskApp-macOS-arm64.dmg — Apple silicon
-- FrontDeskApp-macOS-x86_64.dmg — Intel
+- FrontDeskApp-macOS-arm64.dmg — Apple silicon. Open the disk image and double-click Install.command. Sonoma reports the unsigned download as damaged until that script clears the download flag.
+- FrontDeskApp-macOS-x86_64.dmg — Intel. Same install step.
 
 Updated from \`${sha}\`.
 EOF

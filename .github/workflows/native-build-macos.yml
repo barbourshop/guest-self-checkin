@@ -147,24 +147,48 @@ jobs:
           </plist>
           EOF
           
-          # Create README
+          # Ad-hoc sign after every file change. An unsigned app downloaded
+          # from GitHub is reported as "damaged" on Sonoma.
+          codesign --force --deep --sign - FrontDeskApp.app
+          codesign --verify --deep --strict --verbose=2 FrontDeskApp.app
+
           cat > README.txt << 'EOF'
-          # Front Desk App - Native Qt Version
-          
-          ## Installation
-          1. Copy FrontDeskApp.app to /Applications
-          2. Right-click and select Open (first time only to bypass Gatekeeper)
-          3. Edit config.json in the app's Resources folder
-          
+          # Front Desk App
+
+          macOS marks this download as damaged because the app is not notarized
+          with Apple. Copying it to Applications is not enough.
+
+          ## Install
+          1. Double-click Install.command in this disk image.
+             If macOS blocks that file, open System Settings, go to
+             Privacy & Security, and click Open Anyway.
+          2. The script copies FrontDeskApp.app to /Applications, clears the
+             download flag, and opens the app.
+
+          Or run this in Terminal yourself:
+
+              xattr -cr /Applications/FrontDeskApp.app
+              open /Applications/FrontDeskApp.app
+
+          Copy the app to /Applications before running that command.
+
           ## Configuration
-          Edit FrontDeskApp.app/Contents/Resources/config.json to set:
-          - Square API credentials
-          - Membership segments and groups
-          - Google Sheets settings (optional)
-          
-          ## Support
-          For configuration help, see config.template.json
+          Edit /Applications/FrontDeskApp.app/Contents/Resources/config.json
+          to set Square API credentials, membership segments and groups, and
+          optional Google Sheets settings.
           EOF
+
+          cat > Install.command << 'EOF'
+          #!/bin/bash
+          set -euo pipefail
+          cd "$(dirname "$0")"
+          DEST="/Applications/FrontDeskApp.app"
+          rm -rf "$DEST"
+          cp -R "FrontDeskApp.app" "$DEST"
+          xattr -cr "$DEST"
+          open "$DEST"
+          EOF
+          chmod +x Install.command
       
       - name: Create DMG (macOS 11+)
         working-directory: native/build
@@ -175,7 +199,7 @@ jobs:
           # Create temporary DMG folder
           mkdir -p dmg-temp
           cp -R FrontDeskApp.app dmg-temp/
-          cp README.txt dmg-temp/
+          cp README.txt Install.command dmg-temp/
           ln -s /Applications dmg-temp/Applications
           
           # Create DMG
