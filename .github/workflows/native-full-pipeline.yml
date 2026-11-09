@@ -161,12 +161,6 @@ jobs:
           Compress-Archive -Path installer/* -DestinationPath "FrontDeskApp-Native-Windows-${version}.zip"
         shell: pwsh
       
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-windows
-          path: native/build/*.zip
-
   # Build for macOS (both architectures)
   build-macos:
     needs: test-native
@@ -265,12 +259,6 @@ jobs:
             -ov -format UDZO \
             "$DMG_NAME"
       
-      - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-macos-${{ matrix.arch }}
-          path: native/build/*.dmg
-
   # Create GitHub release (only on workflow_dispatch with create_release=true)
   create-release:
     needs: [build-windows, build-macos]
@@ -281,15 +269,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      
-      - name: Prepare release assets
+      - name: Download snapshot assets
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p release-assets
-          find artifacts -type f \( -name "*.zip" -o -name "*.dmg" \) -exec cp {} release-assets/ \;
+          gh release download native-snapshot --dir release-assets --clobber
           ls -lh release-assets/
       
       - name: Create release

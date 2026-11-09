@@ -1,5 +1,9 @@
 name: Build Native Qt App - Windows
 
+permissions:
+  contents: write
+  actions: write
+
 on:
   push:
     branches:
@@ -131,21 +135,23 @@ jobs:
       - name: Create ZIP archive
         working-directory: native/build/installer
         run: |
-          $version = "2026.3.0"
-          $zipName = "FrontDeskApp-Native-Windows-$version.zip"
-          Compress-Archive -Path * -DestinationPath "../$zipName"
+          Compress-Archive -Path * -DestinationPath "../FrontDeskApp-Windows.zip"
         shell: pwsh
-      
-      - name: Upload build artifacts
+
+      - name: Upload Windows snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: native-windows-build
-          path: native/build/*.zip
-          retention-days: 30
-      
-      - name: Upload executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-windows-exe
-          path: native/build/FrontDeskApp.exe
-          retention-days: 7
+          name: snapshot-windows
+          path: native/build/FrontDeskApp-Windows.zip
+          retention-days: 1
+          overwrite: true
+
+      - name: Publish Windows snapshot
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bash .github/workflows/scripts/publish-native-snapshot.sh \
+            snapshot-windows \
+            native/build/FrontDeskApp-Windows.zip

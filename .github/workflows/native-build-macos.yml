@@ -1,5 +1,9 @@
 name: Build Native Qt App - macOS
 
+permissions:
+  contents: write
+  actions: write
+
 on:
   push:
     branches:
@@ -161,9 +165,8 @@ jobs:
       - name: Create DMG (macOS 11+)
         working-directory: native/build
         run: |
-          VERSION="2026.3.0"
           ARCH="${{ matrix.arch }}"
-          DMG_NAME="FrontDeskApp-Native-macOS-${ARCH}-${VERSION}.dmg"
+          DMG_NAME="FrontDeskApp-macOS-${ARCH}.dmg"
           
           # Create temporary DMG folder
           mkdir -p dmg-temp
@@ -179,16 +182,19 @@ jobs:
           
           rm -rf dmg-temp
       
-      - name: Upload build artifacts
+      - name: Upload macOS snapshot
         uses: actions/upload-artifact@v4
         with:
-          name: native-macos-${{ matrix.arch }}-dmg
-          path: native/build/*.dmg
-          retention-days: 30
-      
-      - name: Upload app bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-macos-${{ matrix.arch }}-app
-          path: native/build/FrontDeskApp.app
-          retention-days: 7
+          name: snapshot-macos-${{ matrix.arch }}
+          path: native/build/FrontDeskApp-macOS-${{ matrix.arch }}.dmg
+          retention-days: 1
+          overwrite: true
+
+      - name: Publish macOS snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bash .github/workflows/scripts/publish-native-snapshot.sh \
+            "snapshot-macos-${{ matrix.arch }}" \
+            "native/build/FrontDeskApp-macOS-${{ matrix.arch }}.dmg"
